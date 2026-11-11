@@ -1,0 +1,28 @@
+# <type>(<scope>): <subject> (Max 50 characters)
+# |<----  Using a Maximum Of 50 Characters  ---->|
+
+
+# Explain WHY this change is being made (Wrap at 72 characters)
+# |<----   Try To Limit Each Line to a Maximum Of 72 Characters   ---->|
+
+
+# AI tooling/percentage
+# Example: [AI-Generated 100% Claude Sonnet]
+
+
+# --- COMMIT END ---
+# Type can be:
+#    feat     (new feature)
+#    fix      (bug fix)
+#    refactor (refactoring production code)
+#    style    (formatting, missing semi colons, etc; no code change)
+#    docs     (changes to documentation)
+#    test     (adding or refactoring tests; no production code change)
+#    chore    (updating build tasks, package manager configs, etc)
+# --------------------
+# Remember to:
+#   - Capitalize the subject line
+#   - Use the imperative mood in the subject line (e.g., "Add", not "Added")
+#   - Do not end the subject line with a period
+#   - Separate subject from body with a blank line
+#   - Use the body to explain what and why vs. how
