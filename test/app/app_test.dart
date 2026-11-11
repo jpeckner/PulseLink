@@ -22,7 +22,7 @@ void main() {
       expect(find.text(disclaimerText), findsOneWidget);
 
       source.emit(
-        HeartRateSample(
+        HeartRateSample.measured(
           bpm: 72,
           timestamp: clock.now(),
           contact: SensorContact.detected,

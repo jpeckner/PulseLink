@@ -70,7 +70,7 @@ class FakeHeartRateSource implements HeartRateSource {
 
     final bpm = _bpm.round();
     _controller.add(
-      HeartRateSample(
+      HeartRateSample.measured(
         bpm: bpm,
         timestamp: clock.now(),
         contact: SensorContact.detected,

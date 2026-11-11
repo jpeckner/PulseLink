@@ -13,7 +13,7 @@ import '../helpers/stub_heart_rate_source.dart';
 final _start = DateTime(2026, 11, 11, 10);
 
 HeartRateSample _sampleAt(DateTime timestamp, {int bpm = 72}) =>
-    HeartRateSample(
+    HeartRateSample.measured(
       bpm: bpm,
       timestamp: timestamp,
       contact: SensorContact.detected,
@@ -178,7 +178,10 @@ void main() {
         source.emit(_sampleAt(clock.now(), bpm: 80));
         final reading = cubit.state as LiveHeartRateReading;
         expect(reading.isStale, isFalse);
-        expect(reading.sample.bpm, 80);
+        expect(
+          reading.sample,
+          isA<MeasuredHeartRateSample>().having((s) => s.bpm, 'bpm', 80),
+        );
       });
     });
 
@@ -191,6 +194,47 @@ void main() {
         expect((cubit.state as LiveHeartRateReading).isStale, isFalse);
         async.elapse(const Duration(seconds: 1));
         expect((cubit.state as LiveHeartRateReading).isStale, isTrue);
+      });
+    });
+
+    group('unavailable samples', () {
+      HeartRateSample unavailableAt(DateTime timestamp) =>
+          HeartRateSample.unavailable(
+            timestamp: timestamp,
+            reason: HeartRateUnavailableReason.noContact,
+          );
+
+      test('count as fresh data: the strap is connected and sending', () {
+        _withStartedCubit((async, source, cubit, states) {
+          final sample = unavailableAt(clock.now());
+          source.emit(sample);
+          expect(
+            cubit.state,
+            LiveHeartRateState.reading(
+              sample: sample,
+              isStale: false,
+              isSimulated: false,
+            ),
+          );
+        });
+      });
+
+      test('restart the stale countdown after a measured sample', () {
+        _withStartedCubit((async, source, cubit, states) {
+          source.emit(_sampleAt(clock.now()));
+          async.elapse(const Duration(seconds: 8));
+          source.emit(unavailableAt(clock.now()));
+          async.elapse(const Duration(seconds: 8));
+          expect((cubit.state as LiveHeartRateReading).isStale, isFalse);
+        });
+      });
+
+      test('go stale like any other sample', () {
+        _withStartedCubit((async, source, cubit, states) {
+          source.emit(unavailableAt(clock.now()));
+          async.elapse(const Duration(seconds: 10));
+          expect((cubit.state as LiveHeartRateReading).isStale, isTrue);
+        });
       });
     });
 

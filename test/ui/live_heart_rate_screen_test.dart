@@ -24,9 +24,22 @@ LiveHeartRateState _reading({
   bool isStale = false,
   bool isSimulated = false,
 }) => LiveHeartRateState.reading(
-  sample: HeartRateSample(bpm: bpm, timestamp: _timestamp, contact: contact),
+  sample: HeartRateSample.measured(
+    bpm: bpm,
+    timestamp: _timestamp,
+    contact: contact,
+  ),
   isStale: isStale,
   isSimulated: isSimulated,
+);
+
+LiveHeartRateState _unavailable(
+  HeartRateUnavailableReason reason, {
+  bool isStale = false,
+}) => LiveHeartRateState.reading(
+  sample: HeartRateSample.unavailable(timestamp: _timestamp, reason: reason),
+  isStale: isStale,
+  isSimulated: false,
 );
 
 void main() {
@@ -103,20 +116,42 @@ void main() {
       });
     });
 
-    group('unusable reading', () {
-      testWidgets('no skin contact shows no number and a warning chip', (
+    group('unavailable reading', () {
+      testWidgets('no contact: no number, a warning chip, still current', (
         tester,
       ) async {
-        await pumpScreen(tester, _reading(contact: SensorContact.notDetected));
-        expect(find.text('72'), findsNothing);
+        await pumpScreen(
+          tester,
+          _unavailable(HeartRateUnavailableReason.noContact),
+        );
         expect(find.text('--'), findsOneWidget);
         expect(find.text('No sensor contact'), findsOneWidget);
+        expect(find.text('Sensor contact'), findsNothing);
+        // Packets are still arriving, so this is not a lost signal.
+        expect(find.text('Updated $_time'), findsOneWidget);
+        expect(find.bySemanticsLabel('No heart-rate reading'), findsOneWidget);
       });
 
-      testWidgets('bpm 0 shows no number', (tester) async {
-        await pumpScreen(tester, _reading(bpm: 0));
-        expect(find.text('0'), findsNothing);
+      testWidgets('zero bpm: no number, and says the sensor has no reading', (
+        tester,
+      ) async {
+        await pumpScreen(
+          tester,
+          _unavailable(HeartRateUnavailableReason.zeroBpm),
+        );
         expect(find.text('--'), findsOneWidget);
+        expect(find.text('0'), findsNothing);
+        expect(find.text('No reading from sensor'), findsOneWidget);
+        expect(find.text('Sensor contact'), findsNothing);
+      });
+
+      testWidgets('stale: shows signal lost', (tester) async {
+        await pumpScreen(
+          tester,
+          _unavailable(HeartRateUnavailableReason.noContact, isStale: true),
+        );
+        expect(find.text('--'), findsOneWidget);
+        expect(find.text('Signal lost · last reading $_time'), findsOneWidget);
       });
     });
 

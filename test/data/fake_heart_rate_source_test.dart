@@ -14,14 +14,20 @@ void _withFakeTime(void Function(FakeAsync async) body) {
   fakeAsync((async) => withClock(async.getClock(_start), () => body(async)));
 }
 
-/// Starts [source], lets [duration] pass, and returns what it emitted.
-List<HeartRateSample> _run(
+/// Starts [source], lets [duration] pass, and returns what it emitted. The
+/// fake only produces measured samples, so anything else fails the test.
+List<MeasuredHeartRateSample> _run(
   FakeAsync async,
   FakeHeartRateSource source,
   Duration duration,
 ) {
-  final samples = <HeartRateSample>[];
-  source.samples.listen(samples.add);
+  final samples = <MeasuredHeartRateSample>[];
+  source.samples.listen(
+    (sample) => samples.add(switch (sample) {
+      final MeasuredHeartRateSample measured => measured,
+      UnavailableHeartRateSample() => fail('Unexpected: $sample'),
+    }),
+  );
   unawaited(source.start());
   async.elapse(duration);
   return samples;
@@ -80,7 +86,6 @@ void main() {
         for (final sample in samples) {
           expect(sample.bpm, inInclusiveRange(60, 160));
           expect(sample.contact, SensorContact.detected);
-          expect(sample.hasUsableBpm, isTrue);
           // One RR interval matching the bpm: 60 s / bpm.
           expect(sample.rrIntervals, hasLength(1));
           final impliedBpm =

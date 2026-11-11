@@ -41,6 +41,11 @@ const _rrIntervalsPresent = 0x10;
 /// than a sample with a wrong number in it. Fields after the flags byte are
 /// little-endian. Energy Expended is validated but skipped. RR intervals arrive
 /// in units of 1/1024 s and are converted to [Duration]s.
+///
+/// A well-formed packet with no skin contact or a bpm of 0 becomes an
+/// [UnavailableHeartRateSample] (no contact wins if both apply), and its bpm
+/// and RR intervals are dropped. Everything else is a
+/// [MeasuredHeartRateSample].
 HeartRateParseResult parseHeartRateMeasurement(
   Uint8List packet, {
   required DateTime timestamp,
@@ -95,14 +100,28 @@ HeartRateParseResult parseHeartRateMeasurement(
     }
   }
 
-  return HeartRateParseResult.success(
-    HeartRateSample(
+  // The whole packet is valid. Now decide whether its bpm can be trusted.
+  final contact = _contactFromFlags(flags);
+  final HeartRateSample sample;
+  if (contact == SensorContact.notDetected) {
+    sample = HeartRateSample.unavailable(
+      timestamp: timestamp,
+      reason: HeartRateUnavailableReason.noContact,
+    );
+  } else if (bpm == 0) {
+    sample = HeartRateSample.unavailable(
+      timestamp: timestamp,
+      reason: HeartRateUnavailableReason.zeroBpm,
+    );
+  } else {
+    sample = HeartRateSample.measured(
       bpm: bpm,
       timestamp: timestamp,
-      contact: _contactFromFlags(flags),
+      contact: contact,
       rrIntervals: rrIntervals,
-    ),
-  );
+    );
+  }
+  return HeartRateParseResult.success(sample);
 }
 
 SensorContact _contactFromFlags(int flags) {

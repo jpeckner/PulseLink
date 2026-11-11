@@ -76,7 +76,10 @@ class _ReadingView extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         _BpmReadout(
-          bpm: sample.hasUsableBpm ? sample.bpm : null,
+          bpm: switch (sample) {
+            MeasuredHeartRateSample(:final bpm) => bpm,
+            UnavailableHeartRateSample() => null,
+          },
           isStale: isStale,
         ),
         const SizedBox(height: 16),
@@ -97,7 +100,7 @@ class _ReadingView extends StatelessWidget {
         else
           Text('Updated $time', style: theme.textTheme.bodyLarge),
         const SizedBox(height: 16),
-        _ContactChip(contact: sample.contact),
+        _SensorStatusChip(sample: sample),
       ],
     );
   }
@@ -147,24 +150,34 @@ class _BpmReadout extends StatelessWidget {
   }
 }
 
-class _ContactChip extends StatelessWidget {
-  const new({required this.contact});
+/// Sensor status: contact for a measured sample, or why there's no reading.
+class _SensorStatusChip extends StatelessWidget {
+  const new({required this.sample});
 
-  final SensorContact contact;
+  final HeartRateSample sample;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    return switch (contact) {
-      SensorContact.notSupported => const SizedBox.shrink(),
-      SensorContact.detected => const Chip(
+    return switch (sample) {
+      MeasuredHeartRateSample(contact: SensorContact.detected) => const Chip(
         avatar: Icon(Icons.check_circle_outline),
         label: Text('Sensor contact'),
       ),
-      SensorContact.notDetected => Chip(
-        avatar: Icon(Icons.error_outline, color: colors.error),
-        label: const Text('No sensor contact'),
-      ),
+      // The sensor doesn't report contact, so there's nothing to say.
+      MeasuredHeartRateSample() => const SizedBox.shrink(),
+      UnavailableHeartRateSample(
+        reason: HeartRateUnavailableReason.noContact,
+      ) =>
+        Chip(
+          avatar: Icon(Icons.error_outline, color: colors.error),
+          label: const Text('No sensor contact'),
+        ),
+      UnavailableHeartRateSample(reason: HeartRateUnavailableReason.zeroBpm) =>
+        const Chip(
+          avatar: Icon(Icons.info_outline),
+          label: Text('No reading from sensor'),
+        ),
     };
   }
 }

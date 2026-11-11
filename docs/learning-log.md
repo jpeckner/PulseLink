@@ -44,11 +44,11 @@ third-party component and version as SOUP under IEC 62304.
 
 ## Milestone 2: Domain and fake data (2026-11-11)
 
-Built: `HeartRateSample` and the Heart Rate Measurement parser (sealed
-success/failure result), the `HeartRateSource` interface with a simulated
-`FakeHeartRateSource`, `LiveHeartRateCubit` with a 10-second stale timer, and
-the live screen (bpm, update time, sensor contact, Demo badge, signal-lost
-state). 67 tests.
+Built: a sealed `HeartRateSample` (measured or unavailable), the Heart Rate
+Measurement parser (sealed success/failure result), the `HeartRateSource`
+interface with a simulated `FakeHeartRateSource`, `LiveHeartRateCubit` with a
+10-second stale timer, and the live screen (bpm, update time, sensor status,
+Demo badge, signal-lost state). 77 tests.
 
 Flutter vs native:
 
@@ -58,8 +58,16 @@ Flutter vs native:
   case, or it doesn't compile. `(:final sample)` destructures a field, like
   `case .success(let sample)`.
 - **Primary constructors (Dart 3.13+)** declare fields in the class header:
-  `class HeartRateSample({required final int bpm, ...})`, close to a Kotlin
-  `data class` or a Swift `struct` with a memberwise init.
+  `class Point({required final int x, required final int y})`, close to a
+  Kotlin `data class` or a Swift `struct` with a memberwise init. freezed
+  supports them for single-case classes; unions still use `const factory`
+  constructors, so `HeartRateSample` moved to that form once it became sealed.
+- **Making illegal states unrepresentable**: `HeartRateSample` was first one
+  class with a `hasUsableBpm` getter, so any code could read `bpm` and forget
+  to check. As a sealed type, only `MeasuredHeartRateSample` has a `bpm`, so
+  showing an untrustworthy value doesn't compile. Same idea as replacing a
+  Swift struct + `isValid` flag with an enum. Shared fields (`timestamp`) stay
+  readable on the base type without a `switch`.
 - **freezed** generates `==`, `hashCode`, `toString` and `copyWith` into a
   `part` file (`*.freezed.dart`). It's code generation via `build_runner`, like
   Kotlin's KSP or Swift macros, but the output is a checked-in source file
@@ -81,7 +89,11 @@ Flutter vs native:
   script the states a screen sees.
 
 Regulated-app notes: the parser never throws and never guesses; a malformed
-packet is a typed failure, not a wrong number. Staleness is measured from each
+packet is a typed failure, not a wrong number. A well-formed packet with no
+skin contact or bpm 0 becomes an "unavailable" sample with no bpm at all, and
+the UI says why ("No sensor contact", "No reading from sensor") without
+medical-sounding wording. Unavailable is distinct from stale: the strap is
+still sending, so the stale timer keeps resetting. Staleness is measured from each
 sample's own timestamp, so a delayed sample can't masquerade as current. A
 regulated app would add a plausibility range check (say 25-250 bpm) and log
 every rejected packet; logging comes with the Milestone 4 debug screen.

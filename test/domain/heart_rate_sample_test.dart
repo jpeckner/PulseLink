@@ -1,46 +1,98 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 
-HeartRateSample _sample({
-  int bpm = 72,
-  SensorContact contact = SensorContact.detected,
-}) => HeartRateSample(
-  bpm: bpm,
-  timestamp: DateTime(2026, 11, 11),
-  contact: contact,
-);
+final _timestamp = DateTime(2026, 11, 11);
 
 void main() {
   group('HeartRateSample', () {
-    group('hasUsableBpm', () {
-      test('is true with contact detected and bpm above 0', () {
-        expect(_sample().hasUsableBpm, isTrue);
+    group('measured', () {
+      test('accepts contact detected or not supported', () {
+        for (final contact in [
+          SensorContact.detected,
+          SensorContact.notSupported,
+        ]) {
+          expect(
+            HeartRateSample.measured(
+              bpm: 72,
+              timestamp: _timestamp,
+              contact: contact,
+            ),
+            isA<MeasuredHeartRateSample>(),
+          );
+        }
       });
 
-      test('is true when the sensor does not report contact', () {
+      test('rejects bpm 0 (debug assert)', () {
         expect(
-          _sample(contact: SensorContact.notSupported).hasUsableBpm,
-          isTrue,
+          () => HeartRateSample.measured(
+            bpm: 0,
+            timestamp: _timestamp,
+            contact: SensorContact.detected,
+          ),
+          throwsA(isA<AssertionError>()),
         );
       });
 
-      test('is false when the sensor reports no contact', () {
+      test('rejects no skin contact (debug assert)', () {
         expect(
-          _sample(contact: SensorContact.notDetected).hasUsableBpm,
-          isFalse,
+          () => HeartRateSample.measured(
+            bpm: 72,
+            timestamp: _timestamp,
+            contact: SensorContact.notDetected,
+          ),
+          throwsA(isA<AssertionError>()),
         );
       });
 
-      test('is false for bpm 0', () {
-        expect(_sample(bpm: 0).hasUsableBpm, isFalse);
+      test('defaults to no RR intervals', () {
+        final sample = HeartRateSample.measured(
+          bpm: 72,
+          timestamp: _timestamp,
+          contact: SensorContact.detected,
+        ) as MeasuredHeartRateSample;
+        expect(sample.rrIntervals, isEmpty);
+      });
+
+      test('has value equality, including RR intervals', () {
+        HeartRateSample withRr(int ms) => HeartRateSample.measured(
+          bpm: 72,
+          timestamp: _timestamp,
+          contact: SensorContact.detected,
+          rrIntervals: [Duration(milliseconds: ms)],
+        );
+        expect(withRr(800), withRr(800));
+        expect(withRr(800), isNot(withRr(801)));
       });
     });
 
-    test('has value equality, including RR intervals', () {
-      HeartRateSample withRr(int ms) =>
-          _sample().copyWith(rrIntervals: [Duration(milliseconds: ms)]);
-      expect(withRr(800), withRr(800));
-      expect(withRr(800), isNot(withRr(801)));
+    group('unavailable', () {
+      test('has value equality, including the reason', () {
+        HeartRateSample unavailable(HeartRateUnavailableReason reason) =>
+            HeartRateSample.unavailable(timestamp: _timestamp, reason: reason);
+        expect(
+          unavailable(HeartRateUnavailableReason.noContact),
+          unavailable(HeartRateUnavailableReason.noContact),
+        );
+        expect(
+          unavailable(HeartRateUnavailableReason.noContact),
+          isNot(unavailable(HeartRateUnavailableReason.zeroBpm)),
+        );
+      });
+    });
+
+    test('exposes the timestamp on both cases without a switch', () {
+      final samples = [
+        HeartRateSample.measured(
+          bpm: 72,
+          timestamp: _timestamp,
+          contact: SensorContact.detected,
+        ),
+        HeartRateSample.unavailable(
+          timestamp: _timestamp,
+          reason: HeartRateUnavailableReason.zeroBpm,
+        ),
+      ];
+      expect(samples.map((s) => s.timestamp), everyElement(_timestamp));
     });
   });
 }
