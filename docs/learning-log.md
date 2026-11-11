@@ -41,3 +41,47 @@ Flutter vs native:
 Regulated-app note: the Flutter SDK version (in CI) and the lint rule set (in
 `analysis_options.yaml`) are both pinned. A regulated team would record every
 third-party component and version as SOUP under IEC 62304.
+
+## Milestone 2: Domain and fake data (2026-11-11)
+
+Built: `HeartRateSample` and the Heart Rate Measurement parser (sealed
+success/failure result), the `HeartRateSource` interface with a simulated
+`FakeHeartRateSource`, `LiveHeartRateCubit` with a 10-second stale timer, and
+the live screen (bpm, update time, sensor contact, Demo badge, signal-lost
+state). 67 tests.
+
+Flutter vs native:
+
+- **Sealed classes + `switch`** work like a Swift enum with associated values
+  or a Kotlin sealed class: `switch (result) { HeartRateParseSuccess(:final
+  sample) => ..., HeartRateParseFailure(:final error) => ... }` must cover every
+  case, or it doesn't compile. `(:final sample)` destructures a field, like
+  `case .success(let sample)`.
+- **Primary constructors (Dart 3.13+)** declare fields in the class header:
+  `class HeartRateSample({required final int bpm, ...})`, close to a Kotlin
+  `data class` or a Swift `struct` with a memberwise init.
+- **freezed** generates `==`, `hashCode`, `toString` and `copyWith` into a
+  `part` file (`*.freezed.dart`). It's code generation via `build_runner`, like
+  Kotlin's KSP or Swift macros, but the output is a checked-in source file
+  rather than compiler-internal. Lists get deep equality automatically.
+- **`ByteData`** reads little-endian integers from a `Uint8List`, like
+  `Data.withUnsafeBytes` / `loadUnaligned` in Swift or `ByteBuffer.order(
+  LITTLE_ENDIAN)` in Kotlin. `ByteData.sublistView` respects a view's offset;
+  `packet.buffer` would not, a classic bug the tests cover.
+- **Streams** are Dart's `AsyncSequence` / Kotlin `Flow`. A *broadcast* stream
+  allows many listeners, like a `SharedFlow`.
+- **`RepositoryProvider`** puts a dependency in the widget tree, like SwiftUI's
+  `@Environment` or a Compose `CompositionLocal`; `context.read<T>()` looks it up.
+- **Testing time**: `fake_async` plus `package:clock` make timers and "now"
+  controllable, like Kotlin's `TestDispatcher` virtual time. One trap: a stream
+  subscription's `cancel()` completes on the real event loop, which fake time
+  never runs, so the cubit's `close()` is tested with real async.
+- **Widget tests** pump a widget tree headlessly and query it with finders,
+  like ViewInspector or Compose's `onNodeWithText`. `MockCubit` + `whenListen`
+  script the states a screen sees.
+
+Regulated-app notes: the parser never throws and never guesses; a malformed
+packet is a typed failure, not a wrong number. Staleness is measured from each
+sample's own timestamp, so a delayed sample can't masquerade as current. A
+regulated app would add a plausibility range check (say 25-250 bpm) and log
+every rejected packet; logging comes with the Milestone 4 debug screen.
