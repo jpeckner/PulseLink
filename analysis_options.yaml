@@ -1,0 +1,16 @@
+# Pinned to a specific rule set so lint changes are a deliberate upgrade,
+# not a surprise when the package updates.
+include: package:very_good_analysis/analysis_options.11.0.0.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - "**/*.g.dart"
+
+linter:
+  rules:
+    # Doc comments on every public member is overkill for an app (it's meant
+    # for published packages). We still document anything non-obvious.
+    public_member_api_docs: false
