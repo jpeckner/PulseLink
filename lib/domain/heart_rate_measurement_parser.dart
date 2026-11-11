@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/positive_int.dart';
 
 part 'heart_rate_measurement_parser.freezed.dart';
 
@@ -58,14 +59,14 @@ HeartRateParseResult parseHeartRateMeasurement(
   final flags = bytes.getUint8(0);
   var offset = 1;
 
-  final int bpm;
+  final int rawBpm;
   if (flags & _heartRateIsUint16 != 0) {
     if (packet.length < offset + 2) {
       return const HeartRateParseResult.failure(
         HeartRateParseError.truncatedHeartRate,
       );
     }
-    bpm = bytes.getUint16(offset, Endian.little);
+    rawBpm = bytes.getUint16(offset, Endian.little);
     offset += 2;
   } else {
     if (packet.length < offset + 1) {
@@ -73,7 +74,7 @@ HeartRateParseResult parseHeartRateMeasurement(
         HeartRateParseError.truncatedHeartRate,
       );
     }
-    bpm = bytes.getUint8(offset);
+    rawBpm = bytes.getUint8(offset);
     offset += 1;
   }
 
@@ -105,13 +106,14 @@ HeartRateParseResult parseHeartRateMeasurement(
   // Bit 1 means nothing unless bit 2 is set.
   final contactSupported = flags & _contactSupported != 0;
   final contactDetected = flags & _contactDetected != 0;
+  final bpm = PositiveInt.tryFrom(rawBpm);
   final HeartRateSample sample;
   if (contactSupported && !contactDetected) {
     sample = HeartRateSample.unavailable(
       timestamp: timestamp,
       reason: HeartRateUnavailableReason.noContact,
     );
-  } else if (bpm == 0) {
+  } else if (bpm == null) {
     sample = HeartRateSample.unavailable(
       timestamp: timestamp,
       reason: HeartRateUnavailableReason.zeroBpm,

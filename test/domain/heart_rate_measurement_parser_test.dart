@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/domain/heart_rate_measurement_parser.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/positive_int.dart';
 
 final _timestamp = DateTime(2026, 11, 11, 10, 52, 31);
 
@@ -37,7 +38,7 @@ void main() {
         expect(
           _parseSample([0x16, 0x48, 0x00, 0x04]),
           HeartRateSample.measured(
-            bpm: 72,
+            bpm: PositiveInt(72),
             timestamp: _timestamp,
             contact: MeasuredContact.detected,
             rrIntervals: const [Duration(milliseconds: 1000)],
@@ -49,7 +50,7 @@ void main() {
         expect(
           _parseSample([0x01, 0xB4, 0x00]),
           HeartRateSample.measured(
-            bpm: 180,
+            bpm: PositiveInt(180),
             timestamp: _timestamp,
             contact: MeasuredContact.notReported,
           ),
@@ -59,15 +60,15 @@ void main() {
 
     group('heart-rate value', () {
       test('reads uint8 bpm', () {
-        expect(_parseMeasured([0x00, 0x3C]).bpm, 60);
+        expect(_parseMeasured([0x00, 0x3C]).bpm.value, 60);
       });
 
       test('reads uint16 bpm little-endian', () {
-        expect(_parseMeasured([0x01, 0x2C, 0x01]).bpm, 300);
+        expect(_parseMeasured([0x01, 0x2C, 0x01]).bpm.value, 300);
       });
 
       test('reads the full uint8 range', () {
-        expect(_parseMeasured([0x00, 0xFF]).bpm, 255);
+        expect(_parseMeasured([0x00, 0xFF]).bpm.value, 255);
       });
 
       test('stamps the sample with the given timestamp', () {
@@ -144,12 +145,12 @@ void main() {
     group('energy expended', () {
       test('is skipped, and RR intervals after it are still read', () {
         final sample = _parseMeasured([0x18, 0x48, 0x10, 0x27, 0x00, 0x04]);
-        expect(sample.bpm, 72);
+        expect(sample.bpm.value, 72);
         expect(sample.rrIntervals, const [Duration(milliseconds: 1000)]);
       });
 
       test('works with uint16 bpm', () {
-        expect(_parseMeasured([0x09, 0xB4, 0x00, 0x10, 0x27]).bpm, 180);
+        expect(_parseMeasured([0x09, 0xB4, 0x00, 0x10, 0x27]).bpm.value, 180);
       });
     });
 
@@ -188,7 +189,7 @@ void main() {
       expect(
         _parseSample([0xE0 | 0x06, 0x48]),
         HeartRateSample.measured(
-          bpm: 72,
+          bpm: PositiveInt(72),
           timestamp: _timestamp,
           contact: MeasuredContact.detected,
         ),
@@ -243,7 +244,7 @@ void main() {
         result,
         HeartRateParseResult.success(
           HeartRateSample.measured(
-            bpm: 72,
+            bpm: PositiveInt(72),
             timestamp: _timestamp,
             contact: MeasuredContact.detected,
             rrIntervals: const [Duration(milliseconds: 1000)],

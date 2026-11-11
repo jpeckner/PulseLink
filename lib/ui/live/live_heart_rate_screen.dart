@@ -77,7 +77,7 @@ class _ReadingView extends StatelessWidget {
       children: [
         _BpmReadout(
           bpm: switch (sample) {
-            MeasuredHeartRateSample(:final bpm) => bpm,
+            MeasuredHeartRateSample(:final bpm) => bpm.value,
             UnavailableHeartRateSample() => null,
           },
           isStale: isStale,

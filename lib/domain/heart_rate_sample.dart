@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:pulselink/domain/positive_int.dart';
 
 part 'heart_rate_sample.freezed.dart';
 
@@ -31,9 +32,8 @@ enum HeartRateUnavailableReason {
 @freezed
 sealed class HeartRateSample with _$HeartRateSample {
   /// A usable reading.
-  @Assert('bpm > 0', 'A measured sample needs a bpm above 0')
   const factory measured({
-    required int bpm,
+    required PositiveInt bpm,
     required DateTime timestamp,
     required MeasuredContact contact,
     @Default(<Duration>[]) List<Duration> rrIntervals,

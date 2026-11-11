@@ -6,6 +6,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/data/fake_heart_rate_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/positive_int.dart';
 
 final _start = DateTime(2026, 11, 11, 10);
 
@@ -79,20 +80,24 @@ void main() {
       _withFakeTime((async) {
         final samples = _run(
           async,
-          FakeHeartRateSource(random: Random(7), minBpm: 60, maxBpm: 160),
+          FakeHeartRateSource(
+            random: Random(7),
+            minBpm: PositiveInt(60),
+            maxBpm: PositiveInt(160),
+          ),
           const Duration(minutes: 5),
         );
         expect(samples, hasLength(300));
         for (final sample in samples) {
-          expect(sample.bpm, inInclusiveRange(60, 160));
+          expect(sample.bpm.value, inInclusiveRange(60, 160));
           expect(sample.contact, MeasuredContact.detected);
           // One RR interval matching the bpm: 60 s / bpm.
           expect(sample.rrIntervals, hasLength(1));
           final impliedBpm =
               60000000 / sample.rrIntervals.single.inMicroseconds;
-          expect(impliedBpm, closeTo(sample.bpm, 0.01));
+          expect(impliedBpm, closeTo(sample.bpm.value, 0.01));
         }
-        final distinct = samples.map((s) => s.bpm).toSet();
+        final distinct = samples.map((s) => s.bpm.value).toSet();
         expect(distinct.length, greaterThan(10), reason: 'bpm should move');
       });
     });
@@ -105,7 +110,10 @@ void main() {
           const Duration(minutes: 5),
         );
         for (var i = 1; i < samples.length; i++) {
-          expect((samples[i].bpm - samples[i - 1].bpm).abs(), lessThan(15));
+          expect(
+            (samples[i].bpm.value - samples[i - 1].bpm.value).abs(),
+            lessThan(15),
+          );
         }
       });
     });
@@ -118,7 +126,7 @@ void main() {
             async,
             FakeHeartRateSource(random: Random(seed)),
             const Duration(seconds: 30),
-          ).map((s) => s.bpm).toList();
+          ).map((s) => s.bpm.value).toList();
         });
         return result;
       }
