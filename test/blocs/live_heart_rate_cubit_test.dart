@@ -16,7 +16,7 @@ HeartRateSample _sampleAt(DateTime timestamp, {int bpm = 72}) =>
     HeartRateSample.measured(
       bpm: bpm,
       timestamp: timestamp,
-      contact: SensorContact.detected,
+      contact: MeasuredContact.detected,
     );
 
 /// Runs [body] with fake time and a matching [clock], against a started cubit,

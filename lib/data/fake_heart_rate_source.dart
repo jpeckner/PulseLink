@@ -73,7 +73,7 @@ class FakeHeartRateSource implements HeartRateSource {
       HeartRateSample.measured(
         bpm: bpm,
         timestamp: clock.now(),
-        contact: SensorContact.detected,
+        contact: MeasuredContact.detected,
         rrIntervals: [Duration(microseconds: (60000000 / bpm).round())],
       ),
     );

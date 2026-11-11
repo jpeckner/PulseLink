@@ -85,7 +85,7 @@ void main() {
         expect(samples, hasLength(300));
         for (final sample in samples) {
           expect(sample.bpm, inInclusiveRange(60, 160));
-          expect(sample.contact, SensorContact.detected);
+          expect(sample.contact, MeasuredContact.detected);
           // One RR interval matching the bpm: 60 s / bpm.
           expect(sample.rrIntervals, hasLength(1));
           final impliedBpm =

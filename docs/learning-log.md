@@ -67,7 +67,9 @@ Flutter vs native:
   to check. As a sealed type, only `MeasuredHeartRateSample` has a `bpm`, so
   showing an untrustworthy value doesn't compile. Same idea as replacing a
   Swift struct + `isValid` flag with an enum. Shared fields (`timestamp`) stay
-  readable on the base type without a `switch`.
+  readable on the base type without a `switch`. Same for contact: a measured
+  sample's `MeasuredContact` has only `detected` and `notReported`, so "no
+  contact" can't sneak in, and no runtime assert is needed to stop it.
 - **freezed** generates `==`, `hashCode`, `toString` and `copyWith` into a
   `part` file (`*.freezed.dart`). It's code generation via `build_runner`, like
   Kotlin's KSP or Swift macros, but the output is a checked-in source file

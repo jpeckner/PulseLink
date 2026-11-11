@@ -25,7 +25,7 @@ void main() {
         HeartRateSample.measured(
           bpm: 72,
           timestamp: clock.now(),
-          contact: SensorContact.detected,
+          contact: MeasuredContact.detected,
         ),
       );
       await tester.pump();

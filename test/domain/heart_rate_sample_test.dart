@@ -6,10 +6,10 @@ final _timestamp = DateTime(2026, 11, 11);
 void main() {
   group('HeartRateSample', () {
     group('measured', () {
-      test('accepts contact detected or not supported', () {
+      test('accepts contact detected or not reported', () {
         for (final contact in [
-          SensorContact.detected,
-          SensorContact.notSupported,
+          MeasuredContact.detected,
+          MeasuredContact.notReported,
         ]) {
           expect(
             HeartRateSample.measured(
@@ -27,18 +27,7 @@ void main() {
           () => HeartRateSample.measured(
             bpm: 0,
             timestamp: _timestamp,
-            contact: SensorContact.detected,
-          ),
-          throwsA(isA<AssertionError>()),
-        );
-      });
-
-      test('rejects no skin contact (debug assert)', () {
-        expect(
-          () => HeartRateSample.measured(
-            bpm: 72,
-            timestamp: _timestamp,
-            contact: SensorContact.notDetected,
+            contact: MeasuredContact.detected,
           ),
           throwsA(isA<AssertionError>()),
         );
@@ -48,7 +37,7 @@ void main() {
         final sample = HeartRateSample.measured(
           bpm: 72,
           timestamp: _timestamp,
-          contact: SensorContact.detected,
+          contact: MeasuredContact.detected,
         ) as MeasuredHeartRateSample;
         expect(sample.rrIntervals, isEmpty);
       });
@@ -57,7 +46,7 @@ void main() {
         HeartRateSample withRr(int ms) => HeartRateSample.measured(
           bpm: 72,
           timestamp: _timestamp,
-          contact: SensorContact.detected,
+          contact: MeasuredContact.detected,
           rrIntervals: [Duration(milliseconds: ms)],
         );
         expect(withRr(800), withRr(800));
@@ -85,7 +74,7 @@ void main() {
         HeartRateSample.measured(
           bpm: 72,
           timestamp: _timestamp,
-          contact: SensorContact.detected,
+          contact: MeasuredContact.detected,
         ),
         HeartRateSample.unavailable(
           timestamp: _timestamp,

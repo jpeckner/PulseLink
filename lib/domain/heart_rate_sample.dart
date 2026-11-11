@@ -2,17 +2,14 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'heart_rate_sample.freezed.dart';
 
-/// Whether the sensor reports skin contact (Heart Rate Measurement flag bits
-/// 1-2).
-enum SensorContact {
-  /// The sensor doesn't report contact status.
-  notSupported,
-
-  /// The sensor supports contact detection and reports no contact.
-  notDetected,
-
-  /// The sensor supports contact detection and reports contact.
+/// Skin-contact status of a measured sample. There's no "no contact" value:
+/// a packet reporting no contact becomes an [UnavailableHeartRateSample].
+enum MeasuredContact {
+  /// The sensor detects skin contact.
   detected,
+
+  /// The sensor doesn't support contact detection, so it can't say.
+  notReported,
 }
 
 /// Why a well-formed packet carries no trustworthy heart rate.
@@ -33,17 +30,12 @@ enum HeartRateUnavailableReason {
 /// by mistake.
 @freezed
 sealed class HeartRateSample with _$HeartRateSample {
-  /// A usable reading. [contact] is [SensorContact.detected] or
-  /// [SensorContact.notSupported], never [SensorContact.notDetected].
+  /// A usable reading.
   @Assert('bpm > 0', 'A measured sample needs a bpm above 0')
-  @Assert(
-    'contact != SensorContact.notDetected',
-    'A sample without skin contact must be unavailable',
-  )
   const factory measured({
     required int bpm,
     required DateTime timestamp,
-    required SensorContact contact,
+    required MeasuredContact contact,
     @Default(<Duration>[]) List<Duration> rrIntervals,
   }) = MeasuredHeartRateSample;
 

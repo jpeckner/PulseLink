@@ -101,9 +101,12 @@ HeartRateParseResult parseHeartRateMeasurement(
   }
 
   // The whole packet is valid. Now decide whether its bpm can be trusted.
-  final contact = _contactFromFlags(flags);
+  // Bit 2: the sensor supports contact detection. Bit 1: it detects contact.
+  // Bit 1 means nothing unless bit 2 is set.
+  final contactSupported = flags & _contactSupported != 0;
+  final contactDetected = flags & _contactDetected != 0;
   final HeartRateSample sample;
-  if (contact == SensorContact.notDetected) {
+  if (contactSupported && !contactDetected) {
     sample = HeartRateSample.unavailable(
       timestamp: timestamp,
       reason: HeartRateUnavailableReason.noContact,
@@ -117,16 +120,11 @@ HeartRateParseResult parseHeartRateMeasurement(
     sample = HeartRateSample.measured(
       bpm: bpm,
       timestamp: timestamp,
-      contact: contact,
+      contact: contactSupported
+          ? MeasuredContact.detected
+          : MeasuredContact.notReported,
       rrIntervals: rrIntervals,
     );
   }
   return HeartRateParseResult.success(sample);
-}
-
-SensorContact _contactFromFlags(int flags) {
-  if (flags & _contactSupported == 0) return SensorContact.notSupported;
-  return flags & _contactDetected != 0
-      ? SensorContact.detected
-      : SensorContact.notDetected;
 }

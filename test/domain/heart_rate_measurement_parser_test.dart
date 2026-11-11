@@ -39,7 +39,7 @@ void main() {
           HeartRateSample.measured(
             bpm: 72,
             timestamp: _timestamp,
-            contact: SensorContact.detected,
+            contact: MeasuredContact.detected,
             rrIntervals: const [Duration(milliseconds: 1000)],
           ),
         );
@@ -51,7 +51,7 @@ void main() {
           HeartRateSample.measured(
             bpm: 180,
             timestamp: _timestamp,
-            contact: SensorContact.notSupported,
+            contact: MeasuredContact.notReported,
           ),
         );
       });
@@ -76,20 +76,20 @@ void main() {
     });
 
     group('sensor contact', () {
-      test('bit 2 clear: measured, contact not supported, whatever bit 1 '
+      test('bit 2 clear: measured, contact not reported, whatever bit 1 '
           'says', () {
         expect(
           _parseMeasured([0x00, 0x48]).contact,
-          SensorContact.notSupported,
+          MeasuredContact.notReported,
         );
         expect(
           _parseMeasured([0x02, 0x48]).contact,
-          SensorContact.notSupported,
+          MeasuredContact.notReported,
         );
       });
 
       test('bits 1 and 2 set: measured, contact detected', () {
-        expect(_parseMeasured([0x06, 0x48]).contact, SensorContact.detected);
+        expect(_parseMeasured([0x06, 0x48]).contact, MeasuredContact.detected);
       });
     });
 
@@ -190,7 +190,7 @@ void main() {
         HeartRateSample.measured(
           bpm: 72,
           timestamp: _timestamp,
-          contact: SensorContact.detected,
+          contact: MeasuredContact.detected,
         ),
       );
     });
@@ -245,7 +245,7 @@ void main() {
           HeartRateSample.measured(
             bpm: 72,
             timestamp: _timestamp,
-            contact: SensorContact.detected,
+            contact: MeasuredContact.detected,
             rrIntervals: const [Duration(milliseconds: 1000)],
           ),
         ),

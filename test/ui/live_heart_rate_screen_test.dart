@@ -20,7 +20,7 @@ final String _time = DateFormat.jms().format(_timestamp);
 
 LiveHeartRateState _reading({
   int bpm = 72,
-  SensorContact contact = SensorContact.detected,
+  MeasuredContact contact = MeasuredContact.detected,
   bool isStale = false,
   bool isSimulated = false,
 }) => LiveHeartRateState.reading(
@@ -85,10 +85,13 @@ void main() {
         expect(find.bySemanticsLabel('72 beats per minute'), findsOneWidget);
       });
 
-      testWidgets('shows no contact chip if contact is unsupported', (
+      testWidgets('shows no contact chip if contact is not reported', (
         tester,
       ) async {
-        await pumpScreen(tester, _reading(contact: SensorContact.notSupported));
+        await pumpScreen(
+          tester,
+          _reading(contact: MeasuredContact.notReported),
+        );
         expect(find.text('72'), findsOneWidget);
         expect(find.byType(Chip), findsNothing);
       });

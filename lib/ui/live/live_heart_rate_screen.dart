@@ -160,12 +160,13 @@ class _SensorStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return switch (sample) {
-      MeasuredHeartRateSample(contact: SensorContact.detected) => const Chip(
+      MeasuredHeartRateSample(contact: MeasuredContact.detected) => const Chip(
         avatar: Icon(Icons.check_circle_outline),
         label: Text('Sensor contact'),
       ),
-      // The sensor doesn't report contact, so there's nothing to say.
-      MeasuredHeartRateSample() => const SizedBox.shrink(),
+      // The sensor can't detect contact, so there's nothing to say.
+      MeasuredHeartRateSample(contact: MeasuredContact.notReported) =>
+        const SizedBox.shrink(),
       UnavailableHeartRateSample(
         reason: HeartRateUnavailableReason.noContact,
       ) =>
