@@ -27,7 +27,9 @@ jobs:
           cache: true
 
       - name: Install dependencies
-        run: flutter pub get
+        run: |
+          flutter pub get
+          (cd tool/pulselink_lints && dart pub get)
 
       - name: Check iOS uses Swift Package Manager only (no CocoaPods)
         run: |
@@ -36,14 +38,35 @@ jobs:
             exit 1
           fi
 
+      - name: Check generated code is up to date
+        run: |
+          dart run build_runner build --delete-conflicting-outputs
+          if [ -n "$(git status --porcelain)" ]; then
+            git status --short
+            echo "::error::Generated code is out of date. Run 'dart run build_runner build' and commit the result."
+            exit 1
+          fi
+
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed lib test
 
-      - name: Analyze
-        run: flutter analyze
+      # Lints come from very_good_analysis via analysis_options.yaml. Both
+      # flags are already the defaults; they're spelled out so a lint of any
+      # level fails the build on purpose, not by accident of a default.
+      - name: Analyze (very_good_analysis and pulselink_lints)
+        run: flutter analyze --fatal-infos --fatal-warnings
 
       - name: Test
         run: flutter test --coverage
+
+      # The project's own lint rules (enabled for the app in
+      # analysis_options.yaml, so the analyze step above runs them).
+      - name: Check the lint plugin (format, analyze, test)
+        working-directory: tool/pulselink_lints
+        run: |
+          dart format --output=none --set-exit-if-changed lib test
+          dart analyze --fatal-infos --fatal-warnings
+          dart test
 
   # Android (Ubuntu) and iOS (macOS, no code signing) build jobs are added in
   # Milestone 7.

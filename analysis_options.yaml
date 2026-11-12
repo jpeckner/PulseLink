@@ -8,9 +8,20 @@ analyzer:
     - android/**
     - ios/**
     - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    # Its own package, with its own analysis options; CI checks it separately.
+    - tool/pulselink_lints/**
 
 linter:
   rules:
     # Doc comments on every public member is overkill for an app (it's meant
     # for published packages). We still document anything non-obvious.
     public_member_api_docs: false
+
+# PulseLink's own lint rules (tool/pulselink_lints), for checks no built-in
+# lint covers. Restart the Dart analysis server after changing this section.
+plugins:
+  pulselink_lints:
+    path: tool/pulselink_lints
+    diagnostics:
+      no_catch_all_cases: true
