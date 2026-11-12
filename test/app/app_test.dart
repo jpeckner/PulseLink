@@ -7,7 +7,7 @@ import 'package:pulselink/blocs/debug_override/debug_override_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/data/debug_override_heart_rate_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
-import 'package:pulselink/ui/debug/debug_override_button.dart';
+import 'package:pulselink/ui/debug/debug_override_buttons.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
 import '../helpers/positive_int.dart';
@@ -44,8 +44,8 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('debug wiring: long-press reveals the override, which '
-        'rewrites samples, and hiding it restores them', (tester) async {
+    testWidgets('debug wiring: long-press reveals the override buttons, '
+        'which rewrite samples, and hiding them restores them', (tester) async {
       // Wired the way main() does in debug and profile builds.
       final source = StubHeartRateSource(isSimulated: true);
       final overrideSource = DebugOverrideHeartRateSource(source);
@@ -55,7 +55,7 @@ void main() {
       await tester.pumpWidget(
         PulseLinkApp(
           liveHeartRateCubit: cubit,
-          debugControls: DebugOverrideButton(cubit: overrideCubit),
+          debugControls: DebugOverrideButtons(cubit: overrideCubit),
           onTitleLongPress: overrideCubit.toggleVisibility,
         ),
       );
@@ -69,7 +69,8 @@ void main() {
       await tester.longPress(find.text('PulseLink'));
       await tester.pump();
       expect(find.text('Override: Normal'), findsOneWidget);
-      // Revealing the button doesn't move the readout.
+      expect(find.text('Skin-contact detection: supported'), findsOneWidget);
+      // Revealing the buttons doesn't move the readout.
       expect(tester.getCenter(find.text('bpm')), readoutBefore);
 
       // Normal -> No data (stale) -> No skin contact.
@@ -83,7 +84,19 @@ void main() {
       expect(find.text('--'), findsOneWidget);
       expect(find.text('No skin contact'), findsOneWidget);
 
-      // Hiding the button turns the override off.
+      // A strap that can't detect skin contact: no skin contact isn't
+      // possible, so the condition resets to normal and the bpm shows without
+      // a skin-contact chip.
+      await tester.tap(find.text('Skin-contact detection: supported'));
+      await tester.pump();
+      expect(find.text('Override: Normal'), findsOneWidget);
+      source.emit(sample());
+      await tester.pumpAndSettle();
+      expect(find.text('72'), findsOneWidget);
+      // The chip stays in the tree, invisible, to keep its space.
+      expect(find.bySemanticsLabel('Skin contact'), findsNothing);
+
+      // Hiding the buttons turns the override off.
       await tester.longPress(find.text('PulseLink'));
       await tester.pump();
       expect(find.textContaining('Override:'), findsNothing);

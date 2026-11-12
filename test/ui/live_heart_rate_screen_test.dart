@@ -96,7 +96,24 @@ void main() {
           _reading(skinContact: SkinContact.notSupported),
         );
         expect(find.text('72'), findsOneWidget);
-        expect(find.byType(Chip), findsNothing);
+        // An invisible chip keeps the space; see the next test.
+        expect(
+          Visibility.of(tester.element(find.text('Skin contact'))),
+          isFalse,
+        );
+        expect(find.bySemanticsLabel('Skin contact'), findsNothing);
+      });
+
+      testWidgets('the readout sits in the same place with or without it', (
+        tester,
+      ) async {
+        await pumpScreen(tester, _reading());
+        final detected = tester.getCenter(find.text('72'));
+        await pumpScreen(
+          tester,
+          _reading(skinContact: SkinContact.notSupported),
+        );
+        expect(tester.getCenter(find.text('72')), detected);
       });
     });
 

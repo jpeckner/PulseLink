@@ -120,11 +120,11 @@ return shown(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  hidden,TResult Function( ReadingOverride mode)?  shown,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  hidden,TResult Function( ReadingOverride readingOverride)?  shown,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case DebugOverrideHidden() when hidden != null:
 return hidden();case DebugOverrideShown() when shown != null:
-return shown(_that.mode);case _:
+return shown(_that.readingOverride);case _:
   return orElse();
 
 }
@@ -142,11 +142,11 @@ return shown(_that.mode);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  hidden,required TResult Function( ReadingOverride mode)  shown,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  hidden,required TResult Function( ReadingOverride readingOverride)  shown,}) {final _that = this;
 switch (_that) {
 case DebugOverrideHidden():
 return hidden();case DebugOverrideShown():
-return shown(_that.mode);}
+return shown(_that.readingOverride);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -160,11 +160,11 @@ return shown(_that.mode);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  hidden,TResult? Function( ReadingOverride mode)?  shown,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  hidden,TResult? Function( ReadingOverride readingOverride)?  shown,}) {final _that = this;
 switch (_that) {
 case DebugOverrideHidden() when hidden != null:
 return hidden();case DebugOverrideShown() when shown != null:
-return shown(_that.mode);case _:
+return shown(_that.readingOverride);case _:
   return null;
 
 }
@@ -208,10 +208,10 @@ String toString() {
 
 
 class DebugOverrideShown implements DebugOverrideState {
-  const DebugOverrideShown(this.mode);
+  const DebugOverrideShown(this.readingOverride);
   
 
- final  ReadingOverride mode;
+ final  ReadingOverride readingOverride;
 
 /// Create a copy of DebugOverrideState
 /// with the given fields replaced by the non-null parameter values.
@@ -223,18 +223,18 @@ $DebugOverrideShownCopyWith<DebugOverrideShown> get copyWith => _$DebugOverrideS
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is DebugOverrideShown&&(identical(other.mode, mode) || other.mode == mode));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is DebugOverrideShown&&(identical(other.readingOverride, readingOverride) || other.readingOverride == readingOverride));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,mode);
+    return Object.hash(runtimeType,readingOverride);
 }
 
 @override
 String toString() {
-    return 'DebugOverrideState.shown(mode: $mode)';
+    return 'DebugOverrideState.shown(readingOverride: $readingOverride)';
 }
 
 
@@ -245,11 +245,11 @@ abstract mixin class $DebugOverrideShownCopyWith<$Res> implements $DebugOverride
   factory $DebugOverrideShownCopyWith(DebugOverrideShown value, $Res Function(DebugOverrideShown) _then) = _$DebugOverrideShownCopyWithImpl;
 @useResult
 $Res call({
- ReadingOverride mode
+ ReadingOverride readingOverride
 });
 
 
-
+$ReadingOverrideCopyWith<$Res> get readingOverride;
 
 }
 /// @nodoc
@@ -262,14 +262,23 @@ class _$DebugOverrideShownCopyWithImpl<$Res>
 
 /// Create a copy of DebugOverrideState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? mode = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? readingOverride = null,}) {
   return _then(DebugOverrideShown(
-null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
+null == readingOverride ? _self.readingOverride : readingOverride // ignore: cast_nullable_to_non_nullable
 as ReadingOverride,
   ));
 }
 
-
+/// Create a copy of DebugOverrideState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ReadingOverrideCopyWith<$Res> get readingOverride {
+  
+  return $ReadingOverrideCopyWith<$Res>(_self.readingOverride, (value) {
+    return _then(_self.copyWith(readingOverride: value));
+  });
+}
 }
 
 // dart format on

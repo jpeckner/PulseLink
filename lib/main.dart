@@ -10,7 +10,7 @@ import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/data/debug_override_heart_rate_source.dart';
 import 'package:pulselink/data/fake_heart_rate_source.dart';
 import 'package:pulselink/data/heart_rate_source.dart';
-import 'package:pulselink/ui/debug/debug_override_button.dart';
+import 'package:pulselink/ui/debug/debug_override_buttons.dart';
 
 /// The composition root: builds the app's object graph and hands it to the
 /// widgets through constructors, so a missing dependency is a compile error,
@@ -31,7 +31,7 @@ void main() {
     runApp(
       PulseLinkApp(
         liveHeartRateCubit: _startedCubit(overrideSource),
-        debugControls: DebugOverrideButton(cubit: overrideCubit),
+        debugControls: DebugOverrideButtons(cubit: overrideCubit),
         onTitleLongPress: overrideCubit.toggleVisibility,
       ),
     );

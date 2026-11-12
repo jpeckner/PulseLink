@@ -130,9 +130,10 @@ out by types instead, and any unavoidable exception needs explicit sign-off
 
 ### Debug override tooling
 
-A long-press on the title reveals a debug-only button that forces incoming
-samples to Normal, No data (stale), No skin contact, Zero bpm or Skin contact
-not supported, for real or fake sources.
+A long-press on the title reveals two debug-only buttons, for real or fake
+sources: one sets whether the strap can detect skin contact, the other cycles
+the conditions that kind of strap can be in (Normal, No data (stale), No skin
+contact, Zero bpm; no "No skin contact" for a strap that can't detect it).
 
 - **No preprocessor, but the same result.** Dart has no `#if DEBUG`, but
   `kReleaseMode` / `kDebugMode` are compile-time constants, so the release
@@ -182,4 +183,16 @@ hidden. Testing trap found along the way: re-pumping the same widget tree with
 a mocked cubit keeps the `BlocBuilder`'s first state, so a test that pumps
 several states silently checks only the first. A `UniqueKey` per pump fixes it,
 and the 320 px test then caught an overflow it had been missing.
+
+### Two-part debug override
+
+The single override button mixed a property of the strap (can it detect skin
+contact?) with what's happening right now (normal, no data, no skin contact,
+zero bpm), so it split into two buttons. The override is a sealed type,
+`detectingStrap(condition)` or `nonDetectingStrap(condition)`, with a separate
+condition enum for each, so "no skin contact on a strap that can't detect it"
+can't be built. Same pattern as the app's other sealed types, applied to debug
+tooling. A strap without skin-contact detection can still report bpm 0; it's
+how such a strap shows it has no heart rate. The buttons start from what the
+strap last reported, so revealing them changes nothing on screen.
 

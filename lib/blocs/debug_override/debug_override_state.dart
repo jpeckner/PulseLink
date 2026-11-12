@@ -3,14 +3,14 @@ import 'package:pulselink/data/debug_override_heart_rate_source.dart';
 
 part 'debug_override_state.freezed.dart';
 
-/// Whether the debug override button is showing, and which override it
-/// applies. There's no "hidden but overriding" case: hidden always means
-/// [ReadingOverride.normal].
+/// Whether the debug override buttons are showing, and which override they
+/// apply. There's no "hidden but overriding" case: hidden always means samples
+/// pass through untouched.
 @freezed
 sealed class DebugOverrideState with _$DebugOverrideState {
-  /// The button is hidden and samples pass through unchanged.
+  /// The buttons are hidden and samples pass through untouched.
   const factory hidden() = DebugOverrideHidden;
 
-  /// The button is showing and [mode] is applied to every sample.
-  const factory shown(ReadingOverride mode) = DebugOverrideShown;
+  /// The buttons are showing and [readingOverride] is applied to every sample.
+  const factory shown(ReadingOverride readingOverride) = DebugOverrideShown;
 }

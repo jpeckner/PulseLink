@@ -7,27 +7,108 @@ import '../helpers/stub_heart_rate_source.dart';
 
 final _timestamp = DateTime(2026, 11, 11, 10, 52, 31);
 
-final _measured = HeartRateSample.measured(
+HeartRateSample _measured(SkinContact skinContact) => HeartRateSample.measured(
   bpm: positiveInt(72),
   timestamp: _timestamp,
-  skinContact: SkinContact.detected,
+  skinContact: skinContact,
+  rrIntervals: const [Duration(milliseconds: 833)],
 );
 
+HeartRateSample _unavailable(HeartRateUnavailableReason reason) =>
+    HeartRateSample.unavailable(timestamp: _timestamp, reason: reason);
+
+const ReadingOverride Function(DetectingStrapCondition condition) _detecting =
+    ReadingOverride.detectingStrap;
+const ReadingOverride Function(NonDetectingStrapCondition condition)
+_nonDetecting = ReadingOverride.nonDetectingStrap;
+
 void main() {
-  group('ReadingOverride.next', () {
-    test('cycles normal, stale, no skin contact, zero bpm, skin contact not '
-        'supported, then wraps', () {
-      expect(ReadingOverride.normal.next, ReadingOverride.stale);
-      expect(ReadingOverride.stale.next, ReadingOverride.noSkinContact);
-      expect(ReadingOverride.noSkinContact.next, ReadingOverride.zeroBpm);
+  group('condition cycles', () {
+    test(
+      'a detecting strap cycles normal, stale, no skin contact, zero bpm',
+      () {
+        expect(
+          DetectingStrapCondition.normal.next,
+          DetectingStrapCondition.stale,
+        );
+        expect(
+          DetectingStrapCondition.stale.next,
+          DetectingStrapCondition.noSkinContact,
+        );
+        expect(
+          DetectingStrapCondition.noSkinContact.next,
+          DetectingStrapCondition.zeroBpm,
+        );
+        expect(
+          DetectingStrapCondition.zeroBpm.next,
+          DetectingStrapCondition.normal,
+        );
+      },
+    );
+
+    test('a non-detecting strap cycles normal, stale, zero bpm', () {
       expect(
-        ReadingOverride.zeroBpm.next,
-        ReadingOverride.skinContactNotSupported,
+        NonDetectingStrapCondition.normal.next,
+        NonDetectingStrapCondition.stale,
       );
       expect(
-        ReadingOverride.skinContactNotSupported.next,
-        ReadingOverride.normal,
+        NonDetectingStrapCondition.stale.next,
+        NonDetectingStrapCondition.zeroBpm,
       );
+      expect(
+        NonDetectingStrapCondition.zeroBpm.next,
+        NonDetectingStrapCondition.normal,
+      );
+    });
+  });
+
+  group('ReadingOverrideControls', () {
+    test('detection reflects the kind of strap', () {
+      expect(
+        _detecting(DetectingStrapCondition.zeroBpm).detection,
+        SkinContactDetection.supported,
+      );
+      expect(
+        _nonDetecting(NonDetectingStrapCondition.zeroBpm).detection,
+        SkinContactDetection.notSupported,
+      );
+    });
+
+    test('withNextCondition keeps the kind of strap', () {
+      expect(
+        _detecting(DetectingStrapCondition.stale).withNextCondition,
+        _detecting(DetectingStrapCondition.noSkinContact),
+      );
+      expect(
+        _nonDetecting(NonDetectingStrapCondition.stale).withNextCondition,
+        _nonDetecting(NonDetectingStrapCondition.zeroBpm),
+      );
+    });
+
+    group('withOtherDetection', () {
+      test('carries over conditions both kinds of strap share', () {
+        for (final (detecting, nonDetecting) in [
+          (DetectingStrapCondition.normal, NonDetectingStrapCondition.normal),
+          (DetectingStrapCondition.stale, NonDetectingStrapCondition.stale),
+          (DetectingStrapCondition.zeroBpm, NonDetectingStrapCondition.zeroBpm),
+        ]) {
+          expect(
+            _detecting(detecting).withOtherDetection,
+            _nonDetecting(nonDetecting),
+          );
+          expect(
+            _nonDetecting(nonDetecting).withOtherDetection,
+            _detecting(detecting),
+          );
+        }
+      });
+
+      test('no skin contact becomes normal on a non-detecting strap', () {
+        expect(
+          _detecting(DetectingStrapCondition.noSkinContact).withOtherDetection,
+          _nonDetecting(NonDetectingStrapCondition.normal),
+        );
+      });
     });
   });
 
@@ -43,83 +124,135 @@ void main() {
       source.samples.listen(received.add);
     });
 
-    test('starts with no override', () {
-      expect(source.mode, ReadingOverride.normal);
+    test('with no override, passes every sample through untouched', () {
+      expect(source.readingOverride, isNull);
+      final samples = [
+        _measured(SkinContact.detected),
+        _measured(SkinContact.notSupported),
+        _unavailable(HeartRateUnavailableReason.noSkinContact),
+        _unavailable(HeartRateUnavailableReason.zeroBpm),
+      ]..forEach(inner.emit);
+      expect(received, samples);
     });
 
-    test('normal passes samples through unchanged', () {
-      inner.emit(_measured);
-      expect(received, [_measured]);
-    });
+    group('detecting strap', () {
+      test('normal marks skin contact detected, keeping bpm and RR', () {
+        source.readingOverride = _detecting(DetectingStrapCondition.normal);
+        inner.emit(_measured(SkinContact.notSupported));
+        expect(received, [_measured(SkinContact.detected)]);
+      });
 
-    test('stale drops every sample', () {
-      source.mode = ReadingOverride.stale;
-      inner
-        ..emit(_measured)
-        ..emit(_measured);
-      expect(received, isEmpty);
-    });
+      test('normal passes unavailable samples through', () {
+        source.readingOverride = _detecting(DetectingStrapCondition.normal);
+        final samples = [
+          _unavailable(HeartRateUnavailableReason.noSkinContact),
+          _unavailable(HeartRateUnavailableReason.zeroBpm),
+        ]..forEach(inner.emit);
+        expect(received, samples);
+      });
 
-    test('no skin contact replaces samples, keeping their timestamps', () {
-      source.mode = ReadingOverride.noSkinContact;
-      inner.emit(_measured);
-      expect(received, [
-        HeartRateSample.unavailable(
-          timestamp: _timestamp,
-          reason: HeartRateUnavailableReason.noSkinContact,
-        ),
-      ]);
-    });
+      test('stale drops every sample', () {
+        source.readingOverride = _detecting(DetectingStrapCondition.stale);
+        inner.emit(_measured(SkinContact.detected));
+        expect(received, isEmpty);
+      });
 
-    test('zero bpm replaces samples, keeping their timestamps', () {
-      source.mode = ReadingOverride.zeroBpm;
-      inner.emit(_measured);
-      expect(received, [
-        HeartRateSample.unavailable(
-          timestamp: _timestamp,
-          reason: HeartRateUnavailableReason.zeroBpm,
-        ),
-      ]);
-    });
-
-    test(
-      'skin contact not supported keeps bpm, timestamp and RR intervals',
-      () {
-        source.mode = ReadingOverride.skinContactNotSupported;
-        final withRr = HeartRateSample.measured(
-          bpm: positiveInt(72),
-          timestamp: _timestamp,
-          skinContact: SkinContact.detected,
-          rrIntervals: const [Duration(milliseconds: 833)],
+      test('no skin contact replaces samples, keeping timestamps', () {
+        source.readingOverride = _detecting(
+          DetectingStrapCondition.noSkinContact,
         );
-        inner.emit(withRr);
+        inner.emit(_measured(SkinContact.detected));
         expect(received, [
-          HeartRateSample.measured(
-            bpm: positiveInt(72),
-            timestamp: _timestamp,
-            skinContact: SkinContact.notSupported,
-            rrIntervals: const [Duration(milliseconds: 833)],
-          ),
+          _unavailable(HeartRateUnavailableReason.noSkinContact),
         ]);
-      },
-    );
+      });
 
-    test('skin contact not supported passes unavailable samples through', () {
-      source.mode = ReadingOverride.skinContactNotSupported;
-      final unavailable = HeartRateSample.unavailable(
-        timestamp: _timestamp,
-        reason: HeartRateUnavailableReason.noSkinContact,
-      );
-      inner.emit(unavailable);
-      expect(received, [unavailable]);
+      test('zero bpm replaces samples, keeping timestamps', () {
+        source.readingOverride = _detecting(DetectingStrapCondition.zeroBpm);
+        inner.emit(_measured(SkinContact.detected));
+        expect(received, [_unavailable(HeartRateUnavailableReason.zeroBpm)]);
+      });
     });
 
-    test('a mode change applies to the next sample', () {
-      source.mode = ReadingOverride.stale;
-      inner.emit(_measured);
-      source.mode = ReadingOverride.normal;
-      inner.emit(_measured);
-      expect(received, [_measured]);
+    group('non-detecting strap', () {
+      test('normal marks skin contact not supported, keeping bpm and RR', () {
+        source.readingOverride = _nonDetecting(
+          NonDetectingStrapCondition.normal,
+        );
+        inner.emit(_measured(SkinContact.detected));
+        expect(received, [_measured(SkinContact.notSupported)]);
+      });
+
+      test('normal turns a real no-skin-contact sample into zero bpm', () {
+        source.readingOverride = _nonDetecting(
+          NonDetectingStrapCondition.normal,
+        );
+        inner
+          ..emit(_unavailable(HeartRateUnavailableReason.noSkinContact))
+          ..emit(_unavailable(HeartRateUnavailableReason.zeroBpm));
+        expect(received, [
+          _unavailable(HeartRateUnavailableReason.zeroBpm),
+          _unavailable(HeartRateUnavailableReason.zeroBpm),
+        ]);
+      });
+
+      test('stale drops every sample', () {
+        source.readingOverride = _nonDetecting(
+          NonDetectingStrapCondition.stale,
+        );
+        inner.emit(_measured(SkinContact.notSupported));
+        expect(received, isEmpty);
+      });
+
+      test('zero bpm replaces samples, keeping timestamps', () {
+        source.readingOverride = _nonDetecting(
+          NonDetectingStrapCondition.zeroBpm,
+        );
+        inner.emit(_measured(SkinContact.notSupported));
+        expect(received, [_unavailable(HeartRateUnavailableReason.zeroBpm)]);
+      });
+    });
+
+    group('reportedDetection', () {
+      test('is null until the strap says anything about it', () {
+        expect(source.reportedDetection, isNull);
+        inner.emit(_unavailable(HeartRateUnavailableReason.zeroBpm));
+        expect(source.reportedDetection, isNull);
+      });
+
+      test('follows measured samples', () {
+        inner.emit(_measured(SkinContact.notSupported));
+        expect(source.reportedDetection, SkinContactDetection.notSupported);
+        inner.emit(_measured(SkinContact.detected));
+        expect(source.reportedDetection, SkinContactDetection.supported);
+      });
+
+      test('a no-skin-contact sample means detection is supported', () {
+        inner.emit(_unavailable(HeartRateUnavailableReason.noSkinContact));
+        expect(source.reportedDetection, SkinContactDetection.supported);
+      });
+
+      test('zero bpm keeps the last known value', () {
+        inner
+          ..emit(_measured(SkinContact.notSupported))
+          ..emit(_unavailable(HeartRateUnavailableReason.zeroBpm));
+        expect(source.reportedDetection, SkinContactDetection.notSupported);
+      });
+
+      test('reflects the strap, not the override', () {
+        source.readingOverride = _detecting(DetectingStrapCondition.normal);
+        inner.emit(_measured(SkinContact.notSupported));
+        expect(received, [_measured(SkinContact.detected)]);
+        expect(source.reportedDetection, SkinContactDetection.notSupported);
+      });
+    });
+
+    test('a change of override applies to the next sample', () {
+      source.readingOverride = _detecting(DetectingStrapCondition.stale);
+      inner.emit(_measured(SkinContact.detected));
+      source.readingOverride = null;
+      inner.emit(_measured(SkinContact.detected));
+      expect(received, [_measured(SkinContact.detected)]);
     });
 
     test('passes through isSimulated, start, stop and dispose', () async {

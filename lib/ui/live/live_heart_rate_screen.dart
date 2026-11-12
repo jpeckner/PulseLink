@@ -209,6 +209,11 @@ class _BpmReadout extends StatelessWidget {
   }
 }
 
+const _skinContactChip = Chip(
+  avatar: Icon(Icons.check_circle_outline),
+  label: Text('Skin contact'),
+);
+
 /// Strap status: skin contact for a measured sample, or why there's no
 /// reading. Never about Bluetooth connectivity.
 class _StrapStatusChip extends StatelessWidget {
@@ -220,13 +225,19 @@ class _StrapStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return switch (sample) {
-      MeasuredHeartRateSample(skinContact: SkinContact.detected) => const Chip(
-        avatar: Icon(Icons.check_circle_outline),
-        label: Text('Skin contact'),
-      ),
-      // The strap can't detect skin contact, so there's nothing to say.
+      MeasuredHeartRateSample(skinContact: SkinContact.detected) =>
+        _skinContactChip,
+      // The strap can't detect skin contact, so there's nothing to say. The
+      // chip's space is kept so the readout sits where it does for a strap
+      // that can.
       MeasuredHeartRateSample(skinContact: SkinContact.notSupported) =>
-        const SizedBox.shrink(),
+        const Visibility(
+          visible: false,
+          maintainSize: true,
+          maintainAnimation: true,
+          maintainState: true,
+          child: _skinContactChip,
+        ),
       UnavailableHeartRateSample(
         reason: HeartRateUnavailableReason.noSkinContact,
       ) =>

@@ -3,96 +3,165 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/blocs/debug_override/debug_override_cubit.dart';
 import 'package:pulselink/blocs/debug_override/debug_override_state.dart';
 import 'package:pulselink/data/debug_override_heart_rate_source.dart';
+import 'package:pulselink/domain/heart_rate_sample.dart';
 
+import '../helpers/positive_int.dart';
 import '../helpers/stub_heart_rate_source.dart';
+
+const ReadingOverride Function(DetectingStrapCondition condition) _detecting =
+    ReadingOverride.detectingStrap;
+const ReadingOverride Function(NonDetectingStrapCondition condition)
+_nonDetecting = ReadingOverride.nonDetectingStrap;
+
+DebugOverrideState _shown(ReadingOverride readingOverride) =>
+    DebugOverrideState.shown(readingOverride);
 
 void main() {
   group('DebugOverrideCubit', () {
+    late StubHeartRateSource inner;
     late DebugOverrideHeartRateSource source;
 
-    setUp(() => source = DebugOverrideHeartRateSource(StubHeartRateSource()));
+    setUp(() {
+      inner = StubHeartRateSource();
+      source = DebugOverrideHeartRateSource(inner);
+      source.samples.listen((_) {});
+    });
 
     DebugOverrideCubit build() => DebugOverrideCubit(source: source);
 
+    void emitMeasured(SkinContact skinContact) => inner.emit(
+      HeartRateSample.measured(
+        bpm: positiveInt(72),
+        timestamp: DateTime(2026, 11, 11),
+        skinContact: skinContact,
+      ),
+    );
+
     test('starts hidden, with no override', () {
       expect(build().state, const DebugOverrideState.hidden());
-      expect(source.mode, ReadingOverride.normal);
+      expect(source.readingOverride, isNull);
+    });
+
+    group('revealing matches the strap, so nothing on screen changes', () {
+      blocTest<DebugOverrideCubit, DebugOverrideState>(
+        'a strap that detects skin contact',
+        build: build,
+        setUp: () => emitMeasured(SkinContact.detected),
+        act: (cubit) => cubit.toggleVisibility(),
+        expect: () => [_shown(_detecting(DetectingStrapCondition.normal))],
+      );
+
+      blocTest<DebugOverrideCubit, DebugOverrideState>(
+        "a strap that can't detect skin contact",
+        build: build,
+        setUp: () => emitMeasured(SkinContact.notSupported),
+        act: (cubit) => cubit.toggleVisibility(),
+        expect: () => [
+          _shown(_nonDetecting(NonDetectingStrapCondition.normal)),
+        ],
+      );
+
+      blocTest<DebugOverrideCubit, DebugOverrideState>(
+        'a strap that has not said yet is treated as detecting',
+        build: build,
+        act: (cubit) => cubit.toggleVisibility(),
+        expect: () => [_shown(_detecting(DetectingStrapCondition.normal))],
+      );
     });
 
     blocTest<DebugOverrideCubit, DebugOverrideState>(
-      'toggling shows the button at Normal',
-      build: build,
-      act: (cubit) => cubit.toggleVisibility(),
-      expect: () => [const DebugOverrideState.shown(ReadingOverride.normal)],
-      verify: (_) => expect(source.mode, ReadingOverride.normal),
-    );
-
-    blocTest<DebugOverrideCubit, DebugOverrideState>(
-      'each tap moves to the next override and applies it to the source',
+      'cycling conditions applies each one to the source',
       build: build,
       act: (cubit) {
         cubit.toggleVisibility();
-        expect(source.mode, ReadingOverride.normal);
-        cubit.cycleMode();
-        expect(source.mode, ReadingOverride.stale);
-        cubit.cycleMode();
-        expect(source.mode, ReadingOverride.noSkinContact);
-        cubit.cycleMode();
-        expect(source.mode, ReadingOverride.zeroBpm);
-        cubit.cycleMode();
-        expect(source.mode, ReadingOverride.skinContactNotSupported);
-        cubit.cycleMode();
-        expect(source.mode, ReadingOverride.normal);
+        for (final condition in [
+          DetectingStrapCondition.stale,
+          DetectingStrapCondition.noSkinContact,
+          DetectingStrapCondition.zeroBpm,
+          DetectingStrapCondition.normal,
+        ]) {
+          cubit.cycleCondition();
+          expect(source.readingOverride, _detecting(condition));
+        }
       },
-      expect: () => const [
-        DebugOverrideState.shown(ReadingOverride.normal),
-        DebugOverrideState.shown(ReadingOverride.stale),
-        DebugOverrideState.shown(ReadingOverride.noSkinContact),
-        DebugOverrideState.shown(ReadingOverride.zeroBpm),
-        DebugOverrideState.shown(ReadingOverride.skinContactNotSupported),
-        DebugOverrideState.shown(ReadingOverride.normal),
+      skip: 1,
+      expect: () => [
+        _shown(_detecting(DetectingStrapCondition.stale)),
+        _shown(_detecting(DetectingStrapCondition.noSkinContact)),
+        _shown(_detecting(DetectingStrapCondition.zeroBpm)),
+        _shown(_detecting(DetectingStrapCondition.normal)),
       ],
     );
 
     blocTest<DebugOverrideCubit, DebugOverrideState>(
-      'hiding the button turns the override off',
-      build: build,
-      act: (cubit) {
-        cubit
-          ..toggleVisibility()
-          ..cycleMode()
-          ..cycleMode();
-        expect(source.mode, ReadingOverride.noSkinContact);
-        cubit.toggleVisibility();
-      },
-      expect: () => const [
-        DebugOverrideState.shown(ReadingOverride.normal),
-        DebugOverrideState.shown(ReadingOverride.stale),
-        DebugOverrideState.shown(ReadingOverride.noSkinContact),
-        DebugOverrideState.hidden(),
-      ],
-      verify: (_) => expect(source.mode, ReadingOverride.normal),
-    );
-
-    blocTest<DebugOverrideCubit, DebugOverrideState>(
-      'showing it again starts back at Normal',
+      'a non-detecting strap never offers no skin contact',
       build: build,
       act: (cubit) => cubit
         ..toggleVisibility()
-        ..cycleMode()
-        ..toggleVisibility()
-        ..toggleVisibility(),
-      skip: 3,
-      expect: () => [const DebugOverrideState.shown(ReadingOverride.normal)],
-      verify: (_) => expect(source.mode, ReadingOverride.normal),
+        ..toggleSkinContactDetection()
+        ..cycleCondition()
+        ..cycleCondition()
+        ..cycleCondition(),
+      skip: 2,
+      expect: () => [
+        _shown(_nonDetecting(NonDetectingStrapCondition.stale)),
+        _shown(_nonDetecting(NonDetectingStrapCondition.zeroBpm)),
+        _shown(_nonDetecting(NonDetectingStrapCondition.normal)),
+      ],
     );
 
     blocTest<DebugOverrideCubit, DebugOverrideState>(
-      'tapping does nothing while hidden',
+      'switching strap keeps a shared condition',
       build: build,
-      act: (cubit) => cubit.cycleMode(),
+      act: (cubit) => cubit
+        ..toggleVisibility()
+        ..cycleCondition()
+        ..toggleSkinContactDetection()
+        ..toggleSkinContactDetection(),
+      skip: 2,
+      expect: () => [
+        _shown(_nonDetecting(NonDetectingStrapCondition.stale)),
+        _shown(_detecting(DetectingStrapCondition.stale)),
+      ],
+      verify: (_) => expect(
+        source.readingOverride,
+        _detecting(DetectingStrapCondition.stale),
+      ),
+    );
+
+    blocTest<DebugOverrideCubit, DebugOverrideState>(
+      'switching strap from no skin contact goes to normal',
+      build: build,
+      act: (cubit) => cubit
+        ..toggleVisibility()
+        ..cycleCondition()
+        ..cycleCondition()
+        ..toggleSkinContactDetection(),
+      skip: 3,
+      expect: () => [_shown(_nonDetecting(NonDetectingStrapCondition.normal))],
+    );
+
+    blocTest<DebugOverrideCubit, DebugOverrideState>(
+      'hiding the buttons turns the override off',
+      build: build,
+      act: (cubit) => cubit
+        ..toggleVisibility()
+        ..toggleSkinContactDetection()
+        ..cycleCondition()
+        ..toggleVisibility(),
+      skip: 3,
+      expect: () => [const DebugOverrideState.hidden()],
+      verify: (_) => expect(source.readingOverride, isNull),
+    );
+
+    blocTest<DebugOverrideCubit, DebugOverrideState>(
+      'the buttons do nothing while hidden',
+      build: build,
+      act: (cubit) => cubit
+        ..cycleCondition()
+        ..toggleSkinContactDetection(),
       expect: () => <DebugOverrideState>[],
-      verify: (_) => expect(source.mode, ReadingOverride.normal),
+      verify: (_) => expect(source.readingOverride, isNull),
     );
 
     test('does nothing after close', () async {
@@ -100,9 +169,10 @@ void main() {
       await cubit.close();
       cubit
         ..toggleVisibility()
-        ..cycleMode();
+        ..toggleSkinContactDetection()
+        ..cycleCondition();
       expect(cubit.state, const DebugOverrideState.hidden());
-      expect(source.mode, ReadingOverride.normal);
+      expect(source.readingOverride, isNull);
     });
   });
 }
