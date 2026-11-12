@@ -83,10 +83,13 @@ Flutter vs native:
   `part` file (`*.freezed.dart`). It's code generation via `build_runner`, like
   Kotlin's KSP or Swift macros, but the output is a checked-in source file
   rather than compiler-internal. Lists get deep equality automatically.
-- **`ByteData`** reads little-endian integers from a `Uint8List`, like
-  `Data.withUnsafeBytes` / `loadUnaligned` in Swift or `ByteBuffer.order(
-  LITTLE_ENDIAN)` in Kotlin. `ByteData.sublistView` respects a view's offset;
-  `packet.buffer` would not, a classic bug the tests cover.
+- **Reading bytes safely**: `ByteData.getUint16` (like Swift's
+  `loadUnaligned` or Kotlin's `ByteBuffer`) throws `RangeError` past the end,
+  so the parser uses a tiny private `_ByteReader` whose `uint8()`/`uint16()`
+  return null when bytes run out. Reading past the end can't happen, and the
+  separate length checks disappeared. Indexing a `Uint8List` respects a
+  view's offset; reaching for `packet.buffer` would not, a classic bug the
+  tests cover.
 - **Streams** are Dart's `AsyncSequence` / Kotlin `Flow`. A *broadcast* stream
   allows many listeners, like a `SharedFlow`.
 - **Dependency injection without runtime lookups**: `RepositoryProvider` /
