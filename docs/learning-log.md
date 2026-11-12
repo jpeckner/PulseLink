@@ -95,6 +95,12 @@ Flutter vs native:
   controllable, like Kotlin's `TestDispatcher` virtual time. One trap: a stream
   subscription's `cancel()` completes on the real event loop, which fake time
   never runs, so the cubit's `close()` is tested with real async.
+- **Async gaps in teardown**: `close()` first stopped the source and only then
+  unsubscribed, so a sample arriving during the `await` started a new stale
+  timer that later emitted into the closed cubit (a `StateError` crash). Fix:
+  unsubscribe first; `cancel()` detaches the listener immediately. Same lesson
+  as cancelling Combine subscriptions or coroutine jobs before releasing
+  resources. A regression test uses a deliberately slow-stopping source.
 - **Widget tests** pump a widget tree headlessly and query it with finders,
   like ViewInspector or Compose's `onNodeWithText`. `MockCubit` + `whenListen`
   script the states a screen sees.

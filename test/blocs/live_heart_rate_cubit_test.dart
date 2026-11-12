@@ -281,5 +281,46 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
       },
     );
+
+    // Regression: a sample arriving while close() waited on stop() used to
+    // start a new stale timer that later emitted into the closed cubit.
+    test('a sample arriving while the source stops cannot crash it', () async {
+      final source = _SlowStopSource();
+      final cubit = LiveHeartRateCubit(
+        source: source,
+        staleAfter: const Duration(milliseconds: 20),
+      );
+      await cubit.start();
+
+      await cubit.close();
+      expect(source.emittedDuringStop, isTrue);
+
+      // Long enough for any stale timer started during close to fire.
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(cubit.state, const LiveHeartRateState.waiting(isSimulated: false));
+    });
+
+    test('start after close does nothing', () async {
+      final source = StubHeartRateSource();
+      final cubit = LiveHeartRateCubit(source: source);
+      await cubit.close();
+
+      await cubit.start();
+      expect(source.startCount, 0);
+      expect(source.hasListener, isFalse);
+    });
   });
+}
+
+/// Like a real BLE source, a sample can still arrive while [stop] is in flight.
+class _SlowStopSource extends StubHeartRateSource {
+  bool emittedDuringStop = false;
+
+  @override
+  Future<void> stop() async {
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    emit(_sampleAt(clock.now()));
+    emittedDuringStop = true;
+    await super.stop();
+  }
 }
