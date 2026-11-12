@@ -48,7 +48,7 @@ Built: a sealed `HeartRateSample` (measured or unavailable), the Heart Rate
 Measurement parser (sealed success/failure result), the `HeartRateSource`
 interface with a simulated `FakeHeartRateSource`, `LiveHeartRateCubit` with a
 10-second stale timer, and the live screen (bpm, update time, sensor status,
-Demo badge, signal-lost state). 77 tests.
+Demo badge, signal-lost state). 83 tests.
 
 Flutter vs native:
 
@@ -118,7 +118,11 @@ packet is a typed failure, not a wrong number. A well-formed packet with no
 skin contact or bpm 0 becomes an "unavailable" sample with no bpm at all, and
 the UI says why ("No sensor contact", "No reading from sensor") without
 medical-sounding wording. Unavailable is distinct from stale: the strap is
-still sending, so the stale timer keeps resetting. Staleness is measured from each
-sample's own timestamp, so a delayed sample can't masquerade as current. A
+still sending, so the stale timer keeps resetting. Staleness is measured from
+each sample's own timestamp, so a delayed sample can't masquerade as current. A
 regulated app would add a plausibility range check (say 25-250 bpm) and log
 every rejected packet; logging comes with the Milestone 4 debug screen.
+App code has no assertions or other programmer-error crash points (`assert`,
+`!`, `as`, throwing constructors, provider lookups); invalid states are ruled
+out by types instead, and any unavoidable exception needs explicit sign-off
+(see `CLAUDE.md`).
