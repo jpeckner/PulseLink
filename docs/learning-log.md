@@ -89,8 +89,13 @@ Flutter vs native:
   `packet.buffer` would not, a classic bug the tests cover.
 - **Streams** are Dart's `AsyncSequence` / Kotlin `Flow`. A *broadcast* stream
   allows many listeners, like a `SharedFlow`.
-- **`RepositoryProvider`** puts a dependency in the widget tree, like SwiftUI's
-  `@Environment` or a Compose `CompositionLocal`; `context.read<T>()` looks it up.
+- **Dependency injection without runtime lookups**: `RepositoryProvider` /
+  `BlocProvider` + `context.read<T>()` work like SwiftUI's `@EnvironmentObject`,
+  including crashing at runtime if nothing was provided. PulseLink instead
+  builds its objects in `main()` (a composition root, like an `AppDelegate`
+  building the object graph) and passes them through constructors;
+  `BlocBuilder(bloc: cubit)` then never does a lookup. A missing dependency is
+  a compile error.
 - **Testing time**: `fake_async` plus `package:clock` make timers and "now"
   controllable, like Kotlin's `TestDispatcher` virtual time. One trap: a stream
   subscription's `cancel()` completes on the real event loop, which fake time

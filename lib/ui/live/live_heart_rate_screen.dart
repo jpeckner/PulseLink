@@ -9,11 +9,14 @@ import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 /// Live heart rate: the latest bpm, when it arrived, sensor contact, and a
 /// clear signal-lost state once the reading goes stale.
 class LiveHeartRateScreen extends StatelessWidget {
-  const new({super.key});
+  const new({required this.cubit, super.key});
+
+  final LiveHeartRateCubit cubit;
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<LiveHeartRateCubit, LiveHeartRateState>(
+      bloc: cubit,
       builder: (context, state) => Scaffold(
         appBar: AppBar(
           title: const Text('PulseLink'),
