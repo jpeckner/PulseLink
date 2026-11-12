@@ -71,13 +71,14 @@ Flutter vs native:
   sample's `MeasuredContact` has only `detected` and `notReported`, so "no
   contact" can't sneak in, and no runtime assert is needed to stop it.
 - **`PositiveInt`** replaced a debug-only `assert(bpm > 0)`. Dart has no
-  refinement types, so the check still happens at runtime, but now once, at
-  the boundary, in every build mode: `PositiveInt.tryFrom` returns null (like
-  Swift's `UInt(exactly:)`), and `PositiveInt(n)` throws (like `UInt(n)`
-  trapping). It's a `final class` rather than a zero-cost extension type,
-  because an extension type can be forged with `0 as PositiveInt`; the cost is
-  writing `bpm.value`. `@immutable` (from `package:meta`) lets the analyzer
-  enforce what the hand-written `==`/`hashCode` assume.
+  refinement types, so the check still happens at runtime, but once, at the
+  boundary, and it can't fail: the only way to get one is `PositiveInt.tryFrom`,
+  which returns null (like Swift's `UInt(exactly:)`), and callers must handle
+  that case. There's deliberately no throwing constructor. It's a `final class`
+  rather than a zero-cost extension type, because an extension type can be
+  forged with `0 as PositiveInt`; the cost is writing `bpm.value`.
+  `@immutable` (from `package:meta`) lets the analyzer enforce what the
+  hand-written `==`/`hashCode` assume.
 - **freezed** generates `==`, `hashCode`, `toString` and `copyWith` into a
   `part` file (`*.freezed.dart`). It's code generation via `build_runner`, like
   Kotlin's KSP or Swift macros, but the output is a checked-in source file

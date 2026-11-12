@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/domain/positive_int.dart';
 
+import '../helpers/positive_int.dart';
+
 void main() {
   group('PositiveInt', () {
     group('tryFrom', () {
@@ -16,33 +18,22 @@ void main() {
       });
     });
 
-    group('constructor', () {
-      test('accepts values above 0', () {
-        expect(PositiveInt(1).value, 1);
-      });
-
-      test('throws ArgumentError for 0 and below, in every build mode', () {
-        expect(() => PositiveInt(0), throwsArgumentError);
-        expect(() => PositiveInt(-5), throwsArgumentError);
-      });
-    });
-
     test('has value equality', () {
-      expect(PositiveInt(72), PositiveInt(72));
-      expect(PositiveInt(72).hashCode, PositiveInt(72).hashCode);
-      expect(PositiveInt(72), isNot(PositiveInt(73)));
-      expect({PositiveInt(72), PositiveInt(72)}, hasLength(1));
+      expect(positiveInt(72), positiveInt(72));
+      expect(positiveInt(72).hashCode, positiveInt(72).hashCode);
+      expect(positiveInt(72), isNot(positiveInt(73)));
+      expect({positiveInt(72), positiveInt(72)}, hasLength(1));
     });
 
     test('is not equal to a plain int with the same value', () {
       // Comparing unrelated types on purpose, to prove it's false.
       // ignore: unrelated_type_equality_checks
-      expect(PositiveInt(72) == 72, isFalse);
+      expect(positiveInt(72) == 72, isFalse);
     });
 
     test('prints as the bare number', () {
-      expect(PositiveInt(72).toString(), '72');
-      expect('${PositiveInt(72)} bpm', '72 bpm');
+      expect(positiveInt(72).toString(), '72');
+      expect('${positiveInt(72)} bpm', '72 bpm');
     });
   });
 }

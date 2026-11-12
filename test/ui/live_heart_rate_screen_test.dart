@@ -9,9 +9,10 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
-import 'package:pulselink/domain/positive_int.dart';
 import 'package:pulselink/ui/live/live_heart_rate_screen.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
+
+import '../helpers/positive_int.dart';
 
 class _MockLiveHeartRateCubit extends MockCubit<LiveHeartRateState>
     implements LiveHeartRateCubit;
@@ -26,7 +27,7 @@ LiveHeartRateState _reading({
   bool isSimulated = false,
 }) => LiveHeartRateState.reading(
   sample: HeartRateSample.measured(
-    bpm: PositiveInt(bpm),
+    bpm: positiveInt(bpm),
     timestamp: _timestamp,
     contact: contact,
   ),

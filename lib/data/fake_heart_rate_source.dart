@@ -10,29 +10,24 @@ import 'package:pulselink/domain/positive_int.dart';
 ///
 /// Emits one sample per [interval]. The bpm drifts smoothly toward a target
 /// that changes every so often, like effort changing during a workout, with a
-/// little beat-to-beat noise. Pass a seeded [Random] for repeatable output.
+/// little beat-to-beat noise, always between [minBpm] and [maxBpm]. Pass a
+/// seeded [Random] for repeatable output.
 class FakeHeartRateSource implements HeartRateSource {
-  new({
-    Random? random,
-    this.interval = const Duration(seconds: 1),
-    PositiveInt? minBpm,
-    PositiveInt? maxBpm,
-    double initialBpm = 72,
-  }) : minBpm = minBpm ?? PositiveInt(55),
-       maxBpm = maxBpm ?? PositiveInt(175),
-       _random = random ?? Random(),
-       _bpm = initialBpm,
-       _targetBpm = initialBpm;
+  new({Random? random, this.interval = const Duration(seconds: 1)})
+    : _random = random ?? Random();
+
+  /// The simulated bpm range. Fixed, so there's no invalid range to pass in.
+  static const minBpm = 55;
+  static const maxBpm = 175;
+  static const _initialBpm = 72.0;
 
   final Duration interval;
-  final PositiveInt minBpm;
-  final PositiveInt maxBpm;
 
   final Random _random;
   final _controller = StreamController<HeartRateSample>.broadcast();
   Timer? _timer;
-  double _bpm;
-  double _targetBpm;
+  double _bpm = _initialBpm;
+  double _targetBpm = _initialBpm;
   int _samplesUntilNewTarget = 0;
 
   @override
@@ -41,8 +36,10 @@ class FakeHeartRateSource implements HeartRateSource {
   @override
   Stream<HeartRateSample> get samples => _controller.stream;
 
+  /// Does nothing after [dispose].
   @override
   Future<void> start() async {
+    if (_controller.isClosed) return;
     _timer ??= Timer.periodic(interval, (_) => _emitSample());
   }
 
@@ -60,27 +57,31 @@ class FakeHeartRateSource implements HeartRateSource {
 
   void _emitSample() {
     if (_samplesUntilNewTarget <= 0) {
-      _targetBpm =
-          minBpm.value + _random.nextDouble() * (maxBpm.value - minBpm.value);
+      _targetBpm = minBpm + _random.nextDouble() * (maxBpm - minBpm);
       _samplesUntilNewTarget = 20 + _random.nextInt(40);
     }
     _samplesUntilNewTarget--;
 
     final noise = (_random.nextDouble() - 0.5) * 3;
     _bpm = (_bpm + (_targetBpm - _bpm) * 0.08 + noise).clamp(
-      minBpm.value.toDouble(),
-      maxBpm.value.toDouble(),
+      minBpm.toDouble(),
+      maxBpm.toDouble(),
     );
 
-    // Can't throw: _bpm is clamped to at least minBpm, which is above 0.
-    final bpm = PositiveInt(_bpm.round());
-    _controller.add(
-      HeartRateSample.measured(
+    final now = clock.now();
+    _controller.add(switch (PositiveInt.tryFrom(_bpm.round())) {
+      final bpm? => HeartRateSample.measured(
         bpm: bpm,
-        timestamp: clock.now(),
+        timestamp: now,
         contact: MeasuredContact.detected,
         rrIntervals: [Duration(microseconds: (60000000 / bpm.value).round())],
       ),
-    );
+      // Unreachable while minBpm is above 0, but if the math ever produced 0
+      // the screen shows "No reading from sensor" instead of a wrong number.
+      null => HeartRateSample.unavailable(
+        timestamp: now,
+        reason: HeartRateUnavailableReason.zeroBpm,
+      ),
+    });
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
-import 'package:pulselink/domain/positive_int.dart';
+
+import '../helpers/positive_int.dart';
 
 final _timestamp = DateTime(2026, 11, 11);
 
@@ -14,7 +15,7 @@ void main() {
         ]) {
           expect(
             HeartRateSample.measured(
-              bpm: PositiveInt(72),
+              bpm: positiveInt(72),
               timestamp: _timestamp,
               contact: contact,
             ),
@@ -25,7 +26,7 @@ void main() {
 
       test('defaults to no RR intervals', () {
         final sample = HeartRateSample.measured(
-          bpm: PositiveInt(72),
+          bpm: positiveInt(72),
           timestamp: _timestamp,
           contact: MeasuredContact.detected,
         ) as MeasuredHeartRateSample;
@@ -34,7 +35,7 @@ void main() {
 
       test('has value equality, including RR intervals', () {
         HeartRateSample withRr(int ms) => HeartRateSample.measured(
-          bpm: PositiveInt(72),
+          bpm: positiveInt(72),
           timestamp: _timestamp,
           contact: MeasuredContact.detected,
           rrIntervals: [Duration(milliseconds: ms)],
@@ -62,7 +63,7 @@ void main() {
     test('exposes the timestamp on both cases without a switch', () {
       final samples = [
         HeartRateSample.measured(
-          bpm: PositiveInt(72),
+          bpm: positiveInt(72),
           timestamp: _timestamp,
           contact: MeasuredContact.detected,
         ),

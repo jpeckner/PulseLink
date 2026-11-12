@@ -3,7 +3,8 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/domain/heart_rate_measurement_parser.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
-import 'package:pulselink/domain/positive_int.dart';
+
+import '../helpers/positive_int.dart';
 
 final _timestamp = DateTime(2026, 11, 11, 10, 52, 31);
 
@@ -38,7 +39,7 @@ void main() {
         expect(
           _parseSample([0x16, 0x48, 0x00, 0x04]),
           HeartRateSample.measured(
-            bpm: PositiveInt(72),
+            bpm: positiveInt(72),
             timestamp: _timestamp,
             contact: MeasuredContact.detected,
             rrIntervals: const [Duration(milliseconds: 1000)],
@@ -50,7 +51,7 @@ void main() {
         expect(
           _parseSample([0x01, 0xB4, 0x00]),
           HeartRateSample.measured(
-            bpm: PositiveInt(180),
+            bpm: positiveInt(180),
             timestamp: _timestamp,
             contact: MeasuredContact.notReported,
           ),
@@ -189,7 +190,7 @@ void main() {
       expect(
         _parseSample([0xE0 | 0x06, 0x48]),
         HeartRateSample.measured(
-          bpm: PositiveInt(72),
+          bpm: positiveInt(72),
           timestamp: _timestamp,
           contact: MeasuredContact.detected,
         ),
@@ -244,7 +245,7 @@ void main() {
         result,
         HeartRateParseResult.success(
           HeartRateSample.measured(
-            bpm: PositiveInt(72),
+            bpm: positiveInt(72),
             timestamp: _timestamp,
             contact: MeasuredContact.detected,
             rrIntervals: const [Duration(milliseconds: 1000)],

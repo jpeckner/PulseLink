@@ -3,9 +3,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/app/app.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
-import 'package:pulselink/domain/positive_int.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
+import '../helpers/positive_int.dart';
 import '../helpers/stub_heart_rate_source.dart';
 
 void main() {
@@ -24,7 +24,7 @@ void main() {
 
       source.emit(
         HeartRateSample.measured(
-          bpm: PositiveInt(72),
+          bpm: positiveInt(72),
           timestamp: clock.now(),
           contact: MeasuredContact.detected,
         ),

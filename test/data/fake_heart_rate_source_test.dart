@@ -6,7 +6,6 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/data/fake_heart_rate_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
-import 'package:pulselink/domain/positive_int.dart';
 
 final _start = DateTime(2026, 11, 11, 10);
 
@@ -80,16 +79,18 @@ void main() {
       _withFakeTime((async) {
         final samples = _run(
           async,
-          FakeHeartRateSource(
-            random: Random(7),
-            minBpm: PositiveInt(60),
-            maxBpm: PositiveInt(160),
-          ),
+          FakeHeartRateSource(random: Random(7)),
           const Duration(minutes: 5),
         );
         expect(samples, hasLength(300));
         for (final sample in samples) {
-          expect(sample.bpm.value, inInclusiveRange(60, 160));
+          expect(
+            sample.bpm.value,
+            inInclusiveRange(
+              FakeHeartRateSource.minBpm,
+              FakeHeartRateSource.maxBpm,
+            ),
+          );
           expect(sample.contact, MeasuredContact.detected);
           // One RR interval matching the bpm: 60 s / bpm.
           expect(sample.rrIntervals, hasLength(1));
@@ -155,6 +156,17 @@ void main() {
         unawaited(source.start());
         final samples = _run(async, source, const Duration(seconds: 3));
         expect(samples, hasLength(3));
+      });
+    });
+
+    test('start after dispose does nothing', () {
+      _withFakeTime((async) {
+        final source = FakeHeartRateSource();
+        unawaited(source.dispose());
+        async.flushMicrotasks();
+        unawaited(source.start());
+        async.elapse(const Duration(seconds: 5));
+        expect(async.pendingTimers, isEmpty);
       });
     });
 
