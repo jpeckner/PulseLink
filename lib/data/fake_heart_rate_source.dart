@@ -73,11 +73,11 @@ class FakeHeartRateSource implements HeartRateSource {
       final bpm? => HeartRateSample.measured(
         bpm: bpm,
         timestamp: now,
-        contact: MeasuredContact.detected,
+        skinContact: SkinContact.detected,
         rrIntervals: [Duration(microseconds: (60000000 / bpm.value).round())],
       ),
       // Unreachable while minBpm is above 0, but if the math ever produced 0
-      // the screen shows "No reading from sensor" instead of a wrong number.
+      // the screen says the strap has no heart rate yet, not a wrong number.
       null => HeartRateSample.unavailable(
         timestamp: now,
         reason: HeartRateUnavailableReason.zeroBpm,

@@ -18,7 +18,7 @@ HeartRateSample _sampleAt(DateTime timestamp, {int bpm = 72}) =>
     HeartRateSample.measured(
       bpm: positiveInt(bpm),
       timestamp: timestamp,
-      contact: MeasuredContact.detected,
+      skinContact: SkinContact.detected,
     );
 
 /// Runs [body] with fake time and a matching [clock], against a started cubit,
@@ -203,7 +203,7 @@ void main() {
       HeartRateSample unavailableAt(DateTime timestamp) =>
           HeartRateSample.unavailable(
             timestamp: timestamp,
-            reason: HeartRateUnavailableReason.noContact,
+            reason: HeartRateUnavailableReason.noSkinContact,
           );
 
       test('count as fresh data: the strap is connected and sending', () {

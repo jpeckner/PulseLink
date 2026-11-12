@@ -48,7 +48,7 @@ Built: a sealed `HeartRateSample` (measured or unavailable), the Heart Rate
 Measurement parser (sealed success/failure result), the `HeartRateSource`
 interface with a simulated `FakeHeartRateSource`, `LiveHeartRateCubit` with a
 10-second stale timer, and the live screen (bpm, update time, sensor status,
-Demo badge, signal-lost state). 83 tests.
+Demo badge, "no data from strap" state). 83 tests.
 
 Flutter vs native:
 
@@ -67,9 +67,10 @@ Flutter vs native:
   to check. As a sealed type, only `MeasuredHeartRateSample` has a `bpm`, so
   showing an untrustworthy value doesn't compile. Same idea as replacing a
   Swift struct + `isValid` flag with an enum. Shared fields (`timestamp`) stay
-  readable on the base type without a `switch`. Same for contact: a measured
-  sample's `MeasuredContact` has only `detected` and `notReported`, so "no
-  contact" can't sneak in, and no runtime assert is needed to stop it.
+  readable on the base type without a `switch`. Same for skin contact: a
+  measured sample's `SkinContact` has only `detected` and `notSupported`, so
+  "no skin contact" can't sneak in, and no runtime assert is needed to stop
+  it.
 - **`PositiveInt`** replaced a debug-only `assert(bpm > 0)`. Dart has no
   refinement types, so the check still happens at runtime, but once, at the
   boundary, and it can't fail: the only way to get one is `PositiveInt.tryFrom`,
@@ -116,13 +117,35 @@ Flutter vs native:
 Regulated-app notes: the parser never throws and never guesses; a malformed
 packet is a typed failure, not a wrong number. A well-formed packet with no
 skin contact or bpm 0 becomes an "unavailable" sample with no bpm at all, and
-the UI says why ("No sensor contact", "No reading from sensor") without
-medical-sounding wording. Unavailable is distinct from stale: the strap is
-still sending, so the stale timer keeps resetting. Staleness is measured from
-each sample's own timestamp, so a delayed sample can't masquerade as current. A
-regulated app would add a plausibility range check (say 25-250 bpm) and log
-every rejected packet; logging comes with the Milestone 4 debug screen.
+the UI says why ("No skin contact", "Strap connected, no heart rate yet")
+without medical-sounding wording. Unavailable is distinct from stale: the strap
+is still sending, so the stale timer keeps resetting. Staleness is measured
+from each sample's own timestamp, so a delayed sample can't masquerade as
+current. A regulated app would add a plausibility range check (say 25-250 bpm)
+and log every rejected packet; logging comes with the Milestone 4 debug screen.
 App code has no assertions or other programmer-error crash points (`assert`,
 `!`, `as`, throwing constructors, provider lookups); invalid states are ruled
 out by types instead, and any unavoidable exception needs explicit sign-off
 (see `CLAUDE.md`).
+
+### Skin contact vs. Bluetooth wording
+
+"Contact" was ambiguous: "Sensor contact" could read as "the app can reach the
+sensor", and "Signal lost" with a Wi-Fi icon suggested Wi-Fi. Now "skin
+contact" always means the strap touching skin (`SkinContact`,
+`noSkinContact`), Bluetooth and data wording never mentions contact, and the
+stale state says "No data from strap" with a sensor-off icon. It deliberately
+doesn't claim "Bluetooth disconnected": until Milestone 4's connection state,
+the app can't tell a dropped link from a strap that stopped sending. Making the
+text longer exposed an overflow on narrow screens, so a test now renders every
+state at 320 px wide (Flutter fails a test on any overflow). The test font
+draws every glyph as a full-width square, roughly twice as wide as Roboto, so
+this also stands in for very large accessibility text sizes.
+
+While stale, the skin-contact chip is hidden too: it describes the last
+reading, which is out of date. `Visibility(maintainSize: true)` keeps its space
+so the readout doesn't jump, and `Visibility.of(context)` lets tests check it's
+hidden. Testing trap found along the way: re-pumping the same widget tree with
+a mocked cubit keeps the `BlocBuilder`'s first state, so a test that pumps
+several states silently checks only the first. A `UniqueKey` per pump fixes it,
+and the 320 px test then caught an overflow it had been missing.

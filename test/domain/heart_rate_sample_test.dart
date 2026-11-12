@@ -8,16 +8,16 @@ final _timestamp = DateTime(2026, 11, 11);
 void main() {
   group('HeartRateSample', () {
     group('measured', () {
-      test('accepts contact detected or not reported', () {
-        for (final contact in [
-          MeasuredContact.detected,
-          MeasuredContact.notReported,
+      test('accepts skin contact detected or not supported', () {
+        for (final skinContact in [
+          SkinContact.detected,
+          SkinContact.notSupported,
         ]) {
           expect(
             HeartRateSample.measured(
               bpm: positiveInt(72),
               timestamp: _timestamp,
-              contact: contact,
+              skinContact: skinContact,
             ),
             isA<MeasuredHeartRateSample>(),
           );
@@ -28,7 +28,7 @@ void main() {
         final sample = HeartRateSample.measured(
           bpm: positiveInt(72),
           timestamp: _timestamp,
-          contact: MeasuredContact.detected,
+          skinContact: SkinContact.detected,
         ) as MeasuredHeartRateSample;
         expect(sample.rrIntervals, isEmpty);
       });
@@ -37,7 +37,7 @@ void main() {
         HeartRateSample withRr(int ms) => HeartRateSample.measured(
           bpm: positiveInt(72),
           timestamp: _timestamp,
-          contact: MeasuredContact.detected,
+          skinContact: SkinContact.detected,
           rrIntervals: [Duration(milliseconds: ms)],
         );
         expect(withRr(800), withRr(800));
@@ -50,11 +50,11 @@ void main() {
         HeartRateSample unavailable(HeartRateUnavailableReason reason) =>
             HeartRateSample.unavailable(timestamp: _timestamp, reason: reason);
         expect(
-          unavailable(HeartRateUnavailableReason.noContact),
-          unavailable(HeartRateUnavailableReason.noContact),
+          unavailable(HeartRateUnavailableReason.noSkinContact),
+          unavailable(HeartRateUnavailableReason.noSkinContact),
         );
         expect(
-          unavailable(HeartRateUnavailableReason.noContact),
+          unavailable(HeartRateUnavailableReason.noSkinContact),
           isNot(unavailable(HeartRateUnavailableReason.zeroBpm)),
         );
       });
@@ -65,7 +65,7 @@ void main() {
         HeartRateSample.measured(
           bpm: positiveInt(72),
           timestamp: _timestamp,
-          contact: MeasuredContact.detected,
+          skinContact: SkinContact.detected,
         ),
         HeartRateSample.unavailable(
           timestamp: _timestamp,

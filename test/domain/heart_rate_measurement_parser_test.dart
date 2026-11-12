@@ -35,28 +35,31 @@ HeartRateSample _unavailable(HeartRateUnavailableReason reason) =>
 void main() {
   group('parseHeartRateMeasurement', () {
     group('plan fixtures', () {
-      test('[0x16, 0x48, 0x00, 0x04] is 72 bpm, contact, RR 1000 ms', () {
+      test('[0x16, 0x48, 0x00, 0x04] is 72 bpm, skin contact, RR 1000 ms', () {
         expect(
           _parseSample([0x16, 0x48, 0x00, 0x04]),
           HeartRateSample.measured(
             bpm: positiveInt(72),
             timestamp: _timestamp,
-            contact: MeasuredContact.detected,
+            skinContact: SkinContact.detected,
             rrIntervals: const [Duration(milliseconds: 1000)],
           ),
         );
       });
 
-      test('[0x01, 0xB4, 0x00] is 180 bpm (uint16), contact unsupported', () {
-        expect(
-          _parseSample([0x01, 0xB4, 0x00]),
-          HeartRateSample.measured(
-            bpm: positiveInt(180),
-            timestamp: _timestamp,
-            contact: MeasuredContact.notReported,
-          ),
-        );
-      });
+      test(
+        '[0x01, 0xB4, 0x00] is 180 bpm (uint16), no skin-contact support',
+        () {
+          expect(
+            _parseSample([0x01, 0xB4, 0x00]),
+            HeartRateSample.measured(
+              bpm: positiveInt(180),
+              timestamp: _timestamp,
+              skinContact: SkinContact.notSupported,
+            ),
+          );
+        },
+      );
     });
 
     group('heart-rate value', () {
@@ -77,29 +80,29 @@ void main() {
       });
     });
 
-    group('sensor contact', () {
-      test('bit 2 clear: measured, contact not reported, whatever bit 1 '
+    group('skin contact', () {
+      test('bit 2 clear: measured, skin contact not supported, whatever bit 1 '
           'says', () {
         expect(
-          _parseMeasured([0x00, 0x48]).contact,
-          MeasuredContact.notReported,
+          _parseMeasured([0x00, 0x48]).skinContact,
+          SkinContact.notSupported,
         );
         expect(
-          _parseMeasured([0x02, 0x48]).contact,
-          MeasuredContact.notReported,
+          _parseMeasured([0x02, 0x48]).skinContact,
+          SkinContact.notSupported,
         );
       });
 
-      test('bits 1 and 2 set: measured, contact detected', () {
-        expect(_parseMeasured([0x06, 0x48]).contact, MeasuredContact.detected);
+      test('bits 1 and 2 set: measured, skin contact detected', () {
+        expect(_parseMeasured([0x06, 0x48]).skinContact, SkinContact.detected);
       });
     });
 
     group('unavailable readings', () {
-      test('bit 2 set, bit 1 clear: unavailable, no contact', () {
+      test('bit 2 set, bit 1 clear: unavailable, no skin contact', () {
         expect(
           _parseSample([0x04, 0x48]),
-          _unavailable(HeartRateUnavailableReason.noContact),
+          _unavailable(HeartRateUnavailableReason.noSkinContact),
         );
       });
 
@@ -121,21 +124,21 @@ void main() {
         );
       });
 
-      test('no contact and bpm 0: no contact wins', () {
+      test('no skin contact and bpm 0: no skin contact wins', () {
         expect(
           _parseSample([0x04, 0x00]),
-          _unavailable(HeartRateUnavailableReason.noContact),
+          _unavailable(HeartRateUnavailableReason.noSkinContact),
         );
       });
 
-      test('drops RR intervals when there is no contact', () {
+      test('drops RR intervals when there is no skin contact', () {
         expect(
           _parseSample([0x14, 0x48, 0x00, 0x04]),
-          _unavailable(HeartRateUnavailableReason.noContact),
+          _unavailable(HeartRateUnavailableReason.noSkinContact),
         );
       });
 
-      test('a malformed no-contact packet is still a parse failure', () {
+      test('a malformed no-skin-contact packet is still a parse failure', () {
         expect(
           _parseError([0x14, 0x48, 0x00]),
           HeartRateParseError.truncatedRrInterval,
@@ -192,7 +195,7 @@ void main() {
         HeartRateSample.measured(
           bpm: positiveInt(72),
           timestamp: _timestamp,
-          contact: MeasuredContact.detected,
+          skinContact: SkinContact.detected,
         ),
       );
     });
@@ -247,7 +250,7 @@ void main() {
           HeartRateSample.measured(
             bpm: positiveInt(72),
             timestamp: _timestamp,
-            contact: MeasuredContact.detected,
+            skinContact: SkinContact.detected,
             rrIntervals: const [Duration(milliseconds: 1000)],
           ),
         ),
