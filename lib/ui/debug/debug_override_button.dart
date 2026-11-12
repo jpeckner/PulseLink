@@ -34,5 +34,6 @@ class DebugOverrideButton extends StatelessWidget {
     ReadingOverride.stale => 'No data (stale)',
     ReadingOverride.noSkinContact => 'No skin contact',
     ReadingOverride.zeroBpm => 'Zero bpm',
+    ReadingOverride.skinContactNotSupported => 'Skin contact not supported',
   };
 }

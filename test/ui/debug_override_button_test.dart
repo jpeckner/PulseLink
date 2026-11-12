@@ -41,6 +41,10 @@ void main() {
         ('Override: No data (stale)', ReadingOverride.stale),
         ('Override: No skin contact', ReadingOverride.noSkinContact),
         ('Override: Zero bpm', ReadingOverride.zeroBpm),
+        (
+          'Override: Skin contact not supported',
+          ReadingOverride.skinContactNotSupported,
+        ),
         ('Override: Normal', ReadingOverride.normal),
       ]) {
         await tester.tap(find.byType(OutlinedButton));

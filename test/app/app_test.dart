@@ -65,9 +65,12 @@ void main() {
         skinContact: SkinContact.detected,
       );
 
+      final readoutBefore = tester.getCenter(find.text('bpm'));
       await tester.longPress(find.text('PulseLink'));
       await tester.pump();
       expect(find.text('Override: Normal'), findsOneWidget);
+      // Revealing the button doesn't move the readout.
+      expect(tester.getCenter(find.text('bpm')), readoutBefore);
 
       // Normal -> No data (stale) -> No skin contact.
       await tester.tap(find.text('Override: Normal'));

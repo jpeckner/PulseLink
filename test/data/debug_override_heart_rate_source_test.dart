@@ -15,11 +15,19 @@ final _measured = HeartRateSample.measured(
 
 void main() {
   group('ReadingOverride.next', () {
-    test('cycles normal, stale, no skin contact, zero bpm, then wraps', () {
+    test('cycles normal, stale, no skin contact, zero bpm, skin contact not '
+        'supported, then wraps', () {
       expect(ReadingOverride.normal.next, ReadingOverride.stale);
       expect(ReadingOverride.stale.next, ReadingOverride.noSkinContact);
       expect(ReadingOverride.noSkinContact.next, ReadingOverride.zeroBpm);
-      expect(ReadingOverride.zeroBpm.next, ReadingOverride.normal);
+      expect(
+        ReadingOverride.zeroBpm.next,
+        ReadingOverride.skinContactNotSupported,
+      );
+      expect(
+        ReadingOverride.skinContactNotSupported.next,
+        ReadingOverride.normal,
+      );
     });
   });
 
@@ -72,6 +80,38 @@ void main() {
           reason: HeartRateUnavailableReason.zeroBpm,
         ),
       ]);
+    });
+
+    test(
+      'skin contact not supported keeps bpm, timestamp and RR intervals',
+      () {
+        source.mode = ReadingOverride.skinContactNotSupported;
+        final withRr = HeartRateSample.measured(
+          bpm: positiveInt(72),
+          timestamp: _timestamp,
+          skinContact: SkinContact.detected,
+          rrIntervals: const [Duration(milliseconds: 833)],
+        );
+        inner.emit(withRr);
+        expect(received, [
+          HeartRateSample.measured(
+            bpm: positiveInt(72),
+            timestamp: _timestamp,
+            skinContact: SkinContact.notSupported,
+            rrIntervals: const [Duration(milliseconds: 833)],
+          ),
+        ]);
+      },
+    );
+
+    test('skin contact not supported passes unavailable samples through', () {
+      source.mode = ReadingOverride.skinContactNotSupported;
+      final unavailable = HeartRateSample.unavailable(
+        timestamp: _timestamp,
+        reason: HeartRateUnavailableReason.noSkinContact,
+      );
+      inner.emit(unavailable);
+      expect(received, [unavailable]);
     });
 
     test('a mode change applies to the next sample', () {

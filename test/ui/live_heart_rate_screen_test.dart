@@ -297,6 +297,31 @@ void main() {
         expect(controls.dy, lessThan(disclaimer.dy));
       });
 
+      testWidgets('debug controls never move the readout', (tester) async {
+        when(() => cubit.state).thenReturn(_reading());
+        Future<Offset> readoutCenter(Widget? debugControls) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: LiveHeartRateScreen(
+                cubit: cubit,
+                debugControls: debugControls,
+              ),
+            ),
+          );
+          return tester.getCenter(find.text('72'));
+        }
+
+        // Release builds pass no controls; debug builds pass the button,
+        // which is empty while hidden and about 60 px tall when shown.
+        final release = await readoutCenter(null);
+        final hidden = await readoutCenter(const SizedBox.shrink());
+        final shown = await readoutCenter(
+          const SizedBox(height: 60, child: Text('debug controls')),
+        );
+        expect(hidden, release);
+        expect(shown, release);
+      });
+
       testWidgets('long-pressing the title calls onTitleLongPress', (
         tester,
       ) async {

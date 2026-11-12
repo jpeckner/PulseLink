@@ -14,20 +14,25 @@ enum ReadingOverride {
   noSkinContact,
 
   /// Replace each sample with an unavailable one: bpm 0.
-  zeroBpm;
+  zeroBpm,
+
+  /// Keep each measured sample's bpm, but as if from a sensor that can't
+  /// detect skin contact. Unavailable samples pass through unchanged.
+  skinContactNotSupported;
 
   /// The next override in the cycle, wrapping back to [normal].
   ReadingOverride get next => switch (this) {
     normal => stale,
     stale => noSkinContact,
     noSkinContact => zeroBpm,
-    zeroBpm => normal,
+    zeroBpm => skinContactNotSupported,
+    skinContactNotSupported => normal,
   };
 }
 
 /// Debug and profile builds only. Wraps any [HeartRateSource], real or fake,
-/// and rewrites its samples according to [mode], so stale and unavailable
-/// states can be shown on demand.
+/// and rewrites its samples according to [mode], so stale, unavailable and
+/// skin-contact-not-supported states can be shown on demand.
 class DebugOverrideHeartRateSource implements HeartRateSource {
   new(this._inner);
 
@@ -65,6 +70,14 @@ class DebugOverrideHeartRateSource implements HeartRateSource {
         timestamp: sample.timestamp,
         reason: HeartRateUnavailableReason.zeroBpm,
       ),
+    ],
+    ReadingOverride.skinContactNotSupported => [
+      switch (sample) {
+        final MeasuredHeartRateSample measured => measured.copyWith(
+          skinContact: SkinContact.notSupported,
+        ),
+        UnavailableHeartRateSample() => sample,
+      },
     ],
   };
 }

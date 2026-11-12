@@ -18,7 +18,8 @@ class LiveHeartRateScreen extends StatelessWidget {
 
   final LiveHeartRateCubit cubit;
 
-  /// Shown just above the disclaimer. Only supplied in non-release builds.
+  /// Shown just above the disclaimer, overlaid so it takes no layout space.
+  /// Only supplied in non-release builds.
   final Widget? debugControls;
 
   /// Called when the title is long-pressed. Only supplied in non-release
@@ -43,15 +44,28 @@ class LiveHeartRateScreen extends StatelessWidget {
             child: Column(
               children: [
                 Expanded(
-                  child: Center(
-                    child: switch (state) {
-                      LiveHeartRateWaiting() => const _WaitingView(),
-                      LiveHeartRateReading(:final sample, :final isStale) =>
-                        _ReadingView(sample: sample, isStale: isStale),
-                    },
+                  // Debug controls float over the bottom of this area rather
+                  // than taking layout space, so the readout never moves when
+                  // they appear or disappear, and debug and release layouts
+                  // match.
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Center(
+                        child: switch (state) {
+                          LiveHeartRateWaiting() => const _WaitingView(),
+                          LiveHeartRateReading(:final sample, :final isStale) =>
+                            _ReadingView(sample: sample, isStale: isStale),
+                        },
+                      ),
+                      if (debugControls case final controls?)
+                        Align(
+                          alignment: Alignment.bottomCenter,
+                          child: controls,
+                        ),
+                    ],
                   ),
                 ),
-                ?debugControls,
                 const DisclaimerBanner(),
               ],
             ),

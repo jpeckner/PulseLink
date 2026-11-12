@@ -131,8 +131,8 @@ out by types instead, and any unavoidable exception needs explicit sign-off
 ### Debug override tooling
 
 A long-press on the title reveals a debug-only button that forces incoming
-samples to Normal, No data (stale), No skin contact or Zero bpm, for real or
-fake sources.
+samples to Normal, No data (stale), No skin contact, Zero bpm or Skin contact
+not supported, for real or fake sources.
 
 - **No preprocessor, but the same result.** Dart has no `#if DEBUG`, but
   `kReleaseMode` / `kDebugMode` are compile-time constants, so the release
@@ -182,3 +182,4 @@ hidden. Testing trap found along the way: re-pumping the same widget tree with
 a mocked cubit keeps the `BlocBuilder`'s first state, so a test that pumps
 several states silently checks only the first. A `UniqueKey` per pump fixes it,
 and the 320 px test then caught an overflow it had been missing.
+

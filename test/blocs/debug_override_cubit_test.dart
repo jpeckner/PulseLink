@@ -40,6 +40,8 @@ void main() {
         cubit.cycleMode();
         expect(source.mode, ReadingOverride.zeroBpm);
         cubit.cycleMode();
+        expect(source.mode, ReadingOverride.skinContactNotSupported);
+        cubit.cycleMode();
         expect(source.mode, ReadingOverride.normal);
       },
       expect: () => const [
@@ -47,6 +49,7 @@ void main() {
         DebugOverrideState.shown(ReadingOverride.stale),
         DebugOverrideState.shown(ReadingOverride.noSkinContact),
         DebugOverrideState.shown(ReadingOverride.zeroBpm),
+        DebugOverrideState.shown(ReadingOverride.skinContactNotSupported),
         DebugOverrideState.shown(ReadingOverride.normal),
       ],
     );
