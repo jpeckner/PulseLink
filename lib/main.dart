@@ -15,6 +15,10 @@ void main() {
 
   // Demo mode until real BLE arrives in Milestone 3.
   final liveHeartRateCubit = LiveHeartRateCubit(source: FakeHeartRateSource());
+  // Not awaited: runApp shouldn't wait for the source. FakeHeartRateSource's
+  // start() can't fail. A real BLE source's can (Bluetooth off, permission
+  // denied), so in Milestone 3 start() returns a typed result that the cubit
+  // turns into a state the screen shows, rather than an error dropped here.
   unawaited(liveHeartRateCubit.start());
 
   runApp(PulseLinkApp(liveHeartRateCubit: liveHeartRateCubit));
