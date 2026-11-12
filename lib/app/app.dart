@@ -5,10 +5,19 @@ import 'package:pulselink/ui/live/live_heart_rate_screen.dart';
 /// Root widget. Owns theming and passes dependencies to screens through their
 /// constructors.
 class PulseLinkApp extends StatelessWidget {
-  const new({required this.liveHeartRateCubit, super.key});
+  const new({
+    required this.liveHeartRateCubit,
+    this.debugControls,
+    this.onTitleLongPress,
+    super.key,
+  });
 
   /// Owned by the caller, which starts and closes it.
   final LiveHeartRateCubit liveHeartRateCubit;
+
+  /// Debug tooling for the live screen. Only supplied in non-release builds.
+  final Widget? debugControls;
+  final VoidCallback? onTitleLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +25,11 @@ class PulseLinkApp extends StatelessWidget {
       title: 'PulseLink',
       theme: _theme(Brightness.light),
       darkTheme: _theme(Brightness.dark),
-      home: LiveHeartRateScreen(cubit: liveHeartRateCubit),
+      home: LiveHeartRateScreen(
+        cubit: liveHeartRateCubit,
+        debugControls: debugControls,
+        onTitleLongPress: onTitleLongPress,
+      ),
     );
   }
 

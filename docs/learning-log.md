@@ -128,6 +128,39 @@ App code has no assertions or other programmer-error crash points (`assert`,
 out by types instead, and any unavoidable exception needs explicit sign-off
 (see `CLAUDE.md`).
 
+### Debug override tooling
+
+A long-press on the title reveals a debug-only button that forces incoming
+samples to Normal, No data (stale), No skin contact or Zero bpm, for real or
+fake sources.
+
+- **No preprocessor, but the same result.** Dart has no `#if DEBUG`, but
+  `kReleaseMode` / `kDebugMode` are compile-time constants, so the release
+  compiler deletes `if (!kReleaseMode) { ... }` and anything only it uses.
+  Unlike `#if`, the code must still compile in every mode. All debug wiring
+  lives in that one branch of `main()`; screens only see a generic optional
+  `Widget` and `VoidCallback`, so no debug class or label is referenced
+  elsewhere. Verified by searching the compiled release code for the button's
+  label.
+- **Decorator over the data layer.** `DebugOverrideHeartRateSource` wraps any
+  `HeartRateSource`, so the override works the same for BLE and demo data and
+  the cubit and UI don't know it exists.
+- **Hidden means Normal, by construction.** The button state is sealed
+  (`hidden | shown(mode)`), and the source's mode is derived from it, so
+  "hidden but still overriding" can't happen.
+- **Stale is an absence, not a value.** The Stale override drops samples and
+  lets the real 10-second timer fire, so it tests the actual code path.
+- **Newer Dart syntax met along the way:** `?debugControls` in a list adds the
+  element only if it's non-null (no `!` needed), and `required this._source`
+  initializes a private field from a parameter callers still name `source`.
+- Native shake detection was considered and rejected: `sensors_plus` would ship
+  its native code in release builds (plugins are registered in every build),
+  and the iOS Simulator's Shake menu doesn't produce accelerometer data.
+
+Regulated-app note: debug-only fault injection is standard in device
+development; regulated teams keep evidence it's absent from release builds,
+which the release-binary check provides.
+
 ### Skin contact vs. Bluetooth wording
 
 "Contact" was ambiguous: "Sensor contact" could read as "the app can reach the

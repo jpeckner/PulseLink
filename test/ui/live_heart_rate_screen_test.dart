@@ -278,5 +278,50 @@ void main() {
         expect(tester.takeException(), isNull, reason: '$state');
       }
     });
+
+    group('debug inputs', () {
+      testWidgets('shows debug controls just above the disclaimer', (
+        tester,
+      ) async {
+        when(() => cubit.state).thenReturn(_reading());
+        await tester.pumpWidget(
+          MaterialApp(
+            home: LiveHeartRateScreen(
+              cubit: cubit,
+              debugControls: const Text('debug controls'),
+            ),
+          ),
+        );
+        final controls = tester.getTopLeft(find.text('debug controls'));
+        final disclaimer = tester.getTopLeft(find.text(disclaimerText));
+        expect(controls.dy, lessThan(disclaimer.dy));
+      });
+
+      testWidgets('long-pressing the title calls onTitleLongPress', (
+        tester,
+      ) async {
+        var longPresses = 0;
+        when(() => cubit.state).thenReturn(_reading());
+        await tester.pumpWidget(
+          MaterialApp(
+            home: LiveHeartRateScreen(
+              cubit: cubit,
+              onTitleLongPress: () => longPresses++,
+            ),
+          ),
+        );
+        await tester.longPress(find.text('PulseLink'));
+        expect(longPresses, 1);
+      });
+
+      testWidgets('without debug inputs, nothing extra is shown', (
+        tester,
+      ) async {
+        await pumpScreen(tester, _reading());
+        await tester.longPress(find.text('PulseLink'));
+        await tester.pump();
+        expect(find.byType(OutlinedButton), findsNothing);
+      });
+    });
   });
 }

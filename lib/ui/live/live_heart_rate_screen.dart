@@ -9,9 +9,21 @@ import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 /// Live heart rate: the latest bpm, when it arrived, skin contact, and a clear
 /// "no data from strap" state once the reading goes stale.
 class LiveHeartRateScreen extends StatelessWidget {
-  const new({required this.cubit, super.key});
+  const new({
+    required this.cubit,
+    this.debugControls,
+    this.onTitleLongPress,
+    super.key,
+  });
 
   final LiveHeartRateCubit cubit;
+
+  /// Shown just above the disclaimer. Only supplied in non-release builds.
+  final Widget? debugControls;
+
+  /// Called when the title is long-pressed. Only supplied in non-release
+  /// builds.
+  final VoidCallback? onTitleLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +31,10 @@ class LiveHeartRateScreen extends StatelessWidget {
       bloc: cubit,
       builder: (context, state) => Scaffold(
         appBar: AppBar(
-          title: const Text('PulseLink'),
+          title: GestureDetector(
+            onLongPress: onTitleLongPress,
+            child: const Text('PulseLink'),
+          ),
           actions: [if (state.isSimulated) const _DemoBadge()],
         ),
         body: SafeArea(
@@ -36,6 +51,7 @@ class LiveHeartRateScreen extends StatelessWidget {
                     },
                   ),
                 ),
+                ?debugControls,
                 const DisclaimerBanner(),
               ],
             ),
