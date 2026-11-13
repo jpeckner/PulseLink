@@ -48,6 +48,7 @@ plugins:
   pulselink_lints:
     path: tool/pulselink_lints
     diagnostics:
+      no_assertions: true
       no_catch_all_cases: true
       # Every written `dynamic`, not just on parameters as the built-in
       # avoid_annotating_with_dynamic does.

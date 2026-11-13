@@ -199,6 +199,19 @@ void main() {
       });
     });
 
+    test('a sample stamped in the future goes stale 10 s after it arrives', () {
+      _withStartedCubit((async, source, cubit, states) {
+        // As if the clock was set back an hour after the sample was stamped.
+        source.emit(_sampleAt(clock.now().add(const Duration(hours: 1))));
+        async.elapse(
+          const Duration(seconds: 10) - const Duration(milliseconds: 1),
+        );
+        expect((cubit.state as LiveHeartRateReading).isStale, isFalse);
+        async.elapse(const Duration(milliseconds: 1));
+        expect((cubit.state as LiveHeartRateReading).isStale, isTrue);
+      });
+    });
+
     group('unavailable samples', () {
       HeartRateSample unavailableAt(DateTime timestamp) =>
           HeartRateSample.unavailable(
