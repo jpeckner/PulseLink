@@ -36,9 +36,11 @@ class BleStrapScanner implements StrapScanner {
         if (error is PlatformException) {
           sink.add(const .failed(.unavailable));
         } else {
-          // Anything else is a bug, such as a message that doesn't match the
-          // contract. Passed on, so it reaches the zone's error handler
-          // rather than being hidden.
+          // Anything else is a bug, such as the generated cast failing on a
+          // message of the wrong type. Passed on, so it reaches the zone's
+          // error handler rather than being hidden. A message that fails
+          // while being decoded never gets here: Flutter's messenger reports
+          // it with FlutterError.reportError and drops it.
           sink.addError(error, stackTrace);
         }
       },
