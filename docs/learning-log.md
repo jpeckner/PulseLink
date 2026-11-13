@@ -211,3 +211,6 @@ is the point of the no-catch-all rule. The ceiling is a judgment call: adults
 top out around 220 bpm, so 250 leaves headroom while catching corrupt values.
 The debug override gained an "Implausible bpm" condition so the new state can
 be checked on a device.
+Later renamed `BeatsPerMinute` for clarity, along with everything named after
+it: the sample's `beatsPerMinute` field and the `zeroBeatsPerMinute` and
+`implausibleBeatsPerMinute` reasons. On-screen text still says "bpm".

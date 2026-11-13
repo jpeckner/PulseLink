@@ -11,7 +11,7 @@ import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/ui/live/live_heart_rate_screen.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
-import '../helpers/bpm.dart';
+import '../helpers/beats_per_minute.dart';
 
 class _MockLiveHeartRateCubit extends MockCubit<LiveHeartRateState>
     implements LiveHeartRateCubit;
@@ -20,13 +20,13 @@ final _timestamp = DateTime(2026, 11, 11, 10, 52, 31);
 final String _time = DateFormat.jms().format(_timestamp);
 
 LiveHeartRateState _reading({
-  int bpm = 72,
+  int beatsPerMinute = 72,
   SkinContact skinContact = SkinContact.detected,
   bool isStale = false,
   bool isSimulated = false,
 }) => LiveHeartRateState.reading(
   sample: HeartRateSample.measured(
-    bpm: bpmOf(bpm),
+    beatsPerMinute: beatsPerMinuteOf(beatsPerMinute),
     timestamp: _timestamp,
     skinContact: skinContact,
   ),
@@ -207,7 +207,7 @@ void main() {
       ) async {
         await pumpScreen(
           tester,
-          _unavailable(HeartRateUnavailableReason.zeroBpm),
+          _unavailable(HeartRateUnavailableReason.zeroBeatsPerMinute),
         );
         expect(find.text('--'), findsOneWidget);
         expect(find.text('0'), findsNothing);
@@ -220,7 +220,7 @@ void main() {
       ) async {
         await pumpScreen(
           tester,
-          _unavailable(HeartRateUnavailableReason.implausibleBpm),
+          _unavailable(HeartRateUnavailableReason.implausibleBeatsPerMinute),
         );
         expect(find.text('--'), findsOneWidget);
         expect(find.text('Strap reading out of range'), findsOneWidget);
@@ -277,12 +277,12 @@ void main() {
       expect(find.text('--'), findsOneWidget);
 
       // pumpAndSettle: the mocked stream takes a few async hops to arrive.
-      states.add(_reading(bpm: 80));
+      states.add(_reading(beatsPerMinute: 80));
       await tester.pumpAndSettle();
       expect(find.text('80'), findsOneWidget);
       expect(find.text('Updated $_time'), findsOneWidget);
 
-      states.add(_reading(bpm: 80, isStale: true));
+      states.add(_reading(beatsPerMinute: 80, isStale: true));
       await tester.pumpAndSettle();
       expect(find.text('No data from strap'), findsOneWidget);
       expect(find.text('Last reading $_time'), findsOneWidget);
@@ -303,8 +303,8 @@ void main() {
         _reading(isStale: true, isSimulated: true),
         _reading(skinContact: SkinContact.notSupported),
         _unavailable(HeartRateUnavailableReason.noSkinContact),
-        _unavailable(HeartRateUnavailableReason.zeroBpm),
-        _unavailable(HeartRateUnavailableReason.implausibleBpm),
+        _unavailable(HeartRateUnavailableReason.zeroBeatsPerMinute),
+        _unavailable(HeartRateUnavailableReason.implausibleBeatsPerMinute),
         _unavailable(HeartRateUnavailableReason.noSkinContact, isStale: true),
       ]) {
         await pumpScreen(tester, state);

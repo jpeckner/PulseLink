@@ -5,10 +5,10 @@ import 'package:meta/meta.dart';
 ///
 /// Dart can't check the range at compile time, so the only way to get one is
 /// [tryFrom], which returns null for anything else. A measured sample holds a
-/// [Bpm], so no code can show or record a bpm of 0, or a corrupt value such
-/// as 65535, as if it were a heart rate.
+/// [BeatsPerMinute], so no code can show or record a bpm of 0, or a corrupt
+/// value such as 65535, as if it were a heart rate.
 @immutable
-final class Bpm {
+final class BeatsPerMinute {
   const new _(this.value);
 
   /// The highest bpm treated as a real reading. Maximal exercise in adults
@@ -17,13 +17,14 @@ final class Bpm {
   static const max = 250;
 
   /// Returns null if [value] is below 1 or above [max].
-  static Bpm? tryFrom(int value) =>
-      value >= 1 && value <= max ? Bpm._(value) : null;
+  static BeatsPerMinute? tryFrom(int value) =>
+      value >= 1 && value <= max ? BeatsPerMinute._(value) : null;
 
   final int value;
 
   @override
-  bool operator ==(Object other) => other is Bpm && other.value == value;
+  bool operator ==(Object other) =>
+      other is BeatsPerMinute && other.value == value;
 
   @override
   int get hashCode => value.hashCode;
