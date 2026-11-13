@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:pulselink/domain/bpm.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
-import 'package:pulselink/domain/positive_int.dart';
 
 part 'heart_rate_measurement_parser.freezed.dart';
 
@@ -43,10 +43,10 @@ const _rrIntervalsPresent = 0x10;
 /// little-endian. Energy Expended is checked for length but skipped. RR
 /// intervals arrive in units of 1/1024 s and are converted to [Duration]s.
 ///
-/// A well-formed packet with no skin contact or a bpm of 0 becomes an
-/// [UnavailableHeartRateSample] (no skin contact wins if both apply), and its
-/// bpm and RR intervals are dropped. Everything else is a
-/// [MeasuredHeartRateSample].
+/// A well-formed packet with no skin contact, a bpm of 0 or a bpm above
+/// [Bpm.max] becomes an [UnavailableHeartRateSample] (no skin contact wins if
+/// it applies too), and its bpm and RR intervals are dropped. Everything else
+/// is a [MeasuredHeartRateSample].
 HeartRateParseResult parseHeartRateMeasurement(
   Uint8List packet, {
   required DateTime timestamp,
@@ -93,7 +93,7 @@ HeartRateParseResult parseHeartRateMeasurement(
   // Bit 1 means nothing unless bit 2 is set.
   final skinContactSupported = flags & _skinContactSupported != 0;
   final skinContactDetected = flags & _skinContactDetected != 0;
-  final bpm = PositiveInt.tryFrom(rawBpm);
+  final bpm = Bpm.tryFrom(rawBpm);
   final HeartRateSample sample;
   if (skinContactSupported && !skinContactDetected) {
     sample = HeartRateSample.unavailable(
@@ -103,7 +103,10 @@ HeartRateParseResult parseHeartRateMeasurement(
   } else if (bpm == null) {
     sample = HeartRateSample.unavailable(
       timestamp: timestamp,
-      reason: HeartRateUnavailableReason.zeroBpm,
+      // The raw value is unsigned, so out of Bpm's range means 0 or too high.
+      reason: rawBpm == 0
+          ? HeartRateUnavailableReason.zeroBpm
+          : HeartRateUnavailableReason.implausibleBpm,
     );
   } else {
     sample = HeartRateSample.measured(

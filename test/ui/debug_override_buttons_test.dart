@@ -53,6 +53,7 @@ void main() {
         'Override: No data (stale)',
         'Override: No skin contact',
         'Override: Zero bpm',
+        'Override: Implausible bpm',
         'Override: Normal',
       ]) {
         await tester.tap(find.textContaining('Override:'));
@@ -71,6 +72,7 @@ void main() {
       for (final label in [
         'Override: No data (stale)',
         'Override: Zero bpm',
+        'Override: Implausible bpm',
         'Override: Normal',
       ]) {
         await tester.tap(find.textContaining('Override:'));
