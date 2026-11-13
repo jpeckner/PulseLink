@@ -7,11 +7,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
 import 'package:pulselink/data/heart_rate_source.dart';
+import 'package:pulselink/domain/bluetooth_problem.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
 
 import '../helpers/beats_per_minute.dart';
 import '../helpers/failing_heart_rate_source.dart';
+import '../helpers/strap_connection_failures.dart';
 import '../helpers/stub_heart_rate_source.dart';
 
 final _start = DateTime(2026, 11, 11, 10);
@@ -92,9 +94,9 @@ void main() {
         expect: () => [isA<LiveHeartRateReading>()],
       );
 
-      for (final failure in StrapConnectionFailure.values) {
+      for (final failure in allStrapConnectionFailures) {
         blocTest<LiveHeartRateCubit, LiveHeartRateState>(
-          'a source that fails to start (${failure.name}) shows why',
+          'a source that fails to start ($failure) shows why',
           build: () {
             source.startResult = HeartRateSourceStartResult.failed(failure);
             return LiveHeartRateCubit(source: source);
@@ -123,7 +125,7 @@ void main() {
         'retrying after a failure waits again, then shows the new outcome',
         build: () {
           source.startResult = const HeartRateSourceStartResult.failed(
-            StrapConnectionFailure.bluetoothOff,
+            StrapConnectionFailure.bluetooth(BluetoothProblem.off),
           );
           return LiveHeartRateCubit(source: source);
         },
@@ -135,7 +137,7 @@ void main() {
         },
         expect: () => [
           const LiveHeartRateState.connectionFailed(
-            failure: StrapConnectionFailure.bluetoothOff,
+            failure: StrapConnectionFailure.bluetooth(BluetoothProblem.off),
             isSimulated: false,
           ),
           const LiveHeartRateState.waiting(isSimulated: false),
@@ -148,7 +150,7 @@ void main() {
         'retrying keeps a single subscription',
         build: () {
           source.startResult = const HeartRateSourceStartResult.failed(
-            StrapConnectionFailure.strapUnreachable,
+            StrapConnectionFailure.strapUnreachable(),
           );
           return LiveHeartRateCubit(source: source);
         },
@@ -172,7 +174,7 @@ void main() {
         final source = StubHeartRateSource()
           ..holdStart = true
           ..startResult = const HeartRateSourceStartResult.failed(
-            StrapConnectionFailure.strapUnreachable,
+            StrapConnectionFailure.strapUnreachable(),
           );
         final cubit = LiveHeartRateCubit(source: source);
         final states = <LiveHeartRateState>[];
@@ -196,7 +198,7 @@ void main() {
         // its contract, still can't make the closed cubit emit.
         final source = _StartsAfterStopSource()
           ..startResult = const HeartRateSourceStartResult.failed(
-            StrapConnectionFailure.bluetoothOff,
+            StrapConnectionFailure.bluetooth(BluetoothProblem.off),
           );
         final cubit = LiveHeartRateCubit(source: source);
         final states = <LiveHeartRateState>[];

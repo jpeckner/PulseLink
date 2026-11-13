@@ -1,21 +1,20 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:pulselink/domain/bluetooth_problem.dart';
+
+part 'strap_connection_failure.freezed.dart';
+
 /// Why the app couldn't get heart-rate data from a strap. Each is an expected
 /// outcome that the screen explains, not an error.
-enum StrapConnectionFailure {
-  /// Bluetooth is turned off.
-  bluetoothOff,
-
-  /// This phone can't use Bluetooth LE, or the app doesn't support it on this
-  /// platform yet.
-  bluetoothUnavailable,
-
-  /// The user hasn't allowed the app to use Bluetooth.
-  bluetoothPermissionDenied,
+@freezed
+sealed class StrapConnectionFailure with _$StrapConnectionFailure {
+  /// The phone can't use Bluetooth, for the reason in [problem].
+  const factory bluetooth(BluetoothProblem problem) = BluetoothFailure;
 
   /// The strap couldn't be reached: it's off, out of range, or connected to
   /// another app.
-  strapUnreachable,
+  const factory strapUnreachable() = StrapUnreachable;
 
   /// The device doesn't offer the standard Heart Rate Service, so it isn't a
   /// heart-rate strap.
-  notAHeartRateStrap,
+  const factory notAHeartRateStrap() = NotAHeartRateStrap;
 }
