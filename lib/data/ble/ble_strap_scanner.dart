@@ -5,6 +5,8 @@ import 'package:pulselink/data/ble/ble_api.pigeon.dart';
 import 'package:pulselink/data/strap_scanner.dart';
 import 'package:pulselink/domain/bluetooth_problem.dart';
 import 'package:pulselink/domain/discovered_strap.dart';
+import 'package:pulselink/domain/strap_ble_identifier.dart';
+import 'package:pulselink/domain/strap_ble_name.dart';
 
 /// A [StrapScanner] backed by the phone's own Bluetooth stack, through the
 /// Pigeon contract in pigeons/ble_api.dart: CoreBluetooth on iOS, and
@@ -22,7 +24,11 @@ class BleStrapScanner implements StrapScanner {
   @override
   Stream<StrapScanEvent> scan() => _events.transform(
     StreamTransformer.fromHandlers(
-      handleData: (event, sink) => sink.add(_toScanEvent(event)),
+      handleData: (event, sink) {
+        if (_toScanEvent(event) case final scanEvent?) {
+          sink.add(scanEvent);
+        }
+      },
       handleError: (error, stackTrace, sink) {
         // The native side reports expected failures as BleScanFailed events,
         // so a PlatformException means the channel itself failed, such as a
@@ -39,11 +45,10 @@ class BleStrapScanner implements StrapScanner {
     ),
   );
 
-  static StrapScanEvent _toScanEvent(BleScanEvent event) => switch (event) {
+  /// The domain event for [event], or null if it should be left out.
+  static StrapScanEvent? _toScanEvent(BleScanEvent event) => switch (event) {
     BleScanStarted() => const .scanning(),
-    BleStrapFound(:final id, :final name) => .found(
-      DiscoveredStrap(id: id, name: _nonBlank(name)),
-    ),
+    BleStrapFound(:final id, :final name) => _strapFound(id, name),
     BleScanFailed(:final reason) => .failed(switch (reason) {
       BleScanFailureReason.poweredOff => BluetoothProblem.off,
       BleScanFailureReason.unauthorized => BluetoothProblem.permissionDenied,
@@ -51,10 +56,19 @@ class BleStrapScanner implements StrapScanner {
     }),
   };
 
-  /// [name] with surrounding whitespace removed, or null if nothing's left:
-  /// a strap that advertises a blank name has no name to show.
-  static String? _nonBlank(String? name) {
-    final trimmed = name?.trim();
-    return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
+  /// A strap found, or null if the native side gave it a blank identifier:
+  /// a strap the app can't identify can't be connected to, so it isn't
+  /// listed. A blank name means the strap has none to show.
+  static StrapScanEvent? _strapFound(String id, String? name) {
+    final strapId = StrapBleIdentifier.tryFrom(id);
+    if (strapId == null) {
+      return null;
+    }
+    return StrapScanEvent.found(
+      DiscoveredStrap(
+        id: strapId,
+        name: name == null ? null : StrapBleName.tryFrom(name),
+      ),
+    );
   }
 }

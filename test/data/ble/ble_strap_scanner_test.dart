@@ -6,7 +6,8 @@ import 'package:pulselink/data/ble/ble_api.pigeon.dart';
 import 'package:pulselink/data/ble/ble_strap_scanner.dart';
 import 'package:pulselink/data/strap_scanner.dart';
 import 'package:pulselink/domain/bluetooth_problem.dart';
-import 'package:pulselink/domain/discovered_strap.dart';
+
+import '../../helpers/discovered_strap.dart';
 
 void main() {
   group('BleStrapScanner', () {
@@ -42,10 +43,10 @@ void main() {
         );
         await expectLater(
           BleStrapScanner().scan(),
-          emitsInOrder(const [
-            StrapScanEvent.scanning(),
-            StrapScanEvent.found(DiscoveredStrap(id: 'strap-1', name: 'TICKR')),
-            StrapScanEvent.failed(BluetoothProblem.off),
+          emitsInOrder([
+            const StrapScanEvent.scanning(),
+            StrapScanEvent.found(discoveredStrapOf('strap-1', 'TICKR')),
+            const StrapScanEvent.failed(BluetoothProblem.off),
           ]),
         );
       });
@@ -99,8 +100,8 @@ void main() {
       listen();
       platform.add(BleStrapFound(id: 'strap-1', name: 'Polar H10 12345678'));
       expect(events, [
-        const StrapScanEvent.found(
-          DiscoveredStrap(id: 'strap-1', name: 'Polar H10 12345678'),
+        StrapScanEvent.found(
+          discoveredStrapOf('strap-1', 'Polar H10 12345678'),
         ),
       ]);
     });
@@ -117,10 +118,21 @@ void main() {
           listen();
           platform.add(BleStrapFound(id: 'strap-1', name: advertised));
           expect(events, [
-            StrapScanEvent.found(DiscoveredStrap(id: 'strap-1', name: shown)),
+            StrapScanEvent.found(discoveredStrapOf('strap-1', shown)),
           ]);
         });
       }
+    });
+
+    test('leaves out a strap with a blank identifier', () {
+      listen();
+      platform
+        ..add(BleStrapFound(id: '', name: 'No id'))
+        ..add(BleStrapFound(id: '   ', name: 'Blank id'))
+        ..add(BleStrapFound(id: 'strap-1', name: 'TICKR'));
+      expect(events, [
+        StrapScanEvent.found(discoveredStrapOf('strap-1', 'TICKR')),
+      ]);
     });
 
     group('a failure', () {
