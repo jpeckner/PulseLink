@@ -60,7 +60,8 @@ class FailingHeartRateSource implements HeartRateSource {
   };
 
   @override
-  Future<void> start() async {}
+  Future<HeartRateSourceStartResult> start() async =>
+      const HeartRateSourceStartResult.started();
 
   @override
   Future<void> stop() => switch (_failure) {

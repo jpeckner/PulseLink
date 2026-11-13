@@ -6,7 +6,9 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
+import 'package:pulselink/data/heart_rate_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/strap_connection_failure.dart';
 
 import '../helpers/beats_per_minute.dart';
 import '../helpers/failing_heart_rate_source.dart';
@@ -89,6 +91,124 @@ void main() {
         },
         expect: () => [isA<LiveHeartRateReading>()],
       );
+
+      for (final failure in StrapConnectionFailure.values) {
+        blocTest<LiveHeartRateCubit, LiveHeartRateState>(
+          'a source that fails to start (${failure.name}) shows why',
+          build: () {
+            source.startResult = HeartRateSourceStartResult.failed(failure);
+            return LiveHeartRateCubit(source: source);
+          },
+          act: (cubit) => cubit.start(),
+          expect: () => [
+            LiveHeartRateState.connectionFailed(
+              failure: failure,
+              isSimulated: false,
+            ),
+          ],
+        );
+      }
+
+      blocTest<LiveHeartRateCubit, LiveHeartRateState>(
+        'a cancelled start shows nothing new',
+        build: () {
+          source.startResult = const HeartRateSourceStartResult.cancelled();
+          return LiveHeartRateCubit(source: source);
+        },
+        act: (cubit) => cubit.start(),
+        expect: () => <LiveHeartRateState>[],
+      );
+
+      blocTest<LiveHeartRateCubit, LiveHeartRateState>(
+        'retrying after a failure waits again, then shows the new outcome',
+        build: () {
+          source.startResult = const HeartRateSourceStartResult.failed(
+            StrapConnectionFailure.bluetoothOff,
+          );
+          return LiveHeartRateCubit(source: source);
+        },
+        act: (cubit) async {
+          await cubit.start();
+          source.startResult = const HeartRateSourceStartResult.started();
+          await cubit.start();
+          source.emit(_sampleAt(clock.now()));
+        },
+        expect: () => [
+          const LiveHeartRateState.connectionFailed(
+            failure: StrapConnectionFailure.bluetoothOff,
+            isSimulated: false,
+          ),
+          const LiveHeartRateState.waiting(isSimulated: false),
+          isA<LiveHeartRateReading>(),
+        ],
+        verify: (_) => expect(source.startCount, 2),
+      );
+
+      blocTest<LiveHeartRateCubit, LiveHeartRateState>(
+        'retrying keeps a single subscription',
+        build: () {
+          source.startResult = const HeartRateSourceStartResult.failed(
+            StrapConnectionFailure.strapUnreachable,
+          );
+          return LiveHeartRateCubit(source: source);
+        },
+        act: (cubit) async {
+          await cubit.start();
+          source.startResult = const HeartRateSourceStartResult.started();
+          await cubit.start();
+          source.emit(_sampleAt(clock.now()));
+        },
+        // One reading per sample: a second subscription would add another.
+        expect: () => [
+          isA<LiveHeartRateConnectionFailed>(),
+          isA<LiveHeartRateWaiting>(),
+          isA<LiveHeartRateReading>(),
+        ],
+      );
+    });
+
+    group('closing while the source is still starting', () {
+      test('cancels the start and emits nothing afterwards', () async {
+        final source = StubHeartRateSource()
+          ..holdStart = true
+          ..startResult = const HeartRateSourceStartResult.failed(
+            StrapConnectionFailure.strapUnreachable,
+          );
+        final cubit = LiveHeartRateCubit(source: source);
+        final states = <LiveHeartRateState>[];
+        cubit.stream.listen(states.add);
+
+        final start = cubit.start();
+        expect(source.isStarting, isTrue);
+        await cubit.close();
+
+        // close() stopped the source, which cancelled the start, so start()
+        // finishes without emitting into the closed cubit (which would
+        // throw) and without showing the failure it would have reported.
+        await start;
+        expect(source.isStarting, isFalse);
+        expect(source.stopCount, 1);
+        expect(states, isEmpty);
+      });
+
+      test('a start that finishes after close emits nothing', () async {
+        // A source that ignores stop() and finishes starting anyway, against
+        // its contract, still can't make the closed cubit emit.
+        final source = _StartsAfterStopSource()
+          ..startResult = const HeartRateSourceStartResult.failed(
+            StrapConnectionFailure.bluetoothOff,
+          );
+        final cubit = LiveHeartRateCubit(source: source);
+        final states = <LiveHeartRateState>[];
+        cubit.stream.listen(states.add);
+
+        final start = cubit.start();
+        await cubit.close();
+        source.finishStart();
+
+        await start;
+        expect(states, isEmpty);
+      });
     });
 
     test('emits a fresh reading for each sample', () {
@@ -354,6 +474,30 @@ void main() {
       expect(source.hasListener, isFalse);
     });
   });
+}
+
+/// Breaks the [HeartRateSource] contract on purpose: stop() doesn't cancel a
+/// start in progress, so the test can finish it after the cubit closed.
+class _StartsAfterStopSource extends StubHeartRateSource {
+  new() {
+    holdStart = true;
+  }
+
+  Completer<HeartRateSourceStartResult>? _pending;
+
+  @override
+  Future<HeartRateSourceStartResult> start() {
+    startCount++;
+    final pending = Completer<HeartRateSourceStartResult>();
+    _pending = pending;
+    return pending.future;
+  }
+
+  @override
+  void finishStart() => _pending?.complete(startResult);
+
+  @override
+  Future<void> stop() async => stopCount++;
 }
 
 /// Like a real BLE source, a sample can still arrive while [stop] is in flight.

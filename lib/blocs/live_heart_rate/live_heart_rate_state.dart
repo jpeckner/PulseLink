@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/strap_connection_failure.dart';
 
 part 'live_heart_rate_state.freezed.dart';
 
@@ -16,4 +17,11 @@ sealed class LiveHeartRateState with _$LiveHeartRateState {
     required bool isStale,
     required bool isSimulated,
   }) = LiveHeartRateReading;
+
+  /// The source couldn't start, for the reason in [failure]. No samples will
+  /// arrive until it's started again.
+  const factory connectionFailed({
+    required StrapConnectionFailure failure,
+    required bool isSimulated,
+  }) = LiveHeartRateConnectionFailed;
 }

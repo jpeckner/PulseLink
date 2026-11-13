@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/strap_connection_failure.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
 /// Live heart rate: the latest bpm, when it arrived, skin contact, and a clear
@@ -56,6 +59,16 @@ class LiveHeartRateScreen extends StatelessWidget {
                           LiveHeartRateWaiting() => const _WaitingView(),
                           LiveHeartRateReading(:final sample, :final isStale) =>
                             _ReadingView(sample: sample, isStale: isStale),
+                          LiveHeartRateConnectionFailed(:final failure) =>
+                            _ConnectionFailedView(
+                              failure: failure,
+                              // Not awaited: start() reports how it went by
+                              // changing the cubit's state, which this screen
+                              // already shows. It only throws on a bug in a
+                              // source, which is left to the zone's error
+                              // handler (see main.dart).
+                              onTryAgain: () => unawaited(cubit.start()),
+                            ),
                         },
                       ),
                       if (debugControls case final controls?)
@@ -90,6 +103,59 @@ class _WaitingView extends StatelessWidget {
           'Waiting for heart-rate data…',
           style: Theme.of(context).textTheme.bodyLarge,
         ),
+      ],
+    );
+  }
+}
+
+/// Why there's no heart rate, what to do about it, and a way to retry.
+class _ConnectionFailedView extends StatelessWidget {
+  const new({required this.failure, required this.onTryAgain});
+
+  final StrapConnectionFailure failure;
+  final VoidCallback onTryAgain;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final (icon, title, detail) = switch (failure) {
+      StrapConnectionFailure.bluetoothOff => (
+        Icons.bluetooth_disabled,
+        'Bluetooth is off',
+        'Turn on Bluetooth to connect to your strap.',
+      ),
+      StrapConnectionFailure.bluetoothUnavailable => (
+        Icons.bluetooth_disabled,
+        "Bluetooth isn't available",
+        "This phone can't connect to a heart-rate strap.",
+      ),
+      StrapConnectionFailure.bluetoothPermissionDenied => (
+        Icons.lock_outline,
+        'Bluetooth permission needed',
+        'Allow PulseLink to use Bluetooth in Settings, then try again.',
+      ),
+      StrapConnectionFailure.strapUnreachable => (
+        Icons.sensors_off,
+        "Can't reach the strap",
+        "Make sure it's on, being worn and nearby, and not connected to "
+            'another app.',
+      ),
+      StrapConnectionFailure.notAHeartRateStrap => (
+        Icons.heart_broken_outlined,
+        'Not a heart-rate strap',
+        "This device doesn't send heart-rate data.",
+      ),
+    };
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 48, color: theme.colorScheme.error),
+        const SizedBox(height: 16),
+        Text(title, style: theme.textTheme.titleLarge, textAlign: .center),
+        const SizedBox(height: 8),
+        Text(detail, style: theme.textTheme.bodyLarge, textAlign: .center),
+        const SizedBox(height: 24),
+        FilledButton(onPressed: onTryAgain, child: const Text('Try again')),
       ],
     );
   }

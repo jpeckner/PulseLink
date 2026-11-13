@@ -139,7 +139,7 @@ class DebugOverrideHeartRateSource implements HeartRateSource {
   Stream<HeartRateSample> get samples => _inner.samples.expand(_apply);
 
   @override
-  Future<void> start() => _inner.start();
+  Future<HeartRateSourceStartResult> start() => _inner.start();
 
   @override
   Future<void> stop() => _inner.stop();

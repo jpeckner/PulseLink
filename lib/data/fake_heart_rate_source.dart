@@ -36,13 +36,16 @@ class FakeHeartRateSource implements HeartRateSource {
   @override
   Stream<HeartRateSample> get samples => _controller.stream;
 
-  /// Does nothing after [dispose].
+  /// Starts at once, so it's never still starting when [stop] is called.
+  /// After [dispose], it does nothing and completes with
+  /// [HeartRateSourceStartCancelled].
   @override
-  Future<void> start() async {
+  Future<HeartRateSourceStartResult> start() async {
     if (_controller.isClosed) {
-      return;
+      return const HeartRateSourceStartResult.cancelled();
     }
     _timer ??= Timer.periodic(interval, (_) => _emitSample());
+    return const HeartRateSourceStartResult.started();
   }
 
   @override
