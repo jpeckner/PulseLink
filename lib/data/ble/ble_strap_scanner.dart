@@ -38,9 +38,18 @@ class BleStrapScanner implements StrapScanner {
         } else {
           // Anything else is a bug, such as the generated cast failing on a
           // message of the wrong type. Passed on, so it reaches the zone's
-          // error handler rather than being hidden. A message that fails
-          // while being decoded never gets here: Flutter's messenger reports
-          // it with FlutterError.reportError and drops it.
+          // error handler rather than being hidden.
+          //
+          // A message that fails while being decoded never gets here:
+          // Flutter's messenger reports it with FlutterError.reportError and
+          // drops it. That's acceptable because decoding only fails if the
+          // generated Dart and native code came from different versions of
+          // pigeons/ble_api.dart, which tool/pigeon.sh (it generates all
+          // three together) and CI's generated-code check prevent. And an
+          // unreadable message has nothing in it the app could act on. If it
+          // ever happened, the report would show it in the logs, and the
+          // worst case is one missed event, such as the picker still showing
+          // that it's looking.
           sink.addError(error, stackTrace);
         }
       },
