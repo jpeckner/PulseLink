@@ -15,10 +15,9 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$DiscoveredStrap {
 
-/// Identifies the strap to the phone's Bluetooth stack, so it can be
-/// connected to later. Only meaningful on the phone that found it.
- String get id;/// The name the strap advertises, or null if it doesn't advertise one.
- String? get name;
+/// Identifies the strap, so it can be connected to later.
+ StrapBleIdentifier get id;/// The name the strap advertises, or null if it doesn't advertise one.
+ StrapBleName? get name;
 /// Create a copy of DiscoveredStrap
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -54,7 +53,7 @@ abstract mixin class $DiscoveredStrapCopyWith<$Res>  {
   factory $DiscoveredStrapCopyWith(DiscoveredStrap value, $Res Function(DiscoveredStrap) _then) = _$DiscoveredStrapCopyWithImpl;
 @useResult
 $Res call({
- String id, String? name
+ StrapBleIdentifier id, StrapBleName? name
 });
 
 
@@ -74,8 +73,8 @@ class _$DiscoveredStrapCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = freezed,}) {
   return _then(DiscoveredStrap(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String?,
+as StrapBleIdentifier,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as StrapBleName?,
   ));
 }
 
@@ -160,7 +159,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? name)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( StrapBleIdentifier id,  StrapBleName? name)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DiscoveredStrap() when $default != null:
 return $default(_that.id,_that.name);case _:
@@ -181,7 +180,7 @@ return $default(_that.id,_that.name);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? name)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( StrapBleIdentifier id,  StrapBleName? name)  $default,) {final _that = this;
 switch (_that) {
 case _DiscoveredStrap():
 return $default(_that.id,_that.name);case _:
@@ -201,7 +200,7 @@ return $default(_that.id,_that.name);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? name)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( StrapBleIdentifier id,  StrapBleName? name)?  $default,) {final _that = this;
 switch (_that) {
 case _DiscoveredStrap() when $default != null:
 return $default(_that.id,_that.name);case _:
@@ -219,11 +218,10 @@ class _DiscoveredStrap implements DiscoveredStrap {
   const _DiscoveredStrap({required this.id, required this.name});
   
 
-/// Identifies the strap to the phone's Bluetooth stack, so it can be
-/// connected to later. Only meaningful on the phone that found it.
-@override final  String id;
+/// Identifies the strap, so it can be connected to later.
+@override final  StrapBleIdentifier id;
 /// The name the strap advertises, or null if it doesn't advertise one.
-@override final  String? name;
+@override final  StrapBleName? name;
 
 /// Create a copy of DiscoveredStrap
 /// with the given fields replaced by the non-null parameter values.
@@ -257,7 +255,7 @@ abstract mixin class _$DiscoveredStrapCopyWith<$Res> implements $DiscoveredStrap
   factory _$DiscoveredStrapCopyWith(_DiscoveredStrap value, $Res Function(_DiscoveredStrap) _then) = __$DiscoveredStrapCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String? name
+ StrapBleIdentifier id, StrapBleName? name
 });
 
 
@@ -277,8 +275,8 @@ class __$DiscoveredStrapCopyWithImpl<$Res>
 @override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = freezed,}) {
   return _then(_DiscoveredStrap(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String?,
+as StrapBleIdentifier,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as StrapBleName?,
   ));
 }
 

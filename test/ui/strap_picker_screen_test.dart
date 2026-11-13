@@ -2,10 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/data/strap_scanner.dart';
 import 'package:pulselink/domain/bluetooth_problem.dart';
-import 'package:pulselink/domain/discovered_strap.dart';
 import 'package:pulselink/ui/picker/strap_picker_screen.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
+import '../helpers/discovered_strap.dart';
 import '../helpers/stub_strap_scanner.dart';
 
 void main() {
@@ -31,8 +31,8 @@ void main() {
     ) async {
       await pumpScreen(tester);
       scanner
-        ..emit(const .found(DiscoveredStrap(id: 'polar', name: 'Polar H10')))
-        ..emit(const .found(DiscoveredStrap(id: 'other', name: null)));
+        ..emit(.found(discoveredStrapOf('polar', 'Polar H10')))
+        ..emit(.found(discoveredStrapOf('other')));
       await tester.pump();
       expect(find.text('Polar H10'), findsOneWidget);
       expect(find.text('Unnamed heart-rate strap'), findsOneWidget);
@@ -112,9 +112,9 @@ void main() {
         const StrapScanEvent.scanning(),
         for (var i = 0; i < 20; i++)
           StrapScanEvent.found(
-            DiscoveredStrap(
-              id: 'strap-$i',
-              name: 'A heart-rate strap with a very long name, number $i',
+            discoveredStrapOf(
+              'strap-$i',
+              'A heart-rate strap with a very long name, number $i',
             ),
           ),
         for (final problem in BluetoothProblem.values)

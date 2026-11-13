@@ -107,7 +107,7 @@ class _StrapList extends StatelessWidget {
               for (final strap in straps)
                 ListTile(
                   leading: const Icon(Icons.monitor_heart_outlined),
-                  title: Text(strap.name ?? 'Unnamed heart-rate strap'),
+                  title: Text(strap.name?.value ?? 'Unnamed heart-rate strap'),
                 ),
             ],
           ),

@@ -1,4 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:pulselink/domain/strap_ble_identifier.dart';
+import 'package:pulselink/domain/strap_ble_name.dart';
 
 part 'discovered_strap.freezed.dart';
 
@@ -6,11 +8,10 @@ part 'discovered_strap.freezed.dart';
 @freezed
 abstract class DiscoveredStrap with _$DiscoveredStrap {
   const factory({
-    /// Identifies the strap to the phone's Bluetooth stack, so it can be
-    /// connected to later. Only meaningful on the phone that found it.
-    required String id,
+    /// Identifies the strap, so it can be connected to later.
+    required StrapBleIdentifier id,
 
     /// The name the strap advertises, or null if it doesn't advertise one.
-    required String? name,
+    required StrapBleName? name,
   }) = _DiscoveredStrap;
 }

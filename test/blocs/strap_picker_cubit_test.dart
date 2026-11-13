@@ -6,10 +6,11 @@ import 'package:pulselink/data/strap_scanner.dart';
 import 'package:pulselink/domain/bluetooth_problem.dart';
 import 'package:pulselink/domain/discovered_strap.dart';
 
+import '../helpers/discovered_strap.dart';
 import '../helpers/stub_strap_scanner.dart';
 
-const _polar = DiscoveredStrap(id: 'polar', name: 'Polar H10');
-const _tickr = DiscoveredStrap(id: 'tickr', name: 'TICKR');
+final DiscoveredStrap _polar = discoveredStrapOf('polar', 'Polar H10');
+final DiscoveredStrap _tickr = discoveredStrapOf('tickr', 'TICKR');
 
 void main() {
   group('StrapPickerCubit', () {
@@ -40,10 +41,10 @@ void main() {
         cubit.start();
         scanner
           ..emit(const .scanning())
-          ..emit(const .found(_polar))
-          ..emit(const .found(_tickr));
+          ..emit(.found(_polar))
+          ..emit(.found(_tickr));
       },
-      expect: () => const [
+      expect: () => [
         StrapPickerState.scanning(straps: [_polar]),
         StrapPickerState.scanning(straps: [_polar, _tickr]),
       ],
@@ -55,21 +56,16 @@ void main() {
       act: (cubit) {
         cubit.start();
         scanner
-          ..emit(const .found(_polar))
-          ..emit(const .found(_tickr))
-          ..emit(
-            const .found(DiscoveredStrap(id: 'polar', name: 'Polar H10 2')),
-          )
-          ..emit(const .found(_tickr));
+          ..emit(.found(_polar))
+          ..emit(.found(_tickr))
+          ..emit(.found(discoveredStrapOf('polar', 'Polar H10 2')))
+          ..emit(.found(_tickr));
       },
-      expect: () => const [
+      expect: () => [
         StrapPickerState.scanning(straps: [_polar]),
         StrapPickerState.scanning(straps: [_polar, _tickr]),
         StrapPickerState.scanning(
-          straps: [
-            DiscoveredStrap(id: 'polar', name: 'Polar H10 2'),
-            _tickr,
-          ],
+          straps: [discoveredStrapOf('polar', 'Polar H10 2'), _tickr],
         ),
         // The same strap again changes nothing, so nothing is emitted.
       ],
@@ -83,11 +79,11 @@ void main() {
         act: (cubit) {
           cubit.start();
           scanner
-            ..emit(const .found(_polar))
+            ..emit(.found(_polar))
             ..emit(StrapScanEvent.failed(problem));
         },
         expect: () => [
-          const StrapPickerState.scanning(straps: [_polar]),
+          StrapPickerState.scanning(straps: [_polar]),
           StrapPickerState.failed(problem),
         ],
       );
@@ -99,15 +95,15 @@ void main() {
       act: (cubit) {
         cubit.start();
         scanner
-          ..emit(const .found(_polar))
+          ..emit(.found(_polar))
           ..emit(const .failed(.off))
           ..emit(const .scanning())
-          ..emit(const .found(_tickr));
+          ..emit(.found(_tickr));
       },
-      expect: () => const [
+      expect: () => [
         StrapPickerState.scanning(straps: [_polar]),
-        StrapPickerState.failed(.off),
-        StrapPickerState.scanning(straps: []),
+        const StrapPickerState.failed(.off),
+        const StrapPickerState.scanning(straps: []),
         StrapPickerState.scanning(straps: [_tickr]),
       ],
     );
@@ -119,10 +115,10 @@ void main() {
         cubit.start();
         scanner
           ..emit(const .failed(.off))
-          ..emit(const .found(_tickr));
+          ..emit(.found(_tickr));
       },
-      expect: () => const [
-        StrapPickerState.failed(.off),
+      expect: () => [
+        const StrapPickerState.failed(.off),
         StrapPickerState.scanning(straps: [_tickr]),
       ],
     );
@@ -132,7 +128,7 @@ void main() {
       build: () => StrapPickerCubit(scanner: scanner),
       act: (cubit) {
         cubit.start();
-        scanner.emit(const .found(_polar));
+        scanner.emit(.found(_polar));
       },
       verify: (cubit) {
         switch (cubit.state) {
