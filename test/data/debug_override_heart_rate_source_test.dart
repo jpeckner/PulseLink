@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/data/debug_override_heart_rate_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 
+import '../helpers/failing_heart_rate_source.dart';
 import '../helpers/positive_int.dart';
 import '../helpers/stub_heart_rate_source.dart';
 
@@ -270,4 +271,48 @@ void main() {
       expect(inner.isDisposed, isTrue);
     });
   });
+
+  group('DebugOverrideHeartRateSource passes cleanup errors on when', () {
+    // Passing the source's stop as a function lets the matcher catch an
+    // error thrown before a future is returned, as well as a failed future.
+    for (final failure in [
+      HeartRateSourceFailure.stop,
+      HeartRateSourceFailure.stopBeforeFuture,
+    ]) {
+      test(failure.description, () async {
+        final source = DebugOverrideHeartRateSource(
+          FailingHeartRateSource(failure),
+        );
+        await expectLater(source.stop, throwsA(same(heartRateSourceFailure)));
+      });
+    }
+
+    for (final throwsBeforeFuture in [false, true]) {
+      final description = throwsBeforeFuture
+          ? 'dispose() throws before returning a future'
+          : 'dispose() fails';
+      test(description, () async {
+        final source = DebugOverrideHeartRateSource(
+          _FailingDisposeSource(throwsBeforeFuture: throwsBeforeFuture),
+        );
+        await expectLater(
+          source.dispose,
+          throwsA(same(heartRateSourceFailure)),
+        );
+      });
+    }
+  });
+}
+
+/// A source whose dispose() fails, either with a failed future or by throwing
+/// before it returns one.
+class _FailingDisposeSource extends StubHeartRateSource {
+  new({required this.throwsBeforeFuture});
+
+  final bool throwsBeforeFuture;
+
+  @override
+  Future<void> dispose() => throwsBeforeFuture
+      ? throw heartRateSourceFailure
+      : Future.error(heartRateSourceFailure);
 }
