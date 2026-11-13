@@ -43,6 +43,18 @@ work, and wait for explicit sign-off before proceeding any further. Once
 approved, leave a short comment at that line explaining why it's needed, and
 ignore the lint there.
 
+Native code (Swift in `ios/`, Kotlin in `android/`) follows the same rule,
+though no lint enforces it there yet:
+
+- Swift: no `!` force unwraps, `as!` casts, implicitly unwrapped optionals
+  (`Type!`) or `try!`, and no `fatalError`, `precondition` or `assert`. Use
+  `if let`, `guard let`, `as?` and `try?` or `do`/`catch`. Switch on the
+  app's own enums without `default`. The `@unknown default` Swift requires
+  for Apple's enums is fine, with a comment saying what it does and why.
+- Kotlin: no `!!`, unchecked `as` casts or `lateinit`, and no `error()`,
+  `require` or `check`. Use `?.`, `?:`, `as?` and `firstOrNull()`. Write
+  `when` on sealed classes and enums without `else`.
+
 ## Error handling
 
 Handle errors on purpose. Dart has no checked exceptions and no lint can tell
