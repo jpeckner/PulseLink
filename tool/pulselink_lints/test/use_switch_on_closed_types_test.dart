@@ -121,7 +121,45 @@ void f(S s, bool b) {
   Future<void> test_is_nullableSealedSubtype() =>
       _expectLint('bool f(S? s) => s is A;\n', 's is A');
 
+  // Flagged: ==.
+
+  Future<void> test_equals_enumConstant() =>
+      _expectLint('bool f(E e) => e == E.a;\n', 'e == E.a');
+
+  Future<void> test_notEquals_enumConstant() =>
+      _expectLint('bool f(E e) => e != E.a;\n', 'e != E.a');
+
+  Future<void> test_equals_enumConstantOnLeft() =>
+      _expectLint('bool f(E e) => E.a == e;\n', 'E.a == e');
+
+  Future<void> test_equals_nullableEnum() =>
+      _expectLint('bool f(E? e) => e == E.a;\n', 'e == E.a');
+
+  Future<void> test_equals_constSealedInstance() => _expectLint('''
+sealed class T {
+  const T();
+}
+
+final class TA extends T {
+  const TA();
+}
+
+final class TB extends T {
+  const TB();
+}
+
+bool f(T t) => t == const TA();
+''', 't == const TA()');
+
   // Not flagged.
+  Future<void> test_equals_twoVariables() =>
+      _expectNoLint('bool f(E a, E b) => a == b;\n');
+
+  Future<void> test_equals_null() =>
+      _expectNoLint('bool f(E? e) => e == null;\n');
+
+  Future<void> test_equals_openType() =>
+      _expectNoLint('bool f(Object o) => o == E.a;\n');
 
   Future<void> test_switch() => _expectNoLint('''
 void f(S s) {

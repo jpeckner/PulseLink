@@ -3,6 +3,11 @@
 include: package:very_good_analysis/analysis_options.11.0.0.yaml
 
 analyzer:
+  errors:
+    # very_good_analysis ignores close_sinks for its false positives. It's on
+    # here (see below): an unclosed StreamController leaks, and BLE streams
+    # arrive in Milestone 3.
+    close_sinks: info
   exclude:
     - build/**
     - android/**
@@ -23,6 +28,22 @@ linter:
     # can't look like it's inside an if when it isn't.
     always_put_control_body_on_new_line: true
 
+    # Closer to Swift's compile-time safety. See CLAUDE.md, "No assertions".
+    # Dart generics are covariant: a List<int> passed as a List<num> throws
+    # at runtime when a double is added. Flags class designs that allow it.
+    unsafe_variance: true
+    # No written `dynamic`, as Swift has no implicit Any.
+    avoid_annotating_with_dynamic: true
+    # A StreamController or other sink that's never closed leaks.
+    close_sinks: true
+    # Code nothing reachable from main() uses.
+    unreachable_from_main: true
+    avoid_implementing_value_types: true
+    prefer_void_to_null: true
+    # Off: it suggests making private fields `late`, which the no-assertions
+    # rule forbids.
+    use_late_for_private_fields_and_variables: false
+
 # PulseLink's own lint rules (tool/pulselink_lints), for checks no built-in
 # lint covers. Restart the Dart analysis server after changing this section.
 plugins:
@@ -30,4 +51,5 @@ plugins:
     path: tool/pulselink_lints
     diagnostics:
       no_catch_all_cases: true
+      no_ignored_results: true
       use_switch_on_closed_types: true
