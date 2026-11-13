@@ -96,7 +96,24 @@ void main() {
           _reading(skinContact: SkinContact.notSupported),
         );
         expect(find.text('72'), findsOneWidget);
-        expect(find.byType(Chip), findsNothing);
+        // An invisible chip keeps the space; see the next test.
+        expect(
+          Visibility.of(tester.element(find.text('Skin contact'))),
+          isFalse,
+        );
+        expect(find.bySemanticsLabel('Skin contact'), findsNothing);
+      });
+
+      testWidgets('the readout sits in the same place with or without it', (
+        tester,
+      ) async {
+        await pumpScreen(tester, _reading());
+        final detected = tester.getCenter(find.text('72'));
+        await pumpScreen(
+          tester,
+          _reading(skinContact: SkinContact.notSupported),
+        );
+        expect(tester.getCenter(find.text('72')), detected);
       });
     });
 
@@ -277,6 +294,76 @@ void main() {
         await pumpScreen(tester, state);
         expect(tester.takeException(), isNull, reason: '$state');
       }
+    });
+
+    group('debug inputs', () {
+      testWidgets('shows debug controls just above the disclaimer', (
+        tester,
+      ) async {
+        when(() => cubit.state).thenReturn(_reading());
+        await tester.pumpWidget(
+          MaterialApp(
+            home: LiveHeartRateScreen(
+              cubit: cubit,
+              debugControls: const Text('debug controls'),
+            ),
+          ),
+        );
+        final controls = tester.getTopLeft(find.text('debug controls'));
+        final disclaimer = tester.getTopLeft(find.text(disclaimerText));
+        expect(controls.dy, lessThan(disclaimer.dy));
+      });
+
+      testWidgets('debug controls never move the readout', (tester) async {
+        when(() => cubit.state).thenReturn(_reading());
+        Future<Offset> readoutCenter(Widget? debugControls) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: LiveHeartRateScreen(
+                cubit: cubit,
+                debugControls: debugControls,
+              ),
+            ),
+          );
+          return tester.getCenter(find.text('72'));
+        }
+
+        // Release builds pass no controls; debug builds pass the button,
+        // which is empty while hidden and about 60 px tall when shown.
+        final release = await readoutCenter(null);
+        final hidden = await readoutCenter(const SizedBox.shrink());
+        final shown = await readoutCenter(
+          const SizedBox(height: 60, child: Text('debug controls')),
+        );
+        expect(hidden, release);
+        expect(shown, release);
+      });
+
+      testWidgets('long-pressing the title calls onTitleLongPress', (
+        tester,
+      ) async {
+        var longPresses = 0;
+        when(() => cubit.state).thenReturn(_reading());
+        await tester.pumpWidget(
+          MaterialApp(
+            home: LiveHeartRateScreen(
+              cubit: cubit,
+              onTitleLongPress: () => longPresses++,
+            ),
+          ),
+        );
+        await tester.longPress(find.text('PulseLink'));
+        expect(longPresses, 1);
+      });
+
+      testWidgets('without debug inputs, nothing extra is shown', (
+        tester,
+      ) async {
+        await pumpScreen(tester, _reading());
+        await tester.longPress(find.text('PulseLink'));
+        await tester.pump();
+        expect(find.byType(OutlinedButton), findsNothing);
+      });
     });
   });
 }

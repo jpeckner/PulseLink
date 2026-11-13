@@ -9,9 +9,22 @@ import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 /// Live heart rate: the latest bpm, when it arrived, skin contact, and a clear
 /// "no data from strap" state once the reading goes stale.
 class LiveHeartRateScreen extends StatelessWidget {
-  const new({required this.cubit, super.key});
+  const new({
+    required this.cubit,
+    this.debugControls,
+    this.onTitleLongPress,
+    super.key,
+  });
 
   final LiveHeartRateCubit cubit;
+
+  /// Shown just above the disclaimer, overlaid so it takes no layout space.
+  /// Only supplied in non-release builds.
+  final Widget? debugControls;
+
+  /// Called when the title is long-pressed. Only supplied in non-release
+  /// builds.
+  final VoidCallback? onTitleLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +32,10 @@ class LiveHeartRateScreen extends StatelessWidget {
       bloc: cubit,
       builder: (context, state) => Scaffold(
         appBar: AppBar(
-          title: const Text('PulseLink'),
+          title: GestureDetector(
+            onLongPress: onTitleLongPress,
+            child: const Text('PulseLink'),
+          ),
           actions: [if (state.isSimulated) const _DemoBadge()],
         ),
         body: SafeArea(
@@ -28,12 +44,26 @@ class LiveHeartRateScreen extends StatelessWidget {
             child: Column(
               children: [
                 Expanded(
-                  child: Center(
-                    child: switch (state) {
-                      LiveHeartRateWaiting() => const _WaitingView(),
-                      LiveHeartRateReading(:final sample, :final isStale) =>
-                        _ReadingView(sample: sample, isStale: isStale),
-                    },
+                  // Debug controls float over the bottom of this area rather
+                  // than taking layout space, so the readout never moves when
+                  // they appear or disappear, and debug and release layouts
+                  // match.
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Center(
+                        child: switch (state) {
+                          LiveHeartRateWaiting() => const _WaitingView(),
+                          LiveHeartRateReading(:final sample, :final isStale) =>
+                            _ReadingView(sample: sample, isStale: isStale),
+                        },
+                      ),
+                      if (debugControls case final controls?)
+                        Align(
+                          alignment: Alignment.bottomCenter,
+                          child: controls,
+                        ),
+                    ],
                   ),
                 ),
                 const DisclaimerBanner(),
@@ -179,6 +209,11 @@ class _BpmReadout extends StatelessWidget {
   }
 }
 
+const _skinContactChip = Chip(
+  avatar: Icon(Icons.check_circle_outline),
+  label: Text('Skin contact'),
+);
+
 /// Strap status: skin contact for a measured sample, or why there's no
 /// reading. Never about Bluetooth connectivity.
 class _StrapStatusChip extends StatelessWidget {
@@ -190,13 +225,19 @@ class _StrapStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return switch (sample) {
-      MeasuredHeartRateSample(skinContact: SkinContact.detected) => const Chip(
-        avatar: Icon(Icons.check_circle_outline),
-        label: Text('Skin contact'),
-      ),
-      // The strap can't detect skin contact, so there's nothing to say.
+      MeasuredHeartRateSample(skinContact: SkinContact.detected) =>
+        _skinContactChip,
+      // The strap can't detect skin contact, so there's nothing to say. The
+      // chip's space is kept so the readout sits where it does for a strap
+      // that can.
       MeasuredHeartRateSample(skinContact: SkinContact.notSupported) =>
-        const SizedBox.shrink(),
+        const Visibility(
+          visible: false,
+          maintainSize: true,
+          maintainAnimation: true,
+          maintainState: true,
+          child: _skinContactChip,
+        ),
       UnavailableHeartRateSample(
         reason: HeartRateUnavailableReason.noSkinContact,
       ) =>
