@@ -33,6 +33,8 @@ int noCatchAllCases(_Probe p) => switch (p) {
 };
 
 int noAssertions(int? x) => x!;
+
+int useSwitchOnClosedTypes(_Probe p) => [if (p case _Probe.a) 1].length;
 EOF
 
 # The rules enabled under `plugins: pulselink_lints: diagnostics:`.

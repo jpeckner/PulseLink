@@ -144,15 +144,11 @@ If it lists files, run `dart format lib test`, stage those files, and commit: `s
 flutter analyze --fatal-infos --fatal-warnings > "$LOGS/analyze.log" 2>&1
 ```
 
-<<<<<<< HEAD
-This covers the very_good_analysis lints and, when the branch has it, the `pulselink_lints` plugin, which includes `no_catch_all_cases`. `develop` passes CI, so any issue comes from the branch or from a Flutter upgrade, and fails the check. Fix only issues caused by this run's own commits, e.g. an import left unused by step 4. Report the rest with file, line and rule.
-=======
-This covers the very_good_analysis lints and, when the branch has it, the `pulselink_lints` plugin (`no_assertions`, `no_catch_all_cases`). `develop` passes CI, so any issue comes from the branch or from a Flutter upgrade, and fails the check. Fix only issues caused by this run's own commits, e.g. an import left unused by step 4. Report the rest with file, line and rule.
+This covers the very_good_analysis lints and, when the branch has it, the `pulselink_lints` plugin (`no_assertions`, `no_catch_all_cases`, `use_switch_on_closed_types`). `develop` passes CI, so any issue comes from the branch or from a Flutter upgrade, and fails the check. Fix only issues caused by this run's own commits, e.g. an import left unused by step 4. Report the rest with file, line and rule.
 
 A clean analyze doesn't prove the plugin ran: if it fails to load, analyze reports "No issues found!" anyway. If the branch has `tool/check_lint_plugin.sh`, run it; it analyzes a file that breaks each enabled rule and fails unless every rule reports. A failure here fails the analyze check. If it says it rebuilt the plugin's cached copy and then passed, the first analyze ran with a stale copy, so run analyze again and use that result.
 
 If the branch has the plugin but not the script, do the same by hand: add a file in `lib/` with a `_` case on an enum, run `flutter analyze`, check `no_catch_all_cases` is reported, then delete the file. The analysis server's cached copy of the plugin can be stale after switching branches; if a rule is missing, run `touch tool/pulselink_lints/lib/*.dart tool/pulselink_lints/lib/src/*.dart` and try once more before calling it a failure.
->>>>>>> f84f9c6 (chore(heart_rate_monitor): Milestone 2 - tooling)
 
 ### 5d. Tests
 
@@ -217,7 +213,15 @@ Debug tooling must never ship. Debug-only code lives in `debug_*.dart` files or 
 
 Review the branch's diff against the rules in `CLAUDE.md`.
 
-**No assertions.** List the added lines in `lib/` that might be assertions:
+**No assertions.** If `analysis_options.yaml` enables `no_assertions`, step 5c already failed on any assertion, so review the exceptions instead. List the ignores the branch added:
+
+```bash
+git diff develop...HEAD -- 'lib/*.dart' | grep -nE '^\+.*ignore(_for_file)?:.*no_assertions'
+```
+
+Each must have a comment next to it explaining why it's needed, which means the user signed it off. One without a reason, or an `ignore_for_file`, is a fail.
+
+On a branch without the rule, list the added lines in `lib/` that might be assertions:
 
 ```bash
 git diff develop...HEAD -- 'lib/*.dart' ':!*.freezed.dart' ':!*.g.dart' \

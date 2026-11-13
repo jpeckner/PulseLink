@@ -21,7 +21,11 @@ components that can't fail at runtime:
   variable or other catch-all. Then adding a case is a compile error at every
   switch that must handle it, as in Swift. The `no_catch_all_cases` lint
   (`tool/pulselink_lints`) enforces this; where a catch-all is truly needed,
-  ignore the lint with a comment saying why.
+  ignore the lint with a comment saying why. For the same reason, don't test a
+  closed type with `if (x case ...)` or `is`: those silently skip new cases,
+  so use a switch, with an explicit do-nothing case where one applies. The
+  `use_switch_on_closed_types` lint enforces this; a null check such as
+  `if (x case final y?)` is still fine.
 
 This covers anything in app code that fails at runtime because of a programmer
 error: `assert`, freezed `@Assert`, the `!` null-assertion operator, unchecked

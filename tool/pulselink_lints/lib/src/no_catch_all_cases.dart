@@ -3,10 +3,9 @@ import 'package:analyzer/analysis_rule/rule_context.dart';
 import 'package:analyzer/analysis_rule/rule_visitor_registry.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
-import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
-import 'package:analyzer/dart/element/type_system.dart';
 import 'package:analyzer/error/error.dart';
+import 'package:pulselink_lints/src/closed_types.dart';
 
 /// Flags a catch-all case (`default:`, `_`, `final x`, `Object()` and the
 /// like) in a switch on a closed type: an enum, `bool`, a sealed class, or a
@@ -46,7 +45,7 @@ class NoCatchAllCases extends AnalysisRule {
     RuleVisitorRegistry registry,
     RuleContext context,
   ) {
-    final visitor = _Visitor(this, context.typeSystem);
+    final visitor = _Visitor(this, ClosedTypes(context.typeSystem));
     registry
       ..addSwitchStatement(this, visitor)
       ..addSwitchExpression(this, visitor);
@@ -54,14 +53,14 @@ class NoCatchAllCases extends AnalysisRule {
 }
 
 class _Visitor extends SimpleAstVisitor<void> {
-  new(this.rule, this.typeSystem);
+  new(this.rule, this.closedTypes);
 
   final AnalysisRule rule;
-  final TypeSystem typeSystem;
+  final ClosedTypes closedTypes;
 
   @override
   void visitSwitchStatement(SwitchStatement node) {
-    final scrutineeType = _closedScrutineeType(node.expression);
+    final scrutineeType = closedTypes.closedNonNull(node.expression.staticType);
     if (scrutineeType == null) {
       return;
     }
@@ -80,7 +79,7 @@ class _Visitor extends SimpleAstVisitor<void> {
 
   @override
   void visitSwitchExpression(SwitchExpression node) {
-    final scrutineeType = _closedScrutineeType(node.expression);
+    final scrutineeType = closedTypes.closedNonNull(node.expression.staticType);
     if (scrutineeType == null) {
       return;
     }
@@ -94,64 +93,8 @@ class _Visitor extends SimpleAstVisitor<void> {
       return;
     }
     final pattern = guardedPattern.pattern;
-    if (_matchesEverything(pattern, scrutineeType)) {
+    if (closedTypes.matchesEverything(pattern, scrutineeType)) {
       rule.reportAtNode(pattern);
     }
   }
-
-  /// The scrutinee's type without `?`, if it's closed; otherwise null.
-  DartType? _closedScrutineeType(Expression scrutinee) {
-    final type = scrutinee.staticType;
-    if (type == null) {
-      return null;
-    }
-    final nonNull = typeSystem.promoteToNonNull(
-      typeSystem.resolveToBound(type),
-    );
-    return _isClosed(nonNull) ? nonNull : null;
-  }
-
-  bool _isClosed(DartType type) {
-    if (type.isDartCoreBool) {
-      return true;
-    }
-    return switch (type) {
-      InterfaceType(:final element) =>
-        element is EnumElement || (element is ClassElement && element.isSealed),
-      RecordType(:final positionalFields, :final namedFields) =>
-        positionalFields.every((field) => _isClosedField(field.type)) &&
-            namedFields.every((field) => _isClosedField(field.type)),
-      _ => false,
-    };
-  }
-
-  bool _isClosedField(DartType type) =>
-      _isClosed(typeSystem.promoteToNonNull(typeSystem.resolveToBound(type)));
-
-  /// Whether [pattern] matches every non-null value of [scrutineeType].
-  ///
-  /// Only top-level forms count: a pattern that destructures fields, such as
-  /// `Reading(isStale: _)`, still names one case.
-  bool _matchesEverything(DartPattern pattern, DartType scrutineeType) {
-    return switch (pattern) {
-      WildcardPattern(:final type) || DeclaredVariablePattern(:final type) =>
-        _covers(type?.type, scrutineeType),
-      ObjectPattern(:final type, :final fields) =>
-        fields.isEmpty && _covers(type.type, scrutineeType),
-      ParenthesizedPattern(:final pattern) ||
-      NullCheckPattern(:final pattern) ||
-      NullAssertPattern(
-        :final pattern,
-      ) => _matchesEverything(pattern, scrutineeType),
-      LogicalOrPattern(:final leftOperand, :final rightOperand) =>
-        _matchesEverything(leftOperand, scrutineeType) ||
-            _matchesEverything(rightOperand, scrutineeType),
-      _ => false,
-    };
-  }
-
-  /// Whether a pattern typed [patternType] (null when untyped) matches every
-  /// non-null value of [scrutineeType].
-  bool _covers(DartType? patternType, DartType scrutineeType) =>
-      patternType == null || typeSystem.isSubtypeOf(scrutineeType, patternType);
 }
