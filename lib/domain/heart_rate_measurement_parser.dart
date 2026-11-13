@@ -40,8 +40,8 @@ const _rrIntervalsPresent = 0x10;
 ///
 /// Never throws: a malformed packet returns [HeartRateParseFailure] rather
 /// than a sample with a wrong number in it. Fields after the flags byte are
-/// little-endian. Energy Expended is validated but skipped. RR intervals arrive
-/// in units of 1/1024 s and are converted to [Duration]s.
+/// little-endian. Energy Expended is checked for length but skipped. RR
+/// intervals arrive in units of 1/1024 s and are converted to [Duration]s.
 ///
 /// A well-formed packet with no skin contact or a bpm of 0 becomes an
 /// [UnavailableHeartRateSample] (no contact wins if both apply), and its bpm
@@ -51,52 +51,38 @@ HeartRateParseResult parseHeartRateMeasurement(
   Uint8List packet, {
   required DateTime timestamp,
 }) {
-  if (packet.isEmpty) {
+  final reader = _ByteReader(packet);
+
+  final flags = reader.uint8();
+  if (flags == null) {
     return const HeartRateParseResult.failure(HeartRateParseError.empty);
   }
 
-  final bytes = ByteData.sublistView(packet);
-  final flags = bytes.getUint8(0);
-  var offset = 1;
-
-  final int rawBpm;
-  if (flags & _heartRateIsUint16 != 0) {
-    if (packet.length < offset + 2) {
-      return const HeartRateParseResult.failure(
-        HeartRateParseError.truncatedHeartRate,
-      );
-    }
-    rawBpm = bytes.getUint16(offset, Endian.little);
-    offset += 2;
-  } else {
-    if (packet.length < offset + 1) {
-      return const HeartRateParseResult.failure(
-        HeartRateParseError.truncatedHeartRate,
-      );
-    }
-    rawBpm = bytes.getUint8(offset);
-    offset += 1;
+  final rawBpm = flags & _heartRateIsUint16 != 0
+      ? reader.uint16()
+      : reader.uint8();
+  if (rawBpm == null) {
+    return const HeartRateParseResult.failure(
+      HeartRateParseError.truncatedHeartRate,
+    );
   }
 
-  if (flags & _energyExpendedPresent != 0) {
-    if (packet.length < offset + 2) {
-      return const HeartRateParseResult.failure(
-        HeartRateParseError.truncatedEnergyExpended,
-      );
-    }
-    offset += 2;
+  // Energy Expended is read only to skip past it.
+  if (flags & _energyExpendedPresent != 0 && reader.uint16() == null) {
+    return const HeartRateParseResult.failure(
+      HeartRateParseError.truncatedEnergyExpended,
+    );
   }
 
   final rrIntervals = <Duration>[];
   if (flags & _rrIntervalsPresent != 0) {
-    final remaining = packet.length - offset;
-    if (remaining.isOdd) {
-      return const HeartRateParseResult.failure(
-        HeartRateParseError.truncatedRrInterval,
-      );
-    }
-    for (; offset < packet.length; offset += 2) {
-      final units = bytes.getUint16(offset, Endian.little);
+    while (!reader.isAtEnd) {
+      final units = reader.uint16();
+      if (units == null) {
+        return const HeartRateParseResult.failure(
+          HeartRateParseError.truncatedRrInterval,
+        );
+      }
       rrIntervals.add(Duration(microseconds: (units * 1000000 / 1024).round()));
     }
   }
@@ -129,4 +115,30 @@ HeartRateParseResult parseHeartRateMeasurement(
     );
   }
   return HeartRateParseResult.success(sample);
+}
+
+/// Reads little-endian unsigned integers from a packet, front to back. Each
+/// read returns null, rather than throwing, when there aren't enough bytes
+/// left, so the parser can't read past the end.
+class _ByteReader {
+  new(this._bytes);
+
+  final Uint8List _bytes;
+  int _offset = 0;
+
+  bool get isAtEnd => _offset >= _bytes.length;
+
+  int? uint8() {
+    if (_bytes.length - _offset < 1) return null;
+    final value = _bytes[_offset];
+    _offset += 1;
+    return value;
+  }
+
+  int? uint16() {
+    if (_bytes.length - _offset < 2) return null;
+    final value = _bytes[_offset] | (_bytes[_offset + 1] << 8);
+    _offset += 2;
+    return value;
+  }
 }

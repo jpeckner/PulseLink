@@ -48,7 +48,7 @@ Built: a sealed `HeartRateSample` (measured or unavailable), the Heart Rate
 Measurement parser (sealed success/failure result), the `HeartRateSource`
 interface with a simulated `FakeHeartRateSource`, `LiveHeartRateCubit` with a
 10-second stale timer, and the live screen (bpm, update time, sensor status,
-Demo badge, signal-lost state). 77 tests.
+Demo badge, signal-lost state). 83 tests.
 
 Flutter vs native:
 
@@ -83,18 +83,32 @@ Flutter vs native:
   `part` file (`*.freezed.dart`). It's code generation via `build_runner`, like
   Kotlin's KSP or Swift macros, but the output is a checked-in source file
   rather than compiler-internal. Lists get deep equality automatically.
-- **`ByteData`** reads little-endian integers from a `Uint8List`, like
-  `Data.withUnsafeBytes` / `loadUnaligned` in Swift or `ByteBuffer.order(
-  LITTLE_ENDIAN)` in Kotlin. `ByteData.sublistView` respects a view's offset;
-  `packet.buffer` would not, a classic bug the tests cover.
+- **Reading bytes safely**: `ByteData.getUint16` (like Swift's
+  `loadUnaligned` or Kotlin's `ByteBuffer`) throws `RangeError` past the end,
+  so the parser uses a tiny private `_ByteReader` whose `uint8()`/`uint16()`
+  return null when bytes run out. Reading past the end can't happen, and the
+  separate length checks disappeared. Indexing a `Uint8List` respects a
+  view's offset; reaching for `packet.buffer` would not, a classic bug the
+  tests cover.
 - **Streams** are Dart's `AsyncSequence` / Kotlin `Flow`. A *broadcast* stream
   allows many listeners, like a `SharedFlow`.
-- **`RepositoryProvider`** puts a dependency in the widget tree, like SwiftUI's
-  `@Environment` or a Compose `CompositionLocal`; `context.read<T>()` looks it up.
+- **Dependency injection without runtime lookups**: `RepositoryProvider` /
+  `BlocProvider` + `context.read<T>()` work like SwiftUI's `@EnvironmentObject`,
+  including crashing at runtime if nothing was provided. PulseLink instead
+  builds its objects in `main()` (a composition root, like an `AppDelegate`
+  building the object graph) and passes them through constructors;
+  `BlocBuilder(bloc: cubit)` then never does a lookup. A missing dependency is
+  a compile error.
 - **Testing time**: `fake_async` plus `package:clock` make timers and "now"
   controllable, like Kotlin's `TestDispatcher` virtual time. One trap: a stream
   subscription's `cancel()` completes on the real event loop, which fake time
   never runs, so the cubit's `close()` is tested with real async.
+- **Async gaps in teardown**: `close()` first stopped the source and only then
+  unsubscribed, so a sample arriving during the `await` started a new stale
+  timer that later emitted into the closed cubit (a `StateError` crash). Fix:
+  unsubscribe first; `cancel()` detaches the listener immediately. Same lesson
+  as cancelling Combine subscriptions or coroutine jobs before releasing
+  resources. A regression test uses a deliberately slow-stopping source.
 - **Widget tests** pump a widget tree headlessly and query it with finders,
   like ViewInspector or Compose's `onNodeWithText`. `MockCubit` + `whenListen`
   script the states a screen sees.
@@ -104,7 +118,11 @@ packet is a typed failure, not a wrong number. A well-formed packet with no
 skin contact or bpm 0 becomes an "unavailable" sample with no bpm at all, and
 the UI says why ("No sensor contact", "No reading from sensor") without
 medical-sounding wording. Unavailable is distinct from stale: the strap is
-still sending, so the stale timer keeps resetting. Staleness is measured from each
-sample's own timestamp, so a delayed sample can't masquerade as current. A
+still sending, so the stale timer keeps resetting. Staleness is measured from
+each sample's own timestamp, so a delayed sample can't masquerade as current. A
 regulated app would add a plausibility range check (say 25-250 bpm) and log
 every rejected packet; logging comes with the Milestone 4 debug screen.
+App code has no assertions or other programmer-error crash points (`assert`,
+`!`, `as`, throwing constructors, provider lookups); invalid states are ruled
+out by types instead, and any unavoidable exception needs explicit sign-off
+(see `CLAUDE.md`).

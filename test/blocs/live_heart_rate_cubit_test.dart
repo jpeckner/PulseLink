@@ -6,6 +6,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
+import 'package:pulselink/data/heart_rate_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 
 import '../helpers/positive_int.dart';
@@ -281,5 +282,188 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
       },
     );
+
+    // Regression: a sample arriving while close() waited on stop() used to
+    // start a new stale timer that later emitted into the closed cubit.
+    test('a sample arriving while the source stops cannot crash it', () async {
+      final source = _SlowStopSource();
+      final cubit = LiveHeartRateCubit(
+        source: source,
+        staleAfter: const Duration(milliseconds: 20),
+      );
+      await cubit.start();
+
+      await cubit.close();
+      expect(source.emittedDuringStop, isTrue);
+
+      // Long enough for any stale timer started during close to fire.
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(cubit.state, const LiveHeartRateState.waiting(isSimulated: false));
+    });
+
+    group('close still finishes when', () {
+      for (final failure in _Failure.values) {
+        test(failure.description, () async {
+          final source = _FailingSource(failure);
+          final cubit = LiveHeartRateCubit(
+            source: source,
+            staleAfter: const Duration(milliseconds: 20),
+          );
+          await cubit.start();
+          source.emit(_sampleAt(clock.now()));
+          expect(cubit.state, isA<LiveHeartRateReading>());
+
+          await expectLater(cubit.close(), throwsA(same(_sourceFailure)));
+          expect(cubit.isClosed, isTrue);
+          expect(source.hasListener, isFalse);
+
+          // If the stale timer survived close, it would emit into a closed
+          // cubit and throw, failing this test.
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        });
+      }
+    });
+
+    test('start after close does nothing', () async {
+      final source = StubHeartRateSource();
+      final cubit = LiveHeartRateCubit(source: source);
+      await cubit.close();
+
+      await cubit.start();
+      expect(source.startCount, 0);
+      expect(source.hasListener, isFalse);
+    });
   });
+}
+
+/// Like a real BLE source, a sample can still arrive while [stop] is in flight.
+class _SlowStopSource extends StubHeartRateSource {
+  bool emittedDuringStop = false;
+
+  @override
+  Future<void> stop() async {
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+    emit(_sampleAt(clock.now()));
+    emittedDuringStop = true;
+    await super.stop();
+  }
+}
+
+final _sourceFailure = Exception('source failure');
+
+enum _Failure {
+  stop('stop() fails'),
+  stopBeforeFuture('stop() throws before returning a future'),
+  unsubscribe('unsubscribing fails'),
+  unsubscribeBeforeFuture('unsubscribing throws before returning a future');
+
+  new(this.description);
+
+  final String description;
+}
+
+/// A source whose stop or unsubscribe fails, as a real BLE source's might.
+class _FailingSource implements HeartRateSource {
+  new(this._failure)
+    : _controller = StreamController(
+        // Synchronous, so a sample reaches the cubit as soon as [emit] returns.
+        sync: true,
+        onCancel: _failure == _Failure.unsubscribe
+            ? () => Future<void>.error(_sourceFailure)
+            : null,
+      );
+
+  final _Failure _failure;
+
+  // Single-subscription: unlike a broadcast stream, its cancel() returns the
+  // onCancel future, so the unsubscribe failure reaches the cubit.
+  final StreamController<HeartRateSample> _controller;
+
+  bool get hasListener => _controller.hasListener;
+
+  void emit(HeartRateSample sample) => _controller.add(sample);
+
+  @override
+  bool get isSimulated => false;
+
+  @override
+  Stream<HeartRateSample> get samples => switch (_failure) {
+    _Failure.unsubscribeBeforeFuture => _ThrowingCancelStream(
+      _controller.stream,
+    ),
+    _Failure.stop ||
+    _Failure.stopBeforeFuture ||
+    _Failure.unsubscribe => _controller.stream,
+  };
+
+  @override
+  Future<void> start() async {}
+
+  @override
+  Future<void> stop() => switch (_failure) {
+    _Failure.stop => Future.error(_sourceFailure),
+    _Failure.stopBeforeFuture => throw _sourceFailure,
+    _Failure.unsubscribe || _Failure.unsubscribeBeforeFuture => Future.value(),
+  };
+
+  @override
+  Future<void> dispose() => _controller.close();
+}
+
+/// A stream whose subscriptions unsubscribe, then throw from cancel() before
+/// returning a future, as a hand-written stream class could.
+class _ThrowingCancelStream extends Stream<HeartRateSample> {
+  new(this._inner);
+
+  final Stream<HeartRateSample> _inner;
+
+  @override
+  StreamSubscription<HeartRateSample> listen(
+    void Function(HeartRateSample event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) => _ThrowingCancelSubscription(
+    _inner.listen(
+      onData,
+      onError: onError,
+      onDone: onDone,
+      cancelOnError: cancelOnError,
+    ),
+  );
+}
+
+class _ThrowingCancelSubscription
+    implements StreamSubscription<HeartRateSample> {
+  new(this._inner);
+
+  final StreamSubscription<HeartRateSample> _inner;
+
+  @override
+  Future<void> cancel() {
+    unawaited(_inner.cancel());
+    throw _sourceFailure;
+  }
+
+  @override
+  void onData(void Function(HeartRateSample data)? handleData) =>
+      _inner.onData(handleData);
+
+  @override
+  void onError(Function? handleError) => _inner.onError(handleError);
+
+  @override
+  void onDone(void Function()? handleDone) => _inner.onDone(handleDone);
+
+  @override
+  void pause([Future<void>? resumeSignal]) => _inner.pause(resumeSignal);
+
+  @override
+  void resume() => _inner.resume();
+
+  @override
+  bool get isPaused => _inner.isPaused;
+
+  @override
+  Future<E> asFuture<E>([E? futureValue]) => _inner.asFuture(futureValue);
 }

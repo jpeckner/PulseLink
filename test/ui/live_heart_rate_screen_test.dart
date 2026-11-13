@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
@@ -53,10 +52,7 @@ void main() {
     Future<void> pumpScreen(WidgetTester tester, LiveHeartRateState state) {
       when(() => cubit.state).thenReturn(state);
       return tester.pumpWidget(
-        BlocProvider<LiveHeartRateCubit>.value(
-          value: cubit,
-          child: const MaterialApp(home: LiveHeartRateScreen()),
-        ),
+        MaterialApp(home: LiveHeartRateScreen(cubit: cubit)),
       );
     }
 
@@ -189,10 +185,7 @@ void main() {
         initialState: const LiveHeartRateState.waiting(isSimulated: false),
       );
       await tester.pumpWidget(
-        BlocProvider<LiveHeartRateCubit>.value(
-          value: cubit,
-          child: const MaterialApp(home: LiveHeartRateScreen()),
-        ),
+        MaterialApp(home: LiveHeartRateScreen(cubit: cubit)),
       );
       expect(find.text('--'), findsOneWidget);
 

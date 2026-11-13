@@ -24,8 +24,10 @@ class LiveHeartRateCubit extends Cubit<LiveHeartRateState> {
   StreamSubscription<HeartRateSample>? _subscription;
   Timer? _staleTimer;
 
-  /// Subscribes to the source and starts it. Safe to call more than once.
+  /// Subscribes to the source and starts it. Safe to call more than once;
+  /// does nothing after [close].
   Future<void> start() async {
+    if (isClosed) return;
     _subscription ??= _source.samples.listen(_onSample);
     await _source.start();
   }
@@ -57,9 +59,21 @@ class LiveHeartRateCubit extends Cubit<LiveHeartRateState> {
 
   @override
   Future<void> close() async {
-    _staleTimer?.cancel();
-    await _source.stop();
-    await _subscription?.cancel();
-    await super.close();
+    try {
+      // Stop delivery first: cancel() detaches the listener at once, so no
+      // sample can arrive (and start a new stale timer) while the source is
+      // stopping. The timer goes first because it can't throw; if cancel()
+      // throws, no timer is left to fire into the closed cubit.
+      _staleTimer?.cancel();
+      final cancelSubscription = _subscription?.cancel();
+
+      // Waits for the source to stop and the unsubscribe to finish.
+      // Future.sync turns a stop() that throws before returning a future into
+      // a failed future, so every failure is handled the same way.
+      await Future.wait([Future.sync(_source.stop), ?cancelSubscription]);
+    } finally {
+      // Close even if stopping failed; the error still reaches the caller.
+      await super.close();
+    }
   }
 }
