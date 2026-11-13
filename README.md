@@ -78,9 +78,9 @@ Lints come from `very_good_analysis`, plus
 `curly_braces_in_flow_control_structures`, that means every `if`, `else`,
 `for`, `while` and `do` body has braces, even a one-line `if (x) return;`.
 A few more built-in lints bring it closer to Swift's compile-time checks:
-`unsafe_variance`, `avoid_annotating_with_dynamic`, `close_sinks`,
-`unreachable_from_main`, `avoid_implementing_value_types` and
-`prefer_void_to_null`. `analysis_options.yaml` says why each is on.
+`unsafe_variance`, `close_sinks`, `unreachable_from_main`,
+`avoid_implementing_value_types` and `prefer_void_to_null`.
+`analysis_options.yaml` says why each is on.
 
 `flutter analyze` also runs the project's own lint rules from
 `tool/pulselink_lints`, an analyzer plugin enabled in `analysis_options.yaml`
@@ -92,6 +92,8 @@ A few more built-in lints bring it closer to Swift's compile-time checks:
   tests.
 - `no_catch_all_cases`: no `default`, `_` or other catch-all when switching on
   an enum, `bool` or sealed type.
+- `no_dynamic`: no written `dynamic`, including in type arguments such as
+  `Map<String, dynamic>`; use `Object?` or a precise type.
 - `no_ignored_results`: no thrown-away value of an enum or sealed type, such
   as a typed result. Discard one on purpose with `final _ = ...;`.
 - `use_switch_on_closed_types`: no `if (x case ...)`, `is` or `==` test that

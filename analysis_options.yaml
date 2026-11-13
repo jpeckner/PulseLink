@@ -32,8 +32,6 @@ linter:
     # Dart generics are covariant: a List<int> passed as a List<num> throws
     # at runtime when a double is added. Flags class designs that allow it.
     unsafe_variance: true
-    # No written `dynamic`, as Swift has no implicit Any.
-    avoid_annotating_with_dynamic: true
     # A StreamController or other sink that's never closed leaks.
     close_sinks: true
     # Code nothing reachable from main() uses.
@@ -51,5 +49,8 @@ plugins:
     path: tool/pulselink_lints
     diagnostics:
       no_catch_all_cases: true
+      # Every written `dynamic`, not just on parameters as the built-in
+      # avoid_annotating_with_dynamic does.
+      no_dynamic: true
       no_ignored_results: true
       use_switch_on_closed_types: true
