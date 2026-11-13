@@ -12,5 +12,10 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    // The channel keeps the scanner for as long as the engine runs.
+    ScanForHeartRateStrapsStreamHandler.register(
+      with: engineBridge.applicationRegistrar.messenger(),
+      streamHandler: BleStrapScanner()
+    )
   }
 }

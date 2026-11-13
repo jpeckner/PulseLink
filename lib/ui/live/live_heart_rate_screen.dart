@@ -15,12 +15,16 @@ import 'package:pulselink/ui/widgets/problem_view.dart';
 class LiveHeartRateScreen extends StatelessWidget {
   const new({
     required this.cubit,
+    required this.buildStrapPicker,
     this.debugControls,
     this.onTitleLongPress,
     super.key,
   });
 
   final LiveHeartRateCubit cubit;
+
+  /// Builds the screen that finds a strap, opened from the app bar.
+  final WidgetBuilder buildStrapPicker;
 
   /// Shown just above the disclaimer, overlaid so it takes no layout space.
   /// Only supplied in non-release builds.
@@ -40,7 +44,16 @@ class LiveHeartRateScreen extends StatelessWidget {
             onLongPress: onTitleLongPress,
             child: const Text('PulseLink'),
           ),
-          actions: [if (state.isSimulated) const _DemoBadge()],
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.bluetooth_searching),
+              tooltip: 'Find strap',
+              onPressed: () =>
+                  Navigator.of(context)
+                      .push(MaterialPageRoute<void>(builder: buildStrapPicker)),
+            ),
+            if (state.isSimulated) const _DemoBadge(),
+          ],
         ),
         body: SafeArea(
           child: Padding(

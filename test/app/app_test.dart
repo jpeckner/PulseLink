@@ -12,6 +12,7 @@ import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
 import '../helpers/beats_per_minute.dart';
 import '../helpers/stub_heart_rate_source.dart';
+import '../helpers/stub_strap_scanner.dart';
 
 void main() {
   group('PulseLinkApp', () {
@@ -21,7 +22,12 @@ void main() {
       final source = StubHeartRateSource(isSimulated: true);
       final cubit = LiveHeartRateCubit(source: source);
       unawaited(cubit.start());
-      await tester.pumpWidget(PulseLinkApp(liveHeartRateCubit: cubit));
+      await tester.pumpWidget(
+        PulseLinkApp(
+          liveHeartRateCubit: cubit,
+          strapScanner: StubStrapScanner(),
+        ),
+      );
 
       expect(find.text('PulseLink'), findsOneWidget);
       expect(find.text('Demo'), findsOneWidget);
@@ -44,6 +50,24 @@ void main() {
       await tester.pump();
     });
 
+    testWidgets('Find strap opens the picker, which scans with the scanner '
+        'it is given', (tester) async {
+      final cubit = LiveHeartRateCubit(source: StubHeartRateSource());
+      final scanner = StubStrapScanner();
+      await tester.pumpWidget(
+        PulseLinkApp(liveHeartRateCubit: cubit, strapScanner: scanner),
+      );
+      await tester.tap(find.byTooltip('Find strap'));
+      // Not pumpAndSettle: the picker's progress indicator never settles.
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('Find your strap'), findsOneWidget);
+      expect(scanner.isScanning, isTrue);
+
+      unawaited(cubit.close());
+      await tester.pump();
+    });
+
     testWidgets('debug wiring: long-press reveals the override buttons, '
         'which rewrite samples, and hiding them restores them', (tester) async {
       // Wired the way main() does in debug and profile builds.
@@ -55,6 +79,7 @@ void main() {
       await tester.pumpWidget(
         PulseLinkApp(
           liveHeartRateCubit: cubit,
+          strapScanner: StubStrapScanner(),
           debugControls: DebugOverrideButtons(cubit: overrideCubit),
           onTitleLongPress: overrideCubit.toggleVisibility,
         ),
