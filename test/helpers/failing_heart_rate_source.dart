@@ -26,9 +26,14 @@ class FailingHeartRateSource implements HeartRateSource {
         // Synchronous, so a sample reaches the listener as soon as [emit]
         // returns.
         sync: true,
-        onCancel: _failure == HeartRateSourceFailure.unsubscribe
-            ? () => Future<void>.error(heartRateSourceFailure)
-            : null,
+        onCancel: switch (_failure) {
+          HeartRateSourceFailure.unsubscribe => () => Future<void>.error(
+            heartRateSourceFailure,
+          ),
+          HeartRateSourceFailure.stop ||
+          HeartRateSourceFailure.stopBeforeFuture ||
+          HeartRateSourceFailure.unsubscribeBeforeFuture => null,
+        },
       );
 
   final HeartRateSourceFailure _failure;
