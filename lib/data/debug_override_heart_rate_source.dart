@@ -21,18 +21,18 @@ enum DetectingStrapCondition {
   noSkinContact,
 
   /// The strap reports a bpm of 0.
-  zeroBpm,
+  zeroBeatsPerMinute,
 
   /// The strap reports a bpm too high to be a heartbeat.
-  implausibleBpm;
+  implausibleBeatsPerMinute;
 
   /// The next condition, wrapping back to [normal].
   DetectingStrapCondition get next => switch (this) {
     normal => stale,
     stale => noSkinContact,
-    noSkinContact => zeroBpm,
-    zeroBpm => implausibleBpm,
-    implausibleBpm => normal,
+    noSkinContact => zeroBeatsPerMinute,
+    zeroBeatsPerMinute => implausibleBeatsPerMinute,
+    implausibleBeatsPerMinute => normal,
   };
 }
 
@@ -46,17 +46,17 @@ enum NonDetectingStrapCondition {
   stale,
 
   /// The strap reports a bpm of 0.
-  zeroBpm,
+  zeroBeatsPerMinute,
 
   /// The strap reports a bpm too high to be a heartbeat.
-  implausibleBpm;
+  implausibleBeatsPerMinute;
 
   /// The next condition, wrapping back to [normal].
   NonDetectingStrapCondition get next => switch (this) {
     normal => stale,
-    stale => zeroBpm,
-    zeroBpm => implausibleBpm,
-    implausibleBpm => normal,
+    stale => zeroBeatsPerMinute,
+    zeroBeatsPerMinute => implausibleBeatsPerMinute,
+    implausibleBeatsPerMinute => normal,
   };
 }
 
@@ -97,17 +97,19 @@ extension ReadingOverrideControls on ReadingOverride {
         DetectingStrapCondition.stale => NonDetectingStrapCondition.stale,
         DetectingStrapCondition.noSkinContact =>
           NonDetectingStrapCondition.normal,
-        DetectingStrapCondition.zeroBpm => NonDetectingStrapCondition.zeroBpm,
-        DetectingStrapCondition.implausibleBpm =>
-          NonDetectingStrapCondition.implausibleBpm,
+        DetectingStrapCondition.zeroBeatsPerMinute =>
+          NonDetectingStrapCondition.zeroBeatsPerMinute,
+        DetectingStrapCondition.implausibleBeatsPerMinute =>
+          NonDetectingStrapCondition.implausibleBeatsPerMinute,
       }),
     NonDetectingStrapOverride(:final condition) =>
       ReadingOverride.detectingStrap(switch (condition) {
         NonDetectingStrapCondition.normal => DetectingStrapCondition.normal,
         NonDetectingStrapCondition.stale => DetectingStrapCondition.stale,
-        NonDetectingStrapCondition.zeroBpm => DetectingStrapCondition.zeroBpm,
-        NonDetectingStrapCondition.implausibleBpm =>
-          DetectingStrapCondition.implausibleBpm,
+        NonDetectingStrapCondition.zeroBeatsPerMinute =>
+          DetectingStrapCondition.zeroBeatsPerMinute,
+        NonDetectingStrapCondition.implausibleBeatsPerMinute =>
+          DetectingStrapCondition.implausibleBeatsPerMinute,
       }),
   };
 }
@@ -155,21 +157,27 @@ class DebugOverrideHeartRateSource implements HeartRateSource {
         DetectingStrapCondition.noSkinContact => [
           _unavailable(sample, HeartRateUnavailableReason.noSkinContact),
         ],
-        DetectingStrapCondition.zeroBpm => [
-          _unavailable(sample, HeartRateUnavailableReason.zeroBpm),
+        DetectingStrapCondition.zeroBeatsPerMinute => [
+          _unavailable(sample, HeartRateUnavailableReason.zeroBeatsPerMinute),
         ],
-        DetectingStrapCondition.implausibleBpm => [
-          _unavailable(sample, HeartRateUnavailableReason.implausibleBpm),
+        DetectingStrapCondition.implausibleBeatsPerMinute => [
+          _unavailable(
+            sample,
+            HeartRateUnavailableReason.implausibleBeatsPerMinute,
+          ),
         ],
       },
       NonDetectingStrapOverride(:final condition) => switch (condition) {
         NonDetectingStrapCondition.normal => [_asNonDetectingStrap(sample)],
         NonDetectingStrapCondition.stale => const [],
-        NonDetectingStrapCondition.zeroBpm => [
-          _unavailable(sample, HeartRateUnavailableReason.zeroBpm),
+        NonDetectingStrapCondition.zeroBeatsPerMinute => [
+          _unavailable(sample, HeartRateUnavailableReason.zeroBeatsPerMinute),
         ],
-        NonDetectingStrapCondition.implausibleBpm => [
-          _unavailable(sample, HeartRateUnavailableReason.implausibleBpm),
+        NonDetectingStrapCondition.implausibleBeatsPerMinute => [
+          _unavailable(
+            sample,
+            HeartRateUnavailableReason.implausibleBeatsPerMinute,
+          ),
         ],
       },
     };
@@ -189,8 +197,8 @@ class DebugOverrideHeartRateSource implements HeartRateSource {
       // A bpm of 0, or one too high to be real, says nothing about
       // skin-contact detection.
       UnavailableHeartRateSample(
-        reason: HeartRateUnavailableReason.zeroBpm ||
-            HeartRateUnavailableReason.implausibleBpm,
+        reason: HeartRateUnavailableReason.zeroBeatsPerMinute ||
+            HeartRateUnavailableReason.implausibleBeatsPerMinute,
       ) =>
         null,
     };
@@ -215,10 +223,10 @@ class DebugOverrideHeartRateSource implements HeartRateSource {
         UnavailableHeartRateSample(
           reason: HeartRateUnavailableReason.noSkinContact,
         ) =>
-          _unavailable(sample, HeartRateUnavailableReason.zeroBpm),
+          _unavailable(sample, HeartRateUnavailableReason.zeroBeatsPerMinute),
         UnavailableHeartRateSample(
-          reason: HeartRateUnavailableReason.zeroBpm ||
-              HeartRateUnavailableReason.implausibleBpm,
+          reason: HeartRateUnavailableReason.zeroBeatsPerMinute ||
+              HeartRateUnavailableReason.implausibleBeatsPerMinute,
         ) =>
           sample,
       };

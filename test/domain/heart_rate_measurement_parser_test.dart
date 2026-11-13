@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/domain/heart_rate_measurement_parser.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 
-import '../helpers/bpm.dart';
+import '../helpers/beats_per_minute.dart';
 
 final _timestamp = DateTime(2026, 11, 11, 10, 52, 31);
 
@@ -39,7 +39,7 @@ void main() {
         expect(
           _parseSample([0x16, 0x48, 0x00, 0x04]),
           HeartRateSample.measured(
-            bpm: bpmOf(72),
+            beatsPerMinute: beatsPerMinuteOf(72),
             timestamp: _timestamp,
             skinContact: SkinContact.detected,
             rrIntervals: const [Duration(milliseconds: 1000)],
@@ -53,7 +53,7 @@ void main() {
           expect(
             _parseSample([0x01, 0xB4, 0x00]),
             HeartRateSample.measured(
-              bpm: bpmOf(180),
+              beatsPerMinute: beatsPerMinuteOf(180),
               timestamp: _timestamp,
               skinContact: SkinContact.notSupported,
             ),
@@ -64,16 +64,16 @@ void main() {
 
     group('heart-rate value', () {
       test('reads uint8 bpm', () {
-        expect(_parseMeasured([0x00, 0x3C]).bpm.value, 60);
+        expect(_parseMeasured([0x00, 0x3C]).beatsPerMinute.value, 60);
       });
 
       test('reads uint16 bpm little-endian', () {
         // 0x00FA = 250, the highest plausible bpm.
-        expect(_parseMeasured([0x01, 0xFA, 0x00]).bpm.value, 250);
+        expect(_parseMeasured([0x01, 0xFA, 0x00]).beatsPerMinute.value, 250);
       });
 
       test('reads bpm 1, the lowest plausible bpm', () {
-        expect(_parseMeasured([0x00, 0x01]).bpm.value, 1);
+        expect(_parseMeasured([0x00, 0x01]).beatsPerMinute.value, 1);
       });
 
       test('stamps the sample with the given timestamp', () {
@@ -110,39 +110,39 @@ void main() {
       test('bpm 0: unavailable, zero bpm', () {
         expect(
           _parseSample([0x00, 0x00]),
-          _unavailable(HeartRateUnavailableReason.zeroBpm),
+          _unavailable(HeartRateUnavailableReason.zeroBeatsPerMinute),
         );
         expect(
           _parseSample([0x06, 0x00]),
-          _unavailable(HeartRateUnavailableReason.zeroBpm),
+          _unavailable(HeartRateUnavailableReason.zeroBeatsPerMinute),
         );
       });
 
       test('uint16 bpm 0: unavailable, zero bpm', () {
         expect(
           _parseSample([0x01, 0x00, 0x00]),
-          _unavailable(HeartRateUnavailableReason.zeroBpm),
+          _unavailable(HeartRateUnavailableReason.zeroBeatsPerMinute),
         );
       });
 
       test('uint8 bpm 251: unavailable, implausible bpm', () {
         expect(
           _parseSample([0x00, 0xFB]),
-          _unavailable(HeartRateUnavailableReason.implausibleBpm),
+          _unavailable(HeartRateUnavailableReason.implausibleBeatsPerMinute),
         );
       });
 
       test('uint16 bpm 65535: unavailable, implausible bpm', () {
         expect(
           _parseSample([0x01, 0xFF, 0xFF]),
-          _unavailable(HeartRateUnavailableReason.implausibleBpm),
+          _unavailable(HeartRateUnavailableReason.implausibleBeatsPerMinute),
         );
       });
 
       test('drops RR intervals when the bpm is implausible', () {
         expect(
           _parseSample([0x10, 0xFF, 0x00, 0x04]),
-          _unavailable(HeartRateUnavailableReason.implausibleBpm),
+          _unavailable(HeartRateUnavailableReason.implausibleBeatsPerMinute),
         );
       });
 
@@ -178,12 +178,15 @@ void main() {
     group('energy expended', () {
       test('is skipped, and RR intervals after it are still read', () {
         final sample = _parseMeasured([0x18, 0x48, 0x10, 0x27, 0x00, 0x04]);
-        expect(sample.bpm.value, 72);
+        expect(sample.beatsPerMinute.value, 72);
         expect(sample.rrIntervals, const [Duration(milliseconds: 1000)]);
       });
 
       test('works with uint16 bpm', () {
-        expect(_parseMeasured([0x09, 0xB4, 0x00, 0x10, 0x27]).bpm.value, 180);
+        expect(
+          _parseMeasured([0x09, 0xB4, 0x00, 0x10, 0x27]).beatsPerMinute.value,
+          180,
+        );
       });
     });
 
@@ -222,7 +225,7 @@ void main() {
       expect(
         _parseSample([0xE0 | 0x06, 0x48]),
         HeartRateSample.measured(
-          bpm: bpmOf(72),
+          beatsPerMinute: beatsPerMinuteOf(72),
           timestamp: _timestamp,
           skinContact: SkinContact.detected,
         ),
@@ -277,7 +280,7 @@ void main() {
         result,
         HeartRateParseResult.success(
           HeartRateSample.measured(
-            bpm: bpmOf(72),
+            beatsPerMinute: beatsPerMinuteOf(72),
             timestamp: _timestamp,
             skinContact: SkinContact.detected,
             rrIntervals: const [Duration(milliseconds: 1000)],

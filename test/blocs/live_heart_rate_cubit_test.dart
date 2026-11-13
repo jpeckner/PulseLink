@@ -8,15 +8,15 @@ import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 
-import '../helpers/bpm.dart';
+import '../helpers/beats_per_minute.dart';
 import '../helpers/failing_heart_rate_source.dart';
 import '../helpers/stub_heart_rate_source.dart';
 
 final _start = DateTime(2026, 11, 11, 10);
 
-HeartRateSample _sampleAt(DateTime timestamp, {int bpm = 72}) =>
+HeartRateSample _sampleAt(DateTime timestamp, {int beatsPerMinute = 72}) =>
     HeartRateSample.measured(
-      bpm: bpmOf(bpm),
+      beatsPerMinute: beatsPerMinuteOf(beatsPerMinute),
       timestamp: timestamp,
       skinContact: SkinContact.detected,
     );
@@ -96,7 +96,7 @@ void main() {
         final first = _sampleAt(clock.now());
         source.emit(first);
         async.elapse(const Duration(seconds: 1));
-        final second = _sampleAt(clock.now(), bpm: 75);
+        final second = _sampleAt(clock.now(), beatsPerMinute: 75);
         source.emit(second);
         async.flushMicrotasks();
 
@@ -177,12 +177,16 @@ void main() {
         async.elapse(const Duration(seconds: 15));
         expect((cubit.state as LiveHeartRateReading).isStale, isTrue);
 
-        source.emit(_sampleAt(clock.now(), bpm: 80));
+        source.emit(_sampleAt(clock.now(), beatsPerMinute: 80));
         final reading = cubit.state as LiveHeartRateReading;
         expect(reading.isStale, isFalse);
         expect(
           reading.sample,
-          isA<MeasuredHeartRateSample>().having((s) => s.bpm.value, 'bpm', 80),
+          isA<MeasuredHeartRateSample>().having(
+            (s) => s.beatsPerMinute.value,
+            'bpm',
+            80,
+          ),
         );
       });
     });

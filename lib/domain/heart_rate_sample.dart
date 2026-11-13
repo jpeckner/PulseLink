@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:pulselink/domain/bpm.dart';
+import 'package:pulselink/domain/beats_per_minute.dart';
 
 part 'heart_rate_sample.freezed.dart';
 
@@ -21,11 +21,11 @@ enum HeartRateUnavailableReason {
   noSkinContact,
 
   /// The sensor sent a bpm of 0, meaning it has no reading.
-  zeroBpm,
+  zeroBeatsPerMinute,
 
-  /// The sensor sent a bpm above [Bpm.max], which is almost certainly a
-  /// corrupt packet or a sensor fault rather than a heartbeat.
-  implausibleBpm,
+  /// The sensor sent a bpm above [BeatsPerMinute.max], which is almost
+  /// certainly a corrupt packet or a sensor fault rather than a heartbeat.
+  implausibleBeatsPerMinute,
 }
 
 /// One packet's worth of heart-rate data, stamped with the time it arrived.
@@ -33,13 +33,13 @@ enum HeartRateUnavailableReason {
 /// Either a [MeasuredHeartRateSample], which has a bpm safe to show and
 /// record, or an [UnavailableHeartRateSample], which has none. Both mean the
 /// sensor is connected and sending, so both count as fresh data. Only the
-/// measured case has a `bpm` field, so code can't show an untrustworthy value
-/// by mistake.
+/// measured case has a `beatsPerMinute` field, so code can't show an
+/// untrustworthy value by mistake.
 @freezed
 sealed class HeartRateSample with _$HeartRateSample {
   /// A usable reading.
   const factory measured({
-    required Bpm bpm,
+    required BeatsPerMinute beatsPerMinute,
     required DateTime timestamp,
     required SkinContact skinContact,
     @Default(<Duration>[]) List<Duration> rrIntervals,

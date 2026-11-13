@@ -84,7 +84,7 @@ class _WaitingView extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const _BpmReadout(bpm: null, isStale: false),
+        const _BeatsPerMinuteReadout(beatsPerMinute: null, isStale: false),
         const SizedBox(height: 16),
         Text(
           'Waiting for heart-rate data…',
@@ -108,9 +108,10 @@ class _ReadingView extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _BpmReadout(
-          bpm: switch (sample) {
-            MeasuredHeartRateSample(:final bpm) => bpm.value,
+        _BeatsPerMinuteReadout(
+          beatsPerMinute: switch (sample) {
+            MeasuredHeartRateSample(:final beatsPerMinute) =>
+              beatsPerMinute.value,
             UnavailableHeartRateSample() => null,
           },
           isStale: isStale,
@@ -165,11 +166,11 @@ class _ReadingView extends StatelessWidget {
   }
 }
 
-class _BpmReadout extends StatelessWidget {
-  const new({required this.bpm, required this.isStale});
+class _BeatsPerMinuteReadout extends StatelessWidget {
+  const new({required this.beatsPerMinute, required this.isStale});
 
   /// Null when there's no usable reading; shown as "--".
-  final int? bpm;
+  final int? beatsPerMinute;
   final bool isStale;
 
   @override
@@ -178,10 +179,11 @@ class _BpmReadout extends StatelessWidget {
     final color = isStale
         ? theme.colorScheme.onSurface.withValues(alpha: 0.38)
         : theme.colorScheme.onSurface;
-    final label = switch ((bpm, isStale)) {
+    final label = switch ((beatsPerMinute, isStale)) {
       (null, _) => 'No heart-rate reading',
-      (final bpm?, true) => 'Last reading $bpm beats per minute, out of date',
-      (final bpm?, false) => '$bpm beats per minute',
+      (final beatsPerMinute?, true) =>
+        'Last reading $beatsPerMinute beats per minute, out of date',
+      (final beatsPerMinute?, false) => '$beatsPerMinute beats per minute',
     };
     return Semantics(
       label: label,
@@ -192,7 +194,7 @@ class _BpmReadout extends StatelessWidget {
         textBaseline: TextBaseline.alphabetic,
         children: [
           Text(
-            bpm?.toString() ?? '--',
+            beatsPerMinute?.toString() ?? '--',
             style: theme.textTheme.displayLarge?.copyWith(
               color: color,
               fontWeight: FontWeight.w600,
@@ -245,7 +247,9 @@ class _StrapStatusChip extends StatelessWidget {
           avatar: Icon(Icons.error_outline, color: colors.error),
           label: const Text('No skin contact'),
         ),
-      UnavailableHeartRateSample(reason: HeartRateUnavailableReason.zeroBpm) =>
+      UnavailableHeartRateSample(
+        reason: HeartRateUnavailableReason.zeroBeatsPerMinute,
+      ) =>
         const Chip(
           avatar: Icon(Icons.info_outline),
           label: Text('Strap connected, no heart rate yet'),
@@ -253,7 +257,7 @@ class _StrapStatusChip extends StatelessWidget {
       // Shown as an error, unlike a bpm of 0: the strap sent a value, but not
       // one that can be a heart rate.
       UnavailableHeartRateSample(
-        reason: HeartRateUnavailableReason.implausibleBpm,
+        reason: HeartRateUnavailableReason.implausibleBeatsPerMinute,
       ) =>
         Chip(
           avatar: Icon(Icons.error_outline, color: colors.error),

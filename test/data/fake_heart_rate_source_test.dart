@@ -85,20 +85,23 @@ void main() {
         expect(samples, hasLength(300));
         for (final sample in samples) {
           expect(
-            sample.bpm.value,
+            sample.beatsPerMinute.value,
             inInclusiveRange(
-              FakeHeartRateSource.minBpm,
-              FakeHeartRateSource.maxBpm,
+              FakeHeartRateSource.minBeatsPerMinute,
+              FakeHeartRateSource.maxBeatsPerMinute,
             ),
           );
           expect(sample.skinContact, SkinContact.detected);
           // One RR interval matching the bpm: 60 s / bpm.
           expect(sample.rrIntervals, hasLength(1));
-          final impliedBpm =
+          final impliedBeatsPerMinute =
               60000000 / sample.rrIntervals.single.inMicroseconds;
-          expect(impliedBpm, closeTo(sample.bpm.value, 0.01));
+          expect(
+            impliedBeatsPerMinute,
+            closeTo(sample.beatsPerMinute.value, 0.01),
+          );
         }
-        final distinct = samples.map((s) => s.bpm.value).toSet();
+        final distinct = samples.map((s) => s.beatsPerMinute.value).toSet();
         expect(distinct.length, greaterThan(10), reason: 'bpm should move');
       });
     });
@@ -112,7 +115,9 @@ void main() {
         );
         for (var i = 1; i < samples.length; i++) {
           expect(
-            (samples[i].bpm.value - samples[i - 1].bpm.value).abs(),
+            (samples[i].beatsPerMinute.value -
+                    samples[i - 1].beatsPerMinute.value)
+                .abs(),
             lessThan(15),
           );
         }
@@ -120,20 +125,20 @@ void main() {
     });
 
     test('is repeatable for the same seed', () {
-      List<int> bpms(int seed) {
+      List<int> beatsPerMinuteValues(int seed) {
         late List<int> result;
         _withFakeTime((async) {
           result = _run(
             async,
             FakeHeartRateSource(random: Random(seed)),
             const Duration(seconds: 30),
-          ).map((s) => s.bpm.value).toList();
+          ).map((s) => s.beatsPerMinute.value).toList();
         });
         return result;
       }
 
-      expect(bpms(42), bpms(42));
-      expect(bpms(42), isNot(bpms(43)));
+      expect(beatsPerMinuteValues(42), beatsPerMinuteValues(42));
+      expect(beatsPerMinuteValues(42), isNot(beatsPerMinuteValues(43)));
     });
 
     test('stops emitting after stop, and resumes after start', () {

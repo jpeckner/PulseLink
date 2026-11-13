@@ -10,7 +10,7 @@ import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/ui/debug/debug_override_buttons.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
-import '../helpers/bpm.dart';
+import '../helpers/beats_per_minute.dart';
 import '../helpers/stub_heart_rate_source.dart';
 
 void main() {
@@ -30,7 +30,7 @@ void main() {
 
       source.emit(
         HeartRateSample.measured(
-          bpm: bpmOf(72),
+          beatsPerMinute: beatsPerMinuteOf(72),
           timestamp: clock.now(),
           skinContact: SkinContact.detected,
         ),
@@ -60,7 +60,7 @@ void main() {
         ),
       );
       HeartRateSample sample() => HeartRateSample.measured(
-        bpm: bpmOf(72),
+        beatsPerMinute: beatsPerMinuteOf(72),
         timestamp: clock.now(),
         skinContact: SkinContact.detected,
       );

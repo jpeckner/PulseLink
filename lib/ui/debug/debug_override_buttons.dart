@@ -48,20 +48,21 @@ class DebugOverrideButtons extends StatelessWidget {
           'Skin-contact detection: not supported',
       };
 
-  static String _conditionLabel(ReadingOverride readingOverride) =>
-      switch (readingOverride) {
-        DetectingStrapOverride(:final condition) => switch (condition) {
-          DetectingStrapCondition.normal => 'Normal',
-          DetectingStrapCondition.stale => 'No data (stale)',
-          DetectingStrapCondition.noSkinContact => 'No skin contact',
-          DetectingStrapCondition.zeroBpm => 'Zero bpm',
-          DetectingStrapCondition.implausibleBpm => 'Implausible bpm',
-        },
-        NonDetectingStrapOverride(:final condition) => switch (condition) {
-          NonDetectingStrapCondition.normal => 'Normal',
-          NonDetectingStrapCondition.stale => 'No data (stale)',
-          NonDetectingStrapCondition.zeroBpm => 'Zero bpm',
-          NonDetectingStrapCondition.implausibleBpm => 'Implausible bpm',
-        },
-      };
+  static String _conditionLabel(
+    ReadingOverride readingOverride,
+  ) => switch (readingOverride) {
+    DetectingStrapOverride(:final condition) => switch (condition) {
+      DetectingStrapCondition.normal => 'Normal',
+      DetectingStrapCondition.stale => 'No data (stale)',
+      DetectingStrapCondition.noSkinContact => 'No skin contact',
+      DetectingStrapCondition.zeroBeatsPerMinute => 'Zero bpm',
+      DetectingStrapCondition.implausibleBeatsPerMinute => 'Implausible bpm',
+    },
+    NonDetectingStrapOverride(:final condition) => switch (condition) {
+      NonDetectingStrapCondition.normal => 'Normal',
+      NonDetectingStrapCondition.stale => 'No data (stale)',
+      NonDetectingStrapCondition.zeroBeatsPerMinute => 'Zero bpm',
+      NonDetectingStrapCondition.implausibleBeatsPerMinute => 'Implausible bpm',
+    },
+  };
 }

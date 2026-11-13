@@ -12,7 +12,7 @@ Avoid assertions as much as possible. Instead, build compile-time safe
 components that can't fail at runtime:
 
 - Make invalid states unrepresentable: sealed classes, dedicated enums and
-  value types (such as `Bpm`).
+  value types (such as `BeatsPerMinute`).
 - Untrusted input (BLE packets, platform-channel messages, stored data) returns
   a typed result or `null` rather than failing.
 - Switch on closed types without a catch-all. Model a fixed set of cases as an
