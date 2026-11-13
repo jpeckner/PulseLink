@@ -39,7 +39,9 @@ class FakeHeartRateSource implements HeartRateSource {
   /// Does nothing after [dispose].
   @override
   Future<void> start() async {
-    if (_controller.isClosed) return;
+    if (_controller.isClosed) {
+      return;
+    }
     _timer ??= Timer.periodic(interval, (_) => _emitSample());
   }
 

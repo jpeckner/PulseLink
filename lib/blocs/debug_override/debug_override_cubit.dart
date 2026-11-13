@@ -43,7 +43,9 @@ class DebugOverrideCubit extends Cubit<DebugOverrideState> {
   };
 
   void _apply(DebugOverrideState next) {
-    if (isClosed) return;
+    if (isClosed) {
+      return;
+    }
     // The source's override is always derived from the state, never set apart
     // from it, so hiding the buttons can't leave an override running.
     _source.readingOverride = switch (next) {

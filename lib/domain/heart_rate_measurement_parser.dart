@@ -133,14 +133,18 @@ class _ByteReader {
   bool get isAtEnd => _offset >= _bytes.length;
 
   int? uint8() {
-    if (_bytes.length - _offset < 1) return null;
+    if (_bytes.length - _offset < 1) {
+      return null;
+    }
     final value = _bytes[_offset];
     _offset += 1;
     return value;
   }
 
   int? uint16() {
-    if (_bytes.length - _offset < 2) return null;
+    if (_bytes.length - _offset < 2) {
+      return null;
+    }
     final value = _bytes[_offset] | (_bytes[_offset + 1] << 8);
     _offset += 2;
     return value;

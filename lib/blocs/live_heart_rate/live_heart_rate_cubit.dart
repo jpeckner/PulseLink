@@ -27,7 +27,9 @@ class LiveHeartRateCubit extends Cubit<LiveHeartRateState> {
   /// Subscribes to the source and starts it. Safe to call more than once;
   /// does nothing after [close].
   Future<void> start() async {
-    if (isClosed) return;
+    if (isClosed) {
+      return;
+    }
     // No onError: HeartRateSource.samples never carries errors.
     _subscription ??= _source.samples.listen(_onSample);
     await _source.start();
