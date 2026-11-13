@@ -40,11 +40,12 @@ void main() {
 
 LiveHeartRateCubit _startedCubit(HeartRateSource source) {
   final cubit = LiveHeartRateCubit(source: source);
-  // Not awaited: runApp shouldn't wait for the source. The sources used here
-  // can't fail to start (FakeHeartRateSource, and the debug override that
-  // only wraps it). A real BLE source's can (Bluetooth off, permission
-  // denied), so in Milestone 3 start() returns a typed result that the cubit
-  // turns into a state the screen shows, rather than an error dropped here.
+  // Not awaited: runApp shouldn't wait for the source. start() doesn't need
+  // watching here: a source that can't start (Bluetooth off, permission
+  // denied) reports it as a typed result, which the cubit turns into a state
+  // the screen shows. start() only throws on a bug in a source; that's left
+  // uncaught for the zone's error handler to report, and the screen keeps
+  // showing that it's waiting.
   unawaited(cubit.start());
   return cubit;
 }

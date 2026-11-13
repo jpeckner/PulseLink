@@ -5,6 +5,7 @@ import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/data/fake_heart_rate_source.dart';
+import 'package:pulselink/data/heart_rate_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 
 final _start = DateTime(2026, 11, 11, 10);
@@ -12,6 +13,23 @@ final _start = DateTime(2026, 11, 11, 10);
 /// Runs [body] with fake time, and a [clock] that follows it.
 void _withFakeTime(void Function(FakeAsync async) body) {
   fakeAsync((async) => withClock(async.getClock(_start), () => body(async)));
+}
+
+const _started = HeartRateSourceStartResult.started();
+
+/// Starts [source] under fake time, and returns how starting went.
+HeartRateSourceStartResult _startNow(
+  FakeAsync async,
+  FakeHeartRateSource source,
+) {
+  HeartRateSourceStartResult? result;
+  unawaited(
+    source.start().then((value) {
+      result = value;
+    }),
+  );
+  async.flushMicrotasks();
+  return result ?? fail('start() did not complete');
 }
 
 /// Starts [source], lets [duration] pass, and returns what it emitted. The
@@ -28,7 +46,7 @@ List<MeasuredHeartRateSample> _run(
       UnavailableHeartRateSample() => fail('Unexpected: $sample'),
     }),
   );
-  unawaited(source.start());
+  expect(_startNow(async, source), _started);
   async.elapse(duration);
   return samples;
 }
@@ -149,7 +167,7 @@ void main() {
         async.elapse(const Duration(seconds: 5));
         expect(samples, hasLength(2));
 
-        unawaited(source.start());
+        expect(_startNow(async, source), _started);
         async.elapse(const Duration(seconds: 1));
         expect(samples, hasLength(3));
       });
@@ -158,18 +176,21 @@ void main() {
     test('calling start twice does not double the rate', () {
       _withFakeTime((async) {
         final source = FakeHeartRateSource();
-        unawaited(source.start());
+        expect(_startNow(async, source), _started);
         final samples = _run(async, source, const Duration(seconds: 3));
         expect(samples, hasLength(3));
       });
     });
 
-    test('start after dispose does nothing', () {
+    test('start after dispose does nothing and reports it was cancelled', () {
       _withFakeTime((async) {
         final source = FakeHeartRateSource();
         unawaited(source.dispose());
         async.flushMicrotasks();
-        unawaited(source.start());
+        expect(
+          _startNow(async, source),
+          const HeartRateSourceStartResult.cancelled(),
+        );
         async.elapse(const Duration(seconds: 5));
         expect(async.pendingTimers, isEmpty);
       });
@@ -180,7 +201,7 @@ void main() {
         final source = FakeHeartRateSource();
         var isDone = false;
         source.samples.listen(null, onDone: () => isDone = true);
-        unawaited(source.start());
+        expect(_startNow(async, source), _started);
         unawaited(source.dispose());
         async.flushMicrotasks();
         expect(isDone, isTrue);

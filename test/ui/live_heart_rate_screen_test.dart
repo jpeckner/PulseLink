@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/strap_connection_failure.dart';
 import 'package:pulselink/ui/live/live_heart_rate_screen.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
@@ -243,6 +244,69 @@ void main() {
       });
     });
 
+    group('connection failed', () {
+      const messages = {
+        StrapConnectionFailure.bluetoothOff: (
+          'Bluetooth is off',
+          'Turn on Bluetooth to connect to your strap.',
+        ),
+        StrapConnectionFailure.bluetoothUnavailable: (
+          "Bluetooth isn't available",
+          "This phone can't connect to a heart-rate strap.",
+        ),
+        StrapConnectionFailure.bluetoothPermissionDenied: (
+          'Bluetooth permission needed',
+          'Allow PulseLink to use Bluetooth in Settings, then try again.',
+        ),
+        StrapConnectionFailure.strapUnreachable: (
+          "Can't reach the strap",
+          "Make sure it's on, being worn and nearby, and not connected to "
+              'another app.',
+        ),
+        StrapConnectionFailure.notAHeartRateStrap: (
+          'Not a heart-rate strap',
+          "This device doesn't send heart-rate data.",
+        ),
+      };
+
+      test('every failure has a message', () {
+        expect(messages.keys, unorderedEquals(StrapConnectionFailure.values));
+      });
+
+      for (final MapEntry(key: failure, value: (title, detail))
+          in messages.entries) {
+        testWidgets('${failure.name}: says why, what to do, and no number', (
+          tester,
+        ) async {
+          await pumpScreen(
+            tester,
+            LiveHeartRateState.connectionFailed(
+              failure: failure,
+              isSimulated: false,
+            ),
+          );
+          expect(find.text(title), findsOneWidget);
+          expect(find.text(detail), findsOneWidget);
+          expect(find.text('Try again'), findsOneWidget);
+          expect(find.text('--'), findsNothing);
+          expect(find.text('bpm'), findsNothing);
+        });
+      }
+
+      testWidgets('Try again starts the cubit again', (tester) async {
+        when(() => cubit.start()).thenAnswer((_) async {});
+        await pumpScreen(
+          tester,
+          const LiveHeartRateState.connectionFailed(
+            failure: StrapConnectionFailure.bluetoothOff,
+            isSimulated: false,
+          ),
+        );
+        await tester.tap(find.text('Try again'));
+        verify(() => cubit.start()).called(1);
+      });
+    });
+
     group('demo badge', () {
       testWidgets('shows for simulated data', (tester) async {
         await pumpScreen(tester, _reading(isSimulated: true));
@@ -306,6 +370,11 @@ void main() {
         _unavailable(HeartRateUnavailableReason.zeroBeatsPerMinute),
         _unavailable(HeartRateUnavailableReason.implausibleBeatsPerMinute),
         _unavailable(HeartRateUnavailableReason.noSkinContact, isStale: true),
+        for (final failure in StrapConnectionFailure.values)
+          LiveHeartRateState.connectionFailed(
+            failure: failure,
+            isSimulated: false,
+          ),
       ]) {
         await pumpScreen(tester, state);
         expect(tester.takeException(), isNull, reason: '$state');

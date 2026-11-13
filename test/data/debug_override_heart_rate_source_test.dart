@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/data/debug_override_heart_rate_source.dart';
+import 'package:pulselink/data/heart_rate_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/strap_connection_failure.dart';
 
 import '../helpers/beats_per_minute.dart';
 import '../helpers/failing_heart_rate_source.dart';
@@ -319,12 +321,48 @@ void main() {
         isFalse,
       );
 
-      await source.start();
+      expect(await source.start(), const HeartRateSourceStartResult.started());
       await source.stop();
       await source.dispose();
       expect(inner.startCount, 1);
       expect(inner.stopCount, 1);
       expect(inner.isDisposed, isTrue);
+    });
+
+    test("passes through the wrapped source's start failure", () async {
+      inner.startResult = const HeartRateSourceStartResult.failed(
+        StrapConnectionFailure.bluetoothOff,
+      );
+      expect(
+        await source.start(),
+        const HeartRateSourceStartResult.failed(
+          StrapConnectionFailure.bluetoothOff,
+        ),
+      );
+    });
+
+    test('a second start joins the one in progress', () async {
+      inner
+        ..holdStart = true
+        ..startResult = const HeartRateSourceStartResult.failed(
+          StrapConnectionFailure.strapUnreachable,
+        );
+      final first = source.start();
+      final second = source.start();
+      inner.finishStart();
+      const failed = HeartRateSourceStartResult.failed(
+        StrapConnectionFailure.strapUnreachable,
+      );
+      expect(await first, failed);
+      expect(await second, failed);
+    });
+
+    test('stop cancels a start the wrapped source is still making', () async {
+      inner.holdStart = true;
+      final start = source.start();
+      expect(inner.isStarting, isTrue);
+      await source.stop();
+      expect(await start, const HeartRateSourceStartResult.cancelled());
     });
   });
 
