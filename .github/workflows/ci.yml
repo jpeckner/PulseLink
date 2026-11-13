@@ -56,6 +56,11 @@ jobs:
       - name: Analyze (very_good_analysis and pulselink_lints)
         run: flutter analyze --fatal-infos --fatal-warnings
 
+      # A plugin that fails to load makes the analyze step above pass without
+      # running its rules, so prove each enabled rule still reports.
+      - name: Check the lint plugin is running
+        run: tool/check_lint_plugin.sh
+
       - name: Test
         run: flutter test --coverage
 

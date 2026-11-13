@@ -35,8 +35,11 @@ class LiveHeartRateCubit extends Cubit<LiveHeartRateState> {
 
   void _onSample(HeartRateSample sample) {
     _staleTimer?.cancel();
+    // A timestamp ahead of the clock (the clock was set back, or the sample
+    // was stamped by a clock running ahead) counts as age 0. Otherwise the
+    // negative age would keep the sample fresh for longer than staleAfter.
     final age = clock.now().difference(sample.timestamp);
-    final timeUntilStale = staleAfter - age;
+    final timeUntilStale = staleAfter - (age.isNegative ? Duration.zero : age);
     final isStale = timeUntilStale <= Duration.zero;
 
     emit(
