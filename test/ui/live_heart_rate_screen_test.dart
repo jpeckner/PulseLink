@@ -21,14 +21,14 @@ final String _time = DateFormat.jms().format(_timestamp);
 
 LiveHeartRateState _reading({
   int bpm = 72,
-  MeasuredContact contact = MeasuredContact.detected,
+  SkinContact skinContact = SkinContact.detected,
   bool isStale = false,
   bool isSimulated = false,
 }) => LiveHeartRateState.reading(
   sample: HeartRateSample.measured(
     bpm: positiveInt(bpm),
     timestamp: _timestamp,
-    contact: contact,
+    skinContact: skinContact,
   ),
   isStale: isStale,
   isSimulated: isSimulated,
@@ -51,8 +51,13 @@ void main() {
 
     Future<void> pumpScreen(WidgetTester tester, LiveHeartRateState state) {
       when(() => cubit.state).thenReturn(state);
+      // A new key gives a fresh BlocBuilder, which reads the new state. With
+      // the same key, re-pumping keeps the first state it read, so tests that
+      // pump several states would silently only check the first.
       return tester.pumpWidget(
-        MaterialApp(home: LiveHeartRateScreen(cubit: cubit)),
+        MaterialApp(
+          home: LiveHeartRateScreen(key: UniqueKey(), cubit: cubit),
+        ),
       );
     }
 
@@ -74,21 +79,21 @@ void main() {
     });
 
     group('fresh reading', () {
-      testWidgets('shows bpm, update time and contact', (tester) async {
+      testWidgets('shows bpm, update time and skin contact', (tester) async {
         await pumpScreen(tester, _reading());
         expect(find.text('72'), findsOneWidget);
         expect(find.text('Updated $_time'), findsOneWidget);
-        expect(find.text('Sensor contact'), findsOneWidget);
-        expect(find.textContaining('Signal lost'), findsNothing);
+        expect(find.text('Skin contact'), findsOneWidget);
+        expect(find.textContaining('No data from strap'), findsNothing);
         expect(find.bySemanticsLabel('72 beats per minute'), findsOneWidget);
       });
 
-      testWidgets('shows no contact chip if contact is not reported', (
+      testWidgets('shows no skin-contact chip if the strap cannot detect it', (
         tester,
       ) async {
         await pumpScreen(
           tester,
-          _reading(contact: MeasuredContact.notReported),
+          _reading(skinContact: SkinContact.notSupported),
         );
         expect(find.text('72'), findsOneWidget);
         expect(find.byType(Chip), findsNothing);
@@ -96,11 +101,12 @@ void main() {
     });
 
     group('stale reading', () {
-      testWidgets('says the signal is lost and when the last reading was', (
+      testWidgets('says no data is arriving and when the last reading was', (
         tester,
       ) async {
         await pumpScreen(tester, _reading(isStale: true));
-        expect(find.text('Signal lost · last reading $_time'), findsOneWidget);
+        expect(find.text('No data from strap'), findsOneWidget);
+        expect(find.text('Last reading $_time'), findsOneWidget);
         expect(find.textContaining('Updated'), findsNothing);
       });
 
@@ -117,18 +123,64 @@ void main() {
       });
     });
 
+    group('strap status chip while stale', () {
+      // A hidden chip stays in the tree to keep its space, so check
+      // Visibility.of and what a screen reader sees, not mere presence.
+
+      testWidgets('skin contact is hidden: it is out of date too', (
+        tester,
+      ) async {
+        await pumpScreen(tester, _reading());
+        expect(
+          Visibility.of(tester.element(find.text('Skin contact'))),
+          isTrue,
+        );
+        expect(find.bySemanticsLabel('Skin contact'), findsOneWidget);
+
+        await pumpScreen(tester, _reading(isStale: true));
+        expect(
+          Visibility.of(tester.element(find.text('Skin contact'))),
+          isFalse,
+        );
+        expect(find.bySemanticsLabel('Skin contact'), findsNothing);
+      });
+
+      testWidgets('no skin contact is hidden too', (tester) async {
+        await pumpScreen(
+          tester,
+          _unavailable(HeartRateUnavailableReason.noSkinContact, isStale: true),
+        );
+        expect(
+          Visibility.of(tester.element(find.text('No skin contact'))),
+          isFalse,
+        );
+        expect(find.bySemanticsLabel('No skin contact'), findsNothing);
+        expect(find.text('No data from strap'), findsOneWidget);
+      });
+
+      testWidgets('hiding it does not move the readout', (tester) async {
+        await pumpScreen(tester, _reading());
+        final fresh = tester.getCenter(find.text('72'));
+        await pumpScreen(tester, _reading(isStale: true));
+        final stale = tester.getCenter(find.text('72'));
+        // The status line grows from one line to two, which can shift the
+        // readout slightly; the chip's reserved space keeps it to that.
+        expect((stale.dy - fresh.dy).abs(), lessThan(20));
+      });
+    });
+
     group('unavailable reading', () {
-      testWidgets('no contact: no number, a warning chip, still current', (
+      testWidgets('no skinContact: no number, a warning chip, still current', (
         tester,
       ) async {
         await pumpScreen(
           tester,
-          _unavailable(HeartRateUnavailableReason.noContact),
+          _unavailable(HeartRateUnavailableReason.noSkinContact),
         );
         expect(find.text('--'), findsOneWidget);
-        expect(find.text('No sensor contact'), findsOneWidget);
-        expect(find.text('Sensor contact'), findsNothing);
-        // Packets are still arriving, so this is not a lost signal.
+        expect(find.text('No skin contact'), findsOneWidget);
+        expect(find.text('Skin contact'), findsNothing);
+        // Packets are still arriving, so this is not "no data from strap".
         expect(find.text('Updated $_time'), findsOneWidget);
         expect(find.bySemanticsLabel('No heart-rate reading'), findsOneWidget);
       });
@@ -142,17 +194,20 @@ void main() {
         );
         expect(find.text('--'), findsOneWidget);
         expect(find.text('0'), findsNothing);
-        expect(find.text('No reading from sensor'), findsOneWidget);
-        expect(find.text('Sensor contact'), findsNothing);
+        expect(find.text('Strap connected, no heart rate yet'), findsOneWidget);
+        expect(find.text('Skin contact'), findsNothing);
       });
 
-      testWidgets('stale: shows signal lost', (tester) async {
+      testWidgets('stale: says no data is arriving from the strap', (
+        tester,
+      ) async {
         await pumpScreen(
           tester,
-          _unavailable(HeartRateUnavailableReason.noContact, isStale: true),
+          _unavailable(HeartRateUnavailableReason.noSkinContact, isStale: true),
         );
         expect(find.text('--'), findsOneWidget);
-        expect(find.text('Signal lost · last reading $_time'), findsOneWidget);
+        expect(find.text('No data from strap'), findsOneWidget);
+        expect(find.text('Last reading $_time'), findsOneWidget);
       });
     });
 
@@ -197,7 +252,31 @@ void main() {
 
       states.add(_reading(bpm: 80, isStale: true));
       await tester.pumpAndSettle();
-      expect(find.text('Signal lost · last reading $_time'), findsOneWidget);
+      expect(find.text('No data from strap'), findsOneWidget);
+      expect(find.text('Last reading $_time'), findsOneWidget);
+    });
+
+    testWidgets('every state fits a 320 px wide screen without overflow', (
+      tester,
+    ) async {
+      // Smaller than any current iPhone. Flutter fails the test on overflow.
+      tester.view
+        ..physicalSize = const Size(320, 640)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      for (final state in [
+        const LiveHeartRateState.waiting(isSimulated: true),
+        _reading(isSimulated: true),
+        _reading(isStale: true, isSimulated: true),
+        _reading(skinContact: SkinContact.notSupported),
+        _unavailable(HeartRateUnavailableReason.noSkinContact),
+        _unavailable(HeartRateUnavailableReason.zeroBpm),
+        _unavailable(HeartRateUnavailableReason.noSkinContact, isStale: true),
+      ]) {
+        await pumpScreen(tester, state);
+        expect(tester.takeException(), isNull, reason: '$state');
+      }
     });
   });
 }

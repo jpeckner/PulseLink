@@ -29,7 +29,7 @@ void main() {
         HeartRateSample.measured(
           bpm: positiveInt(72),
           timestamp: clock.now(),
-          contact: MeasuredContact.detected,
+          skinContact: SkinContact.detected,
         ),
       );
       await tester.pump();

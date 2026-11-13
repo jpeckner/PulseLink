@@ -6,8 +6,8 @@ import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
-/// Live heart rate: the latest bpm, when it arrived, sensor contact, and a
-/// clear signal-lost state once the reading goes stale.
+/// Live heart rate: the latest bpm, when it arrived, skin contact, and a clear
+/// "no data from strap" state once the reading goes stale.
 class LiveHeartRateScreen extends StatelessWidget {
   const new({required this.cubit, super.key});
 
@@ -87,14 +87,32 @@ class _ReadingView extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         if (isStale)
-          Row(
+          // Two short lines rather than one long one, so it fits narrow
+          // screens without wrapping away from the icon.
+          Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.signal_wifi_off, color: theme.colorScheme.error),
-              const SizedBox(width: 8),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.sensors_off, color: theme.colorScheme.error),
+                  const SizedBox(width: 8),
+                  // Flexible: wraps instead of overflowing with very large
+                  // accessibility text sizes.
+                  Flexible(
+                    child: Text(
+                      'No data from strap',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
               Text(
-                'Signal lost · last reading $time',
-                style: theme.textTheme.bodyLarge?.copyWith(
+                'Last reading $time',
+                style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.error,
                 ),
               ),
@@ -103,7 +121,15 @@ class _ReadingView extends StatelessWidget {
         else
           Text('Updated $time', style: theme.textTheme.bodyLarge),
         const SizedBox(height: 16),
-        _SensorStatusChip(sample: sample),
+        // A stale reading's skin-contact status is out of date too, so hide
+        // it. Its space is kept so the readout doesn't jump when data stops.
+        Visibility(
+          visible: !isStale,
+          maintainSize: true,
+          maintainAnimation: true,
+          maintainState: true,
+          child: _StrapStatusChip(sample: sample),
+        ),
       ],
     );
   }
@@ -153,8 +179,9 @@ class _BpmReadout extends StatelessWidget {
   }
 }
 
-/// Sensor status: contact for a measured sample, or why there's no reading.
-class _SensorStatusChip extends StatelessWidget {
+/// Strap status: skin contact for a measured sample, or why there's no
+/// reading. Never about Bluetooth connectivity.
+class _StrapStatusChip extends StatelessWidget {
   const new({required this.sample});
 
   final HeartRateSample sample;
@@ -163,24 +190,24 @@ class _SensorStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return switch (sample) {
-      MeasuredHeartRateSample(contact: MeasuredContact.detected) => const Chip(
+      MeasuredHeartRateSample(skinContact: SkinContact.detected) => const Chip(
         avatar: Icon(Icons.check_circle_outline),
-        label: Text('Sensor contact'),
+        label: Text('Skin contact'),
       ),
-      // The sensor can't detect contact, so there's nothing to say.
-      MeasuredHeartRateSample(contact: MeasuredContact.notReported) =>
+      // The strap can't detect skin contact, so there's nothing to say.
+      MeasuredHeartRateSample(skinContact: SkinContact.notSupported) =>
         const SizedBox.shrink(),
       UnavailableHeartRateSample(
-        reason: HeartRateUnavailableReason.noContact,
+        reason: HeartRateUnavailableReason.noSkinContact,
       ) =>
         Chip(
           avatar: Icon(Icons.error_outline, color: colors.error),
-          label: const Text('No sensor contact'),
+          label: const Text('No skin contact'),
         ),
       UnavailableHeartRateSample(reason: HeartRateUnavailableReason.zeroBpm) =>
         const Chip(
           avatar: Icon(Icons.info_outline),
-          label: Text('No reading from sensor'),
+          label: Text('Strap connected, no heart rate yet'),
         ),
     };
   }

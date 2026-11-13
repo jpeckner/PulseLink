@@ -3,20 +3,22 @@ import 'package:pulselink/domain/positive_int.dart';
 
 part 'heart_rate_sample.freezed.dart';
 
-/// Skin-contact status of a measured sample. There's no "no contact" value:
-/// a packet reporting no contact becomes an [UnavailableHeartRateSample].
-enum MeasuredContact {
-  /// The sensor detects skin contact.
+/// Whether a measured sample's strap is touching the wearer's skin. This is
+/// about skin contact only, never Bluetooth connectivity. There's no "no skin
+/// contact" value: a packet reporting no skin contact becomes an
+/// [UnavailableHeartRateSample].
+enum SkinContact {
+  /// The strap detects skin contact.
   detected,
 
-  /// The sensor doesn't support contact detection, so it can't say.
-  notReported,
+  /// The strap can't detect skin contact, so it can't say either way.
+  notSupported,
 }
 
 /// Why a well-formed packet carries no trustworthy heart rate.
 enum HeartRateUnavailableReason {
-  /// The sensor reports no skin contact, so any bpm it sends is meaningless.
-  noContact,
+  /// The strap reports no skin contact, so any bpm it sends is meaningless.
+  noSkinContact,
 
   /// The sensor sent a bpm of 0, meaning it has no reading.
   zeroBpm,
@@ -35,7 +37,7 @@ sealed class HeartRateSample with _$HeartRateSample {
   const factory measured({
     required PositiveInt bpm,
     required DateTime timestamp,
-    required MeasuredContact contact,
+    required SkinContact skinContact,
     @Default(<Duration>[]) List<Duration> rrIntervals,
   }) = MeasuredHeartRateSample;
 

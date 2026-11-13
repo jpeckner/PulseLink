@@ -31,8 +31,8 @@ sealed class HeartRateParseResult with _$HeartRateParseResult {
 
 // Flags byte (byte 0) bit masks, from the Bluetooth Heart Rate Service spec.
 const _heartRateIsUint16 = 0x01;
-const _contactDetected = 0x02;
-const _contactSupported = 0x04;
+const _skinContactDetected = 0x02;
+const _skinContactSupported = 0x04;
 const _energyExpendedPresent = 0x08;
 const _rrIntervalsPresent = 0x10;
 
@@ -44,8 +44,8 @@ const _rrIntervalsPresent = 0x10;
 /// intervals arrive in units of 1/1024 s and are converted to [Duration]s.
 ///
 /// A well-formed packet with no skin contact or a bpm of 0 becomes an
-/// [UnavailableHeartRateSample] (no contact wins if both apply), and its bpm
-/// and RR intervals are dropped. Everything else is a
+/// [UnavailableHeartRateSample] (no skin contact wins if both apply), and its
+/// bpm and RR intervals are dropped. Everything else is a
 /// [MeasuredHeartRateSample].
 HeartRateParseResult parseHeartRateMeasurement(
   Uint8List packet, {
@@ -88,16 +88,17 @@ HeartRateParseResult parseHeartRateMeasurement(
   }
 
   // The whole packet is valid. Now decide whether its bpm can be trusted.
-  // Bit 2: the sensor supports contact detection. Bit 1: it detects contact.
+  // Bit 2: the strap supports skin-contact detection. Bit 1: it detects skin
+  // contact.
   // Bit 1 means nothing unless bit 2 is set.
-  final contactSupported = flags & _contactSupported != 0;
-  final contactDetected = flags & _contactDetected != 0;
+  final skinContactSupported = flags & _skinContactSupported != 0;
+  final skinContactDetected = flags & _skinContactDetected != 0;
   final bpm = PositiveInt.tryFrom(rawBpm);
   final HeartRateSample sample;
-  if (contactSupported && !contactDetected) {
+  if (skinContactSupported && !skinContactDetected) {
     sample = HeartRateSample.unavailable(
       timestamp: timestamp,
-      reason: HeartRateUnavailableReason.noContact,
+      reason: HeartRateUnavailableReason.noSkinContact,
     );
   } else if (bpm == null) {
     sample = HeartRateSample.unavailable(
@@ -108,9 +109,9 @@ HeartRateParseResult parseHeartRateMeasurement(
     sample = HeartRateSample.measured(
       bpm: bpm,
       timestamp: timestamp,
-      contact: contactSupported
-          ? MeasuredContact.detected
-          : MeasuredContact.notReported,
+      skinContact: skinContactSupported
+          ? SkinContact.detected
+          : SkinContact.notSupported,
       rrIntervals: rrIntervals,
     );
   }

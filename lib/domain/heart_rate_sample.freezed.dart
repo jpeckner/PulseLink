@@ -156,10 +156,10 @@ return unavailable(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( PositiveInt bpm,  DateTime timestamp,  MeasuredContact contact,  List<Duration> rrIntervals)?  measured,TResult Function( DateTime timestamp,  HeartRateUnavailableReason reason)?  unavailable,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( PositiveInt bpm,  DateTime timestamp,  SkinContact skinContact,  List<Duration> rrIntervals)?  measured,TResult Function( DateTime timestamp,  HeartRateUnavailableReason reason)?  unavailable,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case MeasuredHeartRateSample() when measured != null:
-return measured(_that.bpm,_that.timestamp,_that.contact,_that.rrIntervals);case UnavailableHeartRateSample() when unavailable != null:
+return measured(_that.bpm,_that.timestamp,_that.skinContact,_that.rrIntervals);case UnavailableHeartRateSample() when unavailable != null:
 return unavailable(_that.timestamp,_that.reason);case _:
   return orElse();
 
@@ -178,10 +178,10 @@ return unavailable(_that.timestamp,_that.reason);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( PositiveInt bpm,  DateTime timestamp,  MeasuredContact contact,  List<Duration> rrIntervals)  measured,required TResult Function( DateTime timestamp,  HeartRateUnavailableReason reason)  unavailable,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( PositiveInt bpm,  DateTime timestamp,  SkinContact skinContact,  List<Duration> rrIntervals)  measured,required TResult Function( DateTime timestamp,  HeartRateUnavailableReason reason)  unavailable,}) {final _that = this;
 switch (_that) {
 case MeasuredHeartRateSample():
-return measured(_that.bpm,_that.timestamp,_that.contact,_that.rrIntervals);case UnavailableHeartRateSample():
+return measured(_that.bpm,_that.timestamp,_that.skinContact,_that.rrIntervals);case UnavailableHeartRateSample():
 return unavailable(_that.timestamp,_that.reason);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -196,10 +196,10 @@ return unavailable(_that.timestamp,_that.reason);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( PositiveInt bpm,  DateTime timestamp,  MeasuredContact contact,  List<Duration> rrIntervals)?  measured,TResult? Function( DateTime timestamp,  HeartRateUnavailableReason reason)?  unavailable,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( PositiveInt bpm,  DateTime timestamp,  SkinContact skinContact,  List<Duration> rrIntervals)?  measured,TResult? Function( DateTime timestamp,  HeartRateUnavailableReason reason)?  unavailable,}) {final _that = this;
 switch (_that) {
 case MeasuredHeartRateSample() when measured != null:
-return measured(_that.bpm,_that.timestamp,_that.contact,_that.rrIntervals);case UnavailableHeartRateSample() when unavailable != null:
+return measured(_that.bpm,_that.timestamp,_that.skinContact,_that.rrIntervals);case UnavailableHeartRateSample() when unavailable != null:
 return unavailable(_that.timestamp,_that.reason);case _:
   return null;
 
@@ -212,12 +212,12 @@ return unavailable(_that.timestamp,_that.reason);case _:
 
 
 class MeasuredHeartRateSample implements HeartRateSample {
-  const MeasuredHeartRateSample({required this.bpm, required this.timestamp, required this.contact,  List<Duration> rrIntervals = const <Duration>[]}): _rrIntervals = rrIntervals;
+  const MeasuredHeartRateSample({required this.bpm, required this.timestamp, required this.skinContact,  List<Duration> rrIntervals = const <Duration>[]}): _rrIntervals = rrIntervals;
   
 
  final  PositiveInt bpm;
 @override final  DateTime timestamp;
- final  MeasuredContact contact;
+ final  SkinContact skinContact;
  final  List<Duration> _rrIntervals;
 @JsonKey() List<Duration> get rrIntervals {
   if (_rrIntervals is EqualUnmodifiableListView) return _rrIntervals;
@@ -236,18 +236,18 @@ $MeasuredHeartRateSampleCopyWith<MeasuredHeartRateSample> get copyWith => _$Meas
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is MeasuredHeartRateSample&&(identical(other.bpm, bpm) || other.bpm == bpm)&&(identical(other.timestamp, timestamp) || other.timestamp == timestamp)&&(identical(other.contact, contact) || other.contact == contact)&&const DeepCollectionEquality().equals(other.rrIntervals, _rrIntervals));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is MeasuredHeartRateSample&&(identical(other.bpm, bpm) || other.bpm == bpm)&&(identical(other.timestamp, timestamp) || other.timestamp == timestamp)&&(identical(other.skinContact, skinContact) || other.skinContact == skinContact)&&const DeepCollectionEquality().equals(other.rrIntervals, _rrIntervals));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,bpm,timestamp,contact,const DeepCollectionEquality().hash(_rrIntervals));
+    return Object.hash(runtimeType,bpm,timestamp,skinContact,const DeepCollectionEquality().hash(_rrIntervals));
 }
 
 @override
 String toString() {
-    return 'HeartRateSample.measured(bpm: $bpm, timestamp: $timestamp, contact: $contact, rrIntervals: $rrIntervals)';
+    return 'HeartRateSample.measured(bpm: $bpm, timestamp: $timestamp, skinContact: $skinContact, rrIntervals: $rrIntervals)';
 }
 
 
@@ -258,7 +258,7 @@ abstract mixin class $MeasuredHeartRateSampleCopyWith<$Res> implements $HeartRat
   factory $MeasuredHeartRateSampleCopyWith(MeasuredHeartRateSample value, $Res Function(MeasuredHeartRateSample) _then) = _$MeasuredHeartRateSampleCopyWithImpl;
 @override @useResult
 $Res call({
- PositiveInt bpm, DateTime timestamp, MeasuredContact contact, List<Duration> rrIntervals
+ PositiveInt bpm, DateTime timestamp, SkinContact skinContact, List<Duration> rrIntervals
 });
 
 
@@ -275,12 +275,12 @@ class _$MeasuredHeartRateSampleCopyWithImpl<$Res>
 
 /// Create a copy of HeartRateSample
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? bpm = null,Object? timestamp = null,Object? contact = null,Object? rrIntervals = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? bpm = null,Object? timestamp = null,Object? skinContact = null,Object? rrIntervals = null,}) {
   return _then(MeasuredHeartRateSample(
 bpm: null == bpm ? _self.bpm : bpm // ignore: cast_nullable_to_non_nullable
 as PositiveInt,timestamp: null == timestamp ? _self.timestamp : timestamp // ignore: cast_nullable_to_non_nullable
-as DateTime,contact: null == contact ? _self.contact : contact // ignore: cast_nullable_to_non_nullable
-as MeasuredContact,rrIntervals: null == rrIntervals ? _self._rrIntervals : rrIntervals // ignore: cast_nullable_to_non_nullable
+as DateTime,skinContact: null == skinContact ? _self.skinContact : skinContact // ignore: cast_nullable_to_non_nullable
+as SkinContact,rrIntervals: null == rrIntervals ? _self._rrIntervals : rrIntervals // ignore: cast_nullable_to_non_nullable
 as List<Duration>,
   ));
 }

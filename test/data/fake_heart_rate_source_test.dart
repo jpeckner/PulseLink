@@ -91,7 +91,7 @@ void main() {
               FakeHeartRateSource.maxBpm,
             ),
           );
-          expect(sample.contact, MeasuredContact.detected);
+          expect(sample.skinContact, SkinContact.detected);
           // One RR interval matching the bpm: 60 s / bpm.
           expect(sample.rrIntervals, hasLength(1));
           final impliedBpm =
