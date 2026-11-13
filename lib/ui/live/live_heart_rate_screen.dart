@@ -8,6 +8,7 @@ import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
+import 'package:pulselink/ui/widgets/problem_view.dart';
 
 /// Live heart rate: the latest bpm, when it arrived, skin contact, and a clear
 /// "no data from strap" state once the reading goes stale.
@@ -117,46 +118,23 @@ class _ConnectionFailedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final (icon, title, detail) = switch (failure) {
-      StrapConnectionFailure.bluetoothOff => (
-        Icons.bluetooth_disabled,
-        'Bluetooth is off',
-        'Turn on Bluetooth to connect to your strap.',
-      ),
-      StrapConnectionFailure.bluetoothUnavailable => (
-        Icons.bluetooth_disabled,
-        "Bluetooth isn't available",
-        "This phone can't connect to a heart-rate strap.",
-      ),
-      StrapConnectionFailure.bluetoothPermissionDenied => (
-        Icons.lock_outline,
-        'Bluetooth permission needed',
-        'Allow PulseLink to use Bluetooth in Settings, then try again.',
-      ),
-      StrapConnectionFailure.strapUnreachable => (
-        Icons.sensors_off,
-        "Can't reach the strap",
-        "Make sure it's on, being worn and nearby, and not connected to "
-            'another app.',
-      ),
-      StrapConnectionFailure.notAHeartRateStrap => (
-        Icons.heart_broken_outlined,
-        'Not a heart-rate strap',
-        "This device doesn't send heart-rate data.",
-      ),
-    };
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 48, color: theme.colorScheme.error),
-        const SizedBox(height: 16),
-        Text(title, style: theme.textTheme.titleLarge, textAlign: .center),
-        const SizedBox(height: 8),
-        Text(detail, style: theme.textTheme.bodyLarge, textAlign: .center),
-        const SizedBox(height: 24),
-        FilledButton(onPressed: onTryAgain, child: const Text('Try again')),
-      ],
+    return ProblemView(
+      message: switch (failure) {
+        BluetoothFailure(:final problem) => bluetoothProblemMessage(problem),
+        StrapUnreachable() => (
+          icon: Icons.sensors_off,
+          title: "Can't reach the strap",
+          detail:
+              "Make sure it's on, being worn and nearby, and not connected "
+              'to another app.',
+        ),
+        NotAHeartRateStrap() => (
+          icon: Icons.heart_broken_outlined,
+          title: 'Not a heart-rate strap',
+          detail: "This device doesn't send heart-rate data.",
+        ),
+      },
+      onTryAgain: onTryAgain,
     );
   }
 }

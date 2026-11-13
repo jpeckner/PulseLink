@@ -409,7 +409,7 @@ $Res call({
 });
 
 
-
+$StrapConnectionFailureCopyWith<$Res> get failure;
 
 }
 /// @nodoc
@@ -430,7 +430,16 @@ as bool,
   ));
 }
 
-
+/// Create a copy of LiveHeartRateState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$StrapConnectionFailureCopyWith<$Res> get failure {
+  
+  return $StrapConnectionFailureCopyWith<$Res>(_self.failure, (value) {
+    return _then(_self.copyWith(failure: value));
+  });
+}
 }
 
 // dart format on

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/data/debug_override_heart_rate_source.dart';
 import 'package:pulselink/data/heart_rate_source.dart';
+import 'package:pulselink/domain/bluetooth_problem.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
 
@@ -331,12 +332,12 @@ void main() {
 
     test("passes through the wrapped source's start failure", () async {
       inner.startResult = const HeartRateSourceStartResult.failed(
-        StrapConnectionFailure.bluetoothOff,
+        StrapConnectionFailure.bluetooth(BluetoothProblem.off),
       );
       expect(
         await source.start(),
         const HeartRateSourceStartResult.failed(
-          StrapConnectionFailure.bluetoothOff,
+          StrapConnectionFailure.bluetooth(BluetoothProblem.off),
         ),
       );
     });
@@ -345,13 +346,13 @@ void main() {
       inner
         ..holdStart = true
         ..startResult = const HeartRateSourceStartResult.failed(
-          StrapConnectionFailure.strapUnreachable,
+          StrapConnectionFailure.strapUnreachable(),
         );
       final first = source.start();
       final second = source.start();
       inner.finishStart();
       const failed = HeartRateSourceStartResult.failed(
-        StrapConnectionFailure.strapUnreachable,
+        StrapConnectionFailure.strapUnreachable(),
       );
       expect(await first, failed);
       expect(await second, failed);

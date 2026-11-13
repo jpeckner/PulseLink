@@ -7,12 +7,14 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
+import 'package:pulselink/domain/bluetooth_problem.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
 import 'package:pulselink/ui/live/live_heart_rate_screen.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
 import '../helpers/beats_per_minute.dart';
+import '../helpers/strap_connection_failures.dart';
 
 class _MockLiveHeartRateCubit extends MockCubit<LiveHeartRateState>
     implements LiveHeartRateCubit;
@@ -245,37 +247,39 @@ void main() {
     });
 
     group('connection failed', () {
-      const messages = {
-        StrapConnectionFailure.bluetoothOff: (
+      final messages = {
+        const StrapConnectionFailure.bluetooth(BluetoothProblem.off): (
           'Bluetooth is off',
           'Turn on Bluetooth to connect to your strap.',
         ),
-        StrapConnectionFailure.bluetoothUnavailable: (
+        const StrapConnectionFailure.bluetooth(BluetoothProblem.unavailable): (
           "Bluetooth isn't available",
           "This phone can't connect to a heart-rate strap.",
         ),
-        StrapConnectionFailure.bluetoothPermissionDenied: (
+        const StrapConnectionFailure.bluetooth(
+          BluetoothProblem.permissionDenied,
+        ): (
           'Bluetooth permission needed',
           'Allow PulseLink to use Bluetooth in Settings, then try again.',
         ),
-        StrapConnectionFailure.strapUnreachable: (
+        const StrapConnectionFailure.strapUnreachable(): (
           "Can't reach the strap",
           "Make sure it's on, being worn and nearby, and not connected to "
               'another app.',
         ),
-        StrapConnectionFailure.notAHeartRateStrap: (
+        const StrapConnectionFailure.notAHeartRateStrap(): (
           'Not a heart-rate strap',
           "This device doesn't send heart-rate data.",
         ),
       };
 
       test('every failure has a message', () {
-        expect(messages.keys, unorderedEquals(StrapConnectionFailure.values));
+        expect(messages.keys, unorderedEquals(allStrapConnectionFailures));
       });
 
       for (final MapEntry(key: failure, value: (title, detail))
           in messages.entries) {
-        testWidgets('${failure.name}: says why, what to do, and no number', (
+        testWidgets('$failure: says why, what to do, and no number', (
           tester,
         ) async {
           await pumpScreen(
@@ -298,7 +302,7 @@ void main() {
         await pumpScreen(
           tester,
           const LiveHeartRateState.connectionFailed(
-            failure: StrapConnectionFailure.bluetoothOff,
+            failure: StrapConnectionFailure.bluetooth(BluetoothProblem.off),
             isSimulated: false,
           ),
         );
@@ -370,7 +374,7 @@ void main() {
         _unavailable(HeartRateUnavailableReason.zeroBeatsPerMinute),
         _unavailable(HeartRateUnavailableReason.implausibleBeatsPerMinute),
         _unavailable(HeartRateUnavailableReason.noSkinContact, isStale: true),
-        for (final failure in StrapConnectionFailure.values)
+        for (final failure in allStrapConnectionFailures)
           LiveHeartRateState.connectionFailed(
             failure: failure,
             isSimulated: false,
