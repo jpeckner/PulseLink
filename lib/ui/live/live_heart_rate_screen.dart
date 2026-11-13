@@ -250,6 +250,15 @@ class _StrapStatusChip extends StatelessWidget {
           avatar: Icon(Icons.info_outline),
           label: Text('Strap connected, no heart rate yet'),
         ),
+      // Shown as an error, unlike a bpm of 0: the strap sent a value, but not
+      // one that can be a heart rate.
+      UnavailableHeartRateSample(
+        reason: HeartRateUnavailableReason.implausibleBpm,
+      ) =>
+        Chip(
+          avatar: Icon(Icons.error_outline, color: colors.error),
+          label: const Text('Strap reading out of range'),
+        ),
     };
   }
 }

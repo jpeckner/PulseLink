@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:pulselink/domain/positive_int.dart';
+import 'package:pulselink/domain/bpm.dart';
 
 part 'heart_rate_sample.freezed.dart';
 
@@ -22,6 +22,10 @@ enum HeartRateUnavailableReason {
 
   /// The sensor sent a bpm of 0, meaning it has no reading.
   zeroBpm,
+
+  /// The sensor sent a bpm above [Bpm.max], which is almost certainly a
+  /// corrupt packet or a sensor fault rather than a heartbeat.
+  implausibleBpm,
 }
 
 /// One packet's worth of heart-rate data, stamped with the time it arrived.
@@ -35,7 +39,7 @@ enum HeartRateUnavailableReason {
 sealed class HeartRateSample with _$HeartRateSample {
   /// A usable reading.
   const factory measured({
-    required PositiveInt bpm,
+    required Bpm bpm,
     required DateTime timestamp,
     required SkinContact skinContact,
     @Default(<Duration>[]) List<Duration> rrIntervals,

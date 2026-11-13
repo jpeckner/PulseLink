@@ -3,8 +3,8 @@ import 'dart:math';
 
 import 'package:clock/clock.dart';
 import 'package:pulselink/data/heart_rate_source.dart';
+import 'package:pulselink/domain/bpm.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
-import 'package:pulselink/domain/positive_int.dart';
 
 /// Simulated heart rate for demo mode, screenshots and tests.
 ///
@@ -69,18 +69,19 @@ class FakeHeartRateSource implements HeartRateSource {
     );
 
     final now = clock.now();
-    _controller.add(switch (PositiveInt.tryFrom(_bpm.round())) {
+    _controller.add(switch (Bpm.tryFrom(_bpm.round())) {
       final bpm? => HeartRateSample.measured(
         bpm: bpm,
         timestamp: now,
         skinContact: SkinContact.detected,
         rrIntervals: [Duration(microseconds: (60000000 / bpm.value).round())],
       ),
-      // Unreachable while minBpm is above 0, but if the math ever produced 0
-      // the screen says the strap has no heart rate yet, not a wrong number.
+      // Unreachable while minBpm and maxBpm are within Bpm's range, but if
+      // the math ever left it, the screen says so rather than show a wrong
+      // number.
       null => HeartRateSample.unavailable(
         timestamp: now,
-        reason: HeartRateUnavailableReason.zeroBpm,
+        reason: HeartRateUnavailableReason.implausibleBpm,
       ),
     });
   }

@@ -11,7 +11,7 @@ import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/ui/live/live_heart_rate_screen.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
-import '../helpers/positive_int.dart';
+import '../helpers/bpm.dart';
 
 class _MockLiveHeartRateCubit extends MockCubit<LiveHeartRateState>
     implements LiveHeartRateCubit;
@@ -26,7 +26,7 @@ LiveHeartRateState _reading({
   bool isSimulated = false,
 }) => LiveHeartRateState.reading(
   sample: HeartRateSample.measured(
-    bpm: positiveInt(bpm),
+    bpm: bpmOf(bpm),
     timestamp: _timestamp,
     skinContact: skinContact,
   ),
@@ -215,6 +215,21 @@ void main() {
         expect(find.text('Skin contact'), findsNothing);
       });
 
+      testWidgets('implausible bpm: no number, and an out-of-range warning', (
+        tester,
+      ) async {
+        await pumpScreen(
+          tester,
+          _unavailable(HeartRateUnavailableReason.implausibleBpm),
+        );
+        expect(find.text('--'), findsOneWidget);
+        expect(find.text('Strap reading out of range'), findsOneWidget);
+        expect(find.text('Skin contact'), findsNothing);
+        // Packets are still arriving, so this is not "no data from strap".
+        expect(find.text('Updated $_time'), findsOneWidget);
+        expect(find.bySemanticsLabel('No heart-rate reading'), findsOneWidget);
+      });
+
       testWidgets('stale: says no data is arriving from the strap', (
         tester,
       ) async {
@@ -289,6 +304,7 @@ void main() {
         _reading(skinContact: SkinContact.notSupported),
         _unavailable(HeartRateUnavailableReason.noSkinContact),
         _unavailable(HeartRateUnavailableReason.zeroBpm),
+        _unavailable(HeartRateUnavailableReason.implausibleBpm),
         _unavailable(HeartRateUnavailableReason.noSkinContact, isStale: true),
       ]) {
         await pumpScreen(tester, state);

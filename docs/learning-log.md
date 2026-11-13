@@ -196,3 +196,18 @@ tooling. A strap without skin-contact detection can still report bpm 0; it's
 how such a strap shows it has no heart rate. The buttons start from what the
 strap last reported, so revealing them changes nothing on screen.
 
+
+### Plausible bpm range
+
+`PositiveInt` became `Bpm`, which only holds 1 to 250. The parser accepted
+any uint16, so a corrupt packet could put 65535 bpm on screen as a real
+reading. Now a well-formed packet above 250 becomes an unavailable sample with
+reason `implausibleBpm`, and the screen shows "--" with "Strap reading out of
+range". Putting the range in the type rather than only in the parser means
+no source (parser, fake or a future one) can build a measured sample with an
+impossible value, the same way `PositiveInt` already ruled out 0. Adding the
+new reason was a compile error at every switch that had to handle it, which
+is the point of the no-catch-all rule. The ceiling is a judgment call: adults
+top out around 220 bpm, so 250 leaves headroom while catching corrupt values.
+The debug override gained an "Implausible bpm" condition so the new state can
+be checked on a device.

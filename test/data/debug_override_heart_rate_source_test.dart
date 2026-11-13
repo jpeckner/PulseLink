@@ -2,14 +2,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/data/debug_override_heart_rate_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 
+import '../helpers/bpm.dart';
 import '../helpers/failing_heart_rate_source.dart';
-import '../helpers/positive_int.dart';
 import '../helpers/stub_heart_rate_source.dart';
 
 final _timestamp = DateTime(2026, 11, 11, 10, 52, 31);
 
 HeartRateSample _measured(SkinContact skinContact) => HeartRateSample.measured(
-  bpm: positiveInt(72),
+  bpm: bpmOf(72),
   timestamp: _timestamp,
   skinContact: skinContact,
   rrIntervals: const [Duration(milliseconds: 833)],
@@ -25,29 +25,32 @@ _nonDetecting = ReadingOverride.nonDetectingStrap;
 
 void main() {
   group('condition cycles', () {
-    test(
-      'a detecting strap cycles normal, stale, no skin contact, zero bpm',
-      () {
-        expect(
-          DetectingStrapCondition.normal.next,
-          DetectingStrapCondition.stale,
-        );
-        expect(
-          DetectingStrapCondition.stale.next,
-          DetectingStrapCondition.noSkinContact,
-        );
-        expect(
-          DetectingStrapCondition.noSkinContact.next,
-          DetectingStrapCondition.zeroBpm,
-        );
-        expect(
-          DetectingStrapCondition.zeroBpm.next,
-          DetectingStrapCondition.normal,
-        );
-      },
-    );
+    test('a detecting strap cycles normal, stale, no skin contact, zero bpm, '
+        'implausible bpm', () {
+      expect(
+        DetectingStrapCondition.normal.next,
+        DetectingStrapCondition.stale,
+      );
+      expect(
+        DetectingStrapCondition.stale.next,
+        DetectingStrapCondition.noSkinContact,
+      );
+      expect(
+        DetectingStrapCondition.noSkinContact.next,
+        DetectingStrapCondition.zeroBpm,
+      );
+      expect(
+        DetectingStrapCondition.zeroBpm.next,
+        DetectingStrapCondition.implausibleBpm,
+      );
+      expect(
+        DetectingStrapCondition.implausibleBpm.next,
+        DetectingStrapCondition.normal,
+      );
+    });
 
-    test('a non-detecting strap cycles normal, stale, zero bpm', () {
+    test('a non-detecting strap cycles normal, stale, zero bpm, implausible '
+        'bpm', () {
       expect(
         NonDetectingStrapCondition.normal.next,
         NonDetectingStrapCondition.stale,
@@ -58,6 +61,10 @@ void main() {
       );
       expect(
         NonDetectingStrapCondition.zeroBpm.next,
+        NonDetectingStrapCondition.implausibleBpm,
+      );
+      expect(
+        NonDetectingStrapCondition.implausibleBpm.next,
         NonDetectingStrapCondition.normal,
       );
     });
@@ -92,6 +99,10 @@ void main() {
           (DetectingStrapCondition.normal, NonDetectingStrapCondition.normal),
           (DetectingStrapCondition.stale, NonDetectingStrapCondition.stale),
           (DetectingStrapCondition.zeroBpm, NonDetectingStrapCondition.zeroBpm),
+          (
+            DetectingStrapCondition.implausibleBpm,
+            NonDetectingStrapCondition.implausibleBpm,
+          ),
         ]) {
           expect(
             _detecting(detecting).withOtherDetection,
@@ -148,6 +159,7 @@ void main() {
         final samples = [
           _unavailable(HeartRateUnavailableReason.noSkinContact),
           _unavailable(HeartRateUnavailableReason.zeroBpm),
+          _unavailable(HeartRateUnavailableReason.implausibleBpm),
         ]..forEach(inner.emit);
         expect(received, samples);
       });
@@ -172,6 +184,16 @@ void main() {
         source.readingOverride = _detecting(DetectingStrapCondition.zeroBpm);
         inner.emit(_measured(SkinContact.detected));
         expect(received, [_unavailable(HeartRateUnavailableReason.zeroBpm)]);
+      });
+
+      test('implausible bpm replaces samples, keeping timestamps', () {
+        source.readingOverride = _detecting(
+          DetectingStrapCondition.implausibleBpm,
+        );
+        inner.emit(_measured(SkinContact.detected));
+        expect(received, [
+          _unavailable(HeartRateUnavailableReason.implausibleBpm),
+        ]);
       });
     });
 
@@ -212,6 +234,26 @@ void main() {
         inner.emit(_measured(SkinContact.notSupported));
         expect(received, [_unavailable(HeartRateUnavailableReason.zeroBpm)]);
       });
+
+      test('implausible bpm replaces samples, keeping timestamps', () {
+        source.readingOverride = _nonDetecting(
+          NonDetectingStrapCondition.implausibleBpm,
+        );
+        inner.emit(_measured(SkinContact.notSupported));
+        expect(received, [
+          _unavailable(HeartRateUnavailableReason.implausibleBpm),
+        ]);
+      });
+
+      test('normal passes a real implausible-bpm sample through', () {
+        source.readingOverride = _nonDetecting(
+          NonDetectingStrapCondition.normal,
+        );
+        inner.emit(_unavailable(HeartRateUnavailableReason.implausibleBpm));
+        expect(received, [
+          _unavailable(HeartRateUnavailableReason.implausibleBpm),
+        ]);
+      });
     });
 
     group('reportedDetection', () {
@@ -233,10 +275,11 @@ void main() {
         expect(source.reportedDetection, SkinContactDetection.supported);
       });
 
-      test('zero bpm keeps the last known value', () {
+      test('zero or implausible bpm keeps the last known value', () {
         inner
           ..emit(_measured(SkinContact.notSupported))
-          ..emit(_unavailable(HeartRateUnavailableReason.zeroBpm));
+          ..emit(_unavailable(HeartRateUnavailableReason.zeroBpm))
+          ..emit(_unavailable(HeartRateUnavailableReason.implausibleBpm));
         expect(source.reportedDetection, SkinContactDetection.notSupported);
       });
 

@@ -8,15 +8,15 @@ import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 
+import '../helpers/bpm.dart';
 import '../helpers/failing_heart_rate_source.dart';
-import '../helpers/positive_int.dart';
 import '../helpers/stub_heart_rate_source.dart';
 
 final _start = DateTime(2026, 11, 11, 10);
 
 HeartRateSample _sampleAt(DateTime timestamp, {int bpm = 72}) =>
     HeartRateSample.measured(
-      bpm: positiveInt(bpm),
+      bpm: bpmOf(bpm),
       timestamp: timestamp,
       skinContact: SkinContact.detected,
     );

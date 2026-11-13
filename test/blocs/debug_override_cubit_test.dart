@@ -5,7 +5,7 @@ import 'package:pulselink/blocs/debug_override/debug_override_state.dart';
 import 'package:pulselink/data/debug_override_heart_rate_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 
-import '../helpers/positive_int.dart';
+import '../helpers/bpm.dart';
 import '../helpers/stub_heart_rate_source.dart';
 
 const ReadingOverride Function(DetectingStrapCondition condition) _detecting =
@@ -31,7 +31,7 @@ void main() {
 
     void emitMeasured(SkinContact skinContact) => inner.emit(
       HeartRateSample.measured(
-        bpm: positiveInt(72),
+        bpm: bpmOf(72),
         timestamp: DateTime(2026, 11, 11),
         skinContact: skinContact,
       ),
@@ -78,6 +78,7 @@ void main() {
           DetectingStrapCondition.stale,
           DetectingStrapCondition.noSkinContact,
           DetectingStrapCondition.zeroBpm,
+          DetectingStrapCondition.implausibleBpm,
           DetectingStrapCondition.normal,
         ]) {
           cubit.cycleCondition();
@@ -89,6 +90,7 @@ void main() {
         _shown(_detecting(DetectingStrapCondition.stale)),
         _shown(_detecting(DetectingStrapCondition.noSkinContact)),
         _shown(_detecting(DetectingStrapCondition.zeroBpm)),
+        _shown(_detecting(DetectingStrapCondition.implausibleBpm)),
         _shown(_detecting(DetectingStrapCondition.normal)),
       ],
     );
@@ -101,11 +103,13 @@ void main() {
         ..toggleSkinContactDetection()
         ..cycleCondition()
         ..cycleCondition()
+        ..cycleCondition()
         ..cycleCondition(),
       skip: 2,
       expect: () => [
         _shown(_nonDetecting(NonDetectingStrapCondition.stale)),
         _shown(_nonDetecting(NonDetectingStrapCondition.zeroBpm)),
+        _shown(_nonDetecting(NonDetectingStrapCondition.implausibleBpm)),
         _shown(_nonDetecting(NonDetectingStrapCondition.normal)),
       ],
     );
