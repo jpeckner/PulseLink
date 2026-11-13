@@ -58,8 +58,13 @@ class LiveHeartRateCubit extends Cubit<LiveHeartRateState> {
   }
 
   void _markStale() {
-    if (state case final LiveHeartRateReading reading) {
-      emit(reading.copyWith(isStale: true));
+    switch (state) {
+      case final LiveHeartRateReading reading:
+        emit(reading.copyWith(isStale: true));
+      case LiveHeartRateWaiting():
+        // No reading to mark. The stale timer only starts once a reading has
+        // been emitted, so this doesn't happen in practice.
+        break;
     }
   }
 

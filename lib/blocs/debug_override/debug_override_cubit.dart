@@ -18,15 +18,23 @@ class DebugOverrideCubit extends Cubit<DebugOverrideState> {
   /// Switches between a strap that can detect skin contact and one that
   /// can't. Does nothing while hidden.
   void toggleSkinContactDetection() {
-    if (state case DebugOverrideShown(:final readingOverride)) {
-      _apply(DebugOverrideState.shown(readingOverride.withOtherDetection));
+    switch (state) {
+      case DebugOverrideShown(:final readingOverride):
+        _apply(DebugOverrideState.shown(readingOverride.withOtherDetection));
+      case DebugOverrideHidden():
+        // No buttons are showing, so there's nothing to switch.
+        break;
     }
   }
 
   /// Moves to the strap's next condition. Does nothing while hidden.
   void cycleCondition() {
-    if (state case DebugOverrideShown(:final readingOverride)) {
-      _apply(DebugOverrideState.shown(readingOverride.withNextCondition));
+    switch (state) {
+      case DebugOverrideShown(:final readingOverride):
+        _apply(DebugOverrideState.shown(readingOverride.withNextCondition));
+      case DebugOverrideHidden():
+        // No buttons are showing, so there's nothing to cycle.
+        break;
     }
   }
 
