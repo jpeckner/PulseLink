@@ -1,0 +1,14 @@
+name: find_unused_code
+description: Finds top-level declarations in a Dart package's lib/ that nothing uses. Part of the pre-merge-checks skill.
+publish_to: 'none'
+
+environment:
+  sdk: ^3.14.0
+
+dependencies:
+  analyzer: 14.7.0
+  path: ^1.9.0
+
+dev_dependencies:
+  test: ^1.26.0
+  very_good_analysis: ^11.0.0
