@@ -28,5 +28,7 @@ Future<void> main(List<String> args) async {
   unused.forEach(stdout.writeln);
   stdout.writeln('== Used only by tests: ${testsOnly.length}');
   testsOnly.forEach(stdout.writeln);
-  if (unused.isNotEmpty) exitCode = 1;
+  if (unused.isNotEmpty) {
+    exitCode = 1;
+  }
 }

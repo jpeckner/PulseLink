@@ -62,15 +62,21 @@ Future<List<Finding>> findUnusedCode(String root) async {
     for (final context in collection.contexts) {
       for (final path in context.contextRoot.analyzedFiles()) {
         final inScope = p.isWithin(libDir, path) || p.isWithin(testDir, path);
-        if (!inScope || !path.endsWith('.dart') || _isGenerated(path)) continue;
+        if (!inScope || !path.endsWith('.dart') || _isGenerated(path)) {
+          continue;
+        }
         final result = await context.currentSession.getResolvedUnit(path);
-        if (result is ResolvedUnitResult) units.add(result);
+        if (result is ResolvedUnitResult) {
+          units.add(result);
+        }
       }
     }
 
     final declarations = <Element, _Declaration>{};
     for (final unit in units) {
-      if (!p.isWithin(libDir, unit.path)) continue;
+      if (!p.isWithin(libDir, unit.path)) {
+        continue;
+      }
       for (final declaration in _declarationsIn(unit, packageRoot)) {
         declarations[declaration.element] = declaration;
       }
@@ -107,7 +113,9 @@ Iterable<_Declaration> _declarationsIn(
 ) sync* {
   final isMainFile = p.equals(unit.path, p.join(packageRoot, 'lib/main.dart'));
   for (final member in unit.unit.declarations) {
-    if (_isKept(unit, member)) continue;
+    if (_isKept(unit, member)) {
+      continue;
+    }
     // A variable declaration list declares each variable separately.
     final declared = switch (member) {
       TopLevelVariableDeclaration(:final variables) => [
@@ -122,12 +130,16 @@ Iterable<_Declaration> _declarationsIn(
       ],
     };
     for (final (fragment, offset) in declared) {
-      if (fragment == null) continue;
+      if (fragment == null) {
+        continue;
+      }
       final element = fragment.element;
       final name = element.displayName.isEmpty
           ? '(unnamed extension)'
           : element.displayName;
-      if (isMainFile && name == 'main') continue;
+      if (isMainFile && name == 'main') {
+        continue;
+      }
       yield _Declaration(
         element: element,
         name: name,
@@ -189,12 +201,16 @@ class _ReferenceCollector extends RecursiveAstVisitor<void> {
 
   void _record(Element? element, AstNode node) {
     final declaration = _declarations[_topLevel(element)];
-    if (declaration == null) return;
+    if (declaration == null) {
+      return;
+    }
     final isSelfReference =
         declaration.path == path &&
         node.offset >= declaration.start &&
         node.end <= declaration.end;
-    if (isSelfReference) return;
+    if (isSelfReference) {
+      return;
+    }
     if (p.isWithin(_testDir, path)) {
       declaration.usedFromTest = true;
     } else {

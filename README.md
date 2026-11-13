@@ -73,6 +73,11 @@ flutter analyze
 flutter test
 ```
 
+Lints come from `very_good_analysis`, plus
+`always_put_control_body_on_new_line`. Together with
+`curly_braces_in_flow_control_structures`, that means every `if`, `else`,
+`for`, `while` and `do` body has braces, even a one-line `if (x) return;`.
+
 `flutter analyze` also runs the project's own lint rules from
 `tool/pulselink_lints`, an analyzer plugin enabled in `analysis_options.yaml`
 (VS Code shows them too). After changing the plugin, restart the Dart analysis

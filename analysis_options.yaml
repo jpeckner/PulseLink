@@ -17,6 +17,11 @@ linter:
     # Doc comments on every public member is overkill for an app (it's meant
     # for published packages). We still document anything non-obvious.
     public_member_api_docs: false
+    # Every if, else, for, while and do body goes on its own line. With
+    # curly_braces_in_flow_control_structures (from very_good_analysis), that
+    # means braces always, even for `if (x) return;`, so a line added later
+    # can't look like it's inside an if when it isn't.
+    always_put_control_body_on_new_line: true
 
 # PulseLink's own lint rules (tool/pulselink_lints), for checks no built-in
 # lint covers. Restart the Dart analysis server after changing this section.
