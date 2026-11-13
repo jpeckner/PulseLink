@@ -58,12 +58,12 @@ git rev-list --count HEAD..develop
 tool/regenerate.sh > "$LOGS/regenerate.log" 2>&1
 ```
 
-It cleans `build/`, gets packages, runs `build_runner` and, on macOS, regenerates the iOS project config. If it fails, show the end of the log and stop. If the branch has the lint plugin and the script doesn't already fetch the plugin's packages, also run `(cd tool/pulselink_lints && dart pub get)`.
+It cleans `build/`, gets packages, runs `build_runner` and `tool/pigeon.sh` and, on macOS, regenerates the iOS project config. If it fails, show the end of the log and stop. If the branch has the lint plugin and the script doesn't already fetch the plugin's packages, also run `(cd tool/pulselink_lints && dart pub get)`.
 
 Then:
 
 1. Run `git status --porcelain` and sort what changed:
-   - **Generated output:** `*.freezed.dart`, `*.g.dart`, `pubspec.lock`, `tool/pulselink_lints/pubspec.lock`. This is out of date on the branch.
+   - **Generated output:** `*.freezed.dart`, `*.g.dart`, `pubspec.lock`, `tool/pulselink_lints/pubspec.lock`, and Pigeon's `*.pigeon.dart`, `*.pigeon.swift` and `*.pigeon.kt` (the last two live under `ios/` and `android/`, but they're generated, so the next bullet doesn't apply to them). This is out of date on the branch.
    - **Anything under `ios/` or `android/`.** Flutter's tool rewrites these files after an upgrade, or when plugins change. Stop, show `git diff --stat`, and ask the user whether to commit them. Native project changes need a human look.
    - **Anything else.** It's unexpected, so stop and report it.
 2. Look for generated files left behind by a deleted or renamed source. `build_runner` doesn't remove them:
@@ -71,6 +71,12 @@ Then:
    for f in $(git ls-files '*.freezed.dart' '*.g.dart'); do
      src="${f%.freezed.dart}"; src="${src%.g.dart}.dart"
      grep -qF "part '$(basename "$f")';" "$src" 2>/dev/null || echo "Orphaned: $f"
+   done
+   ```
+   Pigeon output isn't a `part` file, so check it against the `pigeons/` contracts instead:
+   ```bash
+   for f in $(git ls-files '*.pigeon.dart' '*.pigeon.swift' '*.pigeon.kt'); do
+     grep -qF "'$f'" pigeons/*.dart 2>/dev/null || echo "Orphaned: $f"
    done
    ```
    Delete each orphan with `git rm`, since nothing can import it.
@@ -110,9 +116,9 @@ Then handle each remaining **unused** finding. Prefer the first of these that fi
    - mentions in `README.md`, `lib/*/README.md` and `docs/`.
 2. **Keep it with a comment**, when it has to stay: it's groundwork for an upcoming milestone in the build plan, or something outside Dart (a platform channel, reflection) uses it. Put `// unused-code: keep, <reason>` on the line above the declaration, after its doc comment. If you're not sure the code is planned, ask the user instead of guessing.
 
-Never edit `*.freezed.dart` or `*.g.dart` by hand. If a finding points at a generated class, fix its source.
+Never edit `*.freezed.dart`, `*.g.dart` or `*.pigeon.*` by hand. If a finding points at a generated class, fix its source.
 
-Rerun the tool until it reports nothing unused; deleting code often makes more code unused. Then rerun step 3's `build_runner` check, stage the changes by path and commit, e.g. `refactor(heart_rate_monitor): Milestone 2 - unused code`.
+Rerun the tool until it reports nothing unused; deleting code often makes more code unused. Then rerun step 3's `build_runner` and `tool/pigeon.sh` check, stage the changes by path and commit, e.g. `refactor(heart_rate_monitor): Milestone 2 - unused code`.
 
 **Used only by tests** findings are informational. Report them, and don't delete them. At this stage of the project, they're usually the next milestone's groundwork, e.g. the Heart Rate Measurement parser before BLE arrives in Milestone 3.
 
@@ -224,7 +230,7 @@ Each must have a comment next to it explaining why it's needed, which means the 
 On a branch without the rule, list the added lines in `lib/` that might be assertions:
 
 ```bash
-git diff develop...HEAD -- 'lib/*.dart' ':!*.freezed.dart' ':!*.g.dart' \
+git diff develop...HEAD -- 'lib/*.dart' ':!*.freezed.dart' ':!*.g.dart' ':!*.pigeon.dart' \
   | grep -nE '^\+.*(\bassert\(|@Assert|\blate\b|throw (ArgumentError|StateError|RangeError|UnsupportedError|UnimplementedError|Exception)|[A-Za-z0-9_)\]]![.;,)\[ ]| as [A-Z])' \
   | grep -vE "^\+\s*(//|import )"
 ```
@@ -265,7 +271,7 @@ git log --format='%h %s' develop..HEAD | grep -iE '\bwip\b|^[0-9a-f]+ (fixup|squ
 
 **Leftovers in the diff.** These are added lines only, with generated code excluded:
 ```bash
-git diff develop...HEAD -- '*.dart' ':!*.freezed.dart' ':!*.g.dart' \
+git diff develop...HEAD -- '*.dart' ':!*.freezed.dart' ':!*.g.dart' ':!*.pigeon.dart' \
   | grep -nE '^\+.*(TODO|FIXME|XXX|HACK|\bprint\(|debugPrint\(|debugger\(|\bsolo: true|\bskip: (true|'"'"'))'
 ```
 `print` and `debugPrint` don't belong in app code, and `solo:` or `skip:` in a test hides other tests. Report each match with its file. Some may be intentional, so don't remove them.

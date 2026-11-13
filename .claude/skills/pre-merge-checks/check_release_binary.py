@@ -33,7 +33,7 @@ def dart_files():
     for folder, _, files in os.walk("lib"):
         in_debug_folder = "debug" in folder.split(os.sep)
         for name in files:
-            if name.endswith(".dart") and not name.endswith((".freezed.dart", ".g.dart")):
+            if name.endswith(".dart") and not name.endswith((".freezed.dart", ".g.dart", ".pigeon.dart")):
                 yield os.path.join(folder, name), in_debug_folder or name.startswith("debug_")
 
 

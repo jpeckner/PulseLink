@@ -108,6 +108,22 @@ class Node {
     );
   });
 
+  test("Pigeon's generated libraries are neither checked nor uses", () async {
+    expect(
+      await findingsFor({
+        'lib/main.dart': 'void main() {}\n',
+        'lib/a.dart': 'class A {}\n',
+        'lib/api.pigeon.dart': '''
+import 'package:app/a.dart';
+
+const pigeonCodec = 1;
+A makeA() => A();
+''',
+      }),
+      ['unused lib/a.dart:1 A'],
+    );
+  });
+
   test('each variable in a declaration list is checked', () async {
     expect(
       await findingsFor({

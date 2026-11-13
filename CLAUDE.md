@@ -55,6 +55,8 @@ though no lint enforces it there yet:
   `require` or `check`. Use `?.`, `?:`, `as?` and `firstOrNull()`. Write
   `when` on sealed classes and enums without `else`.
 
+Pigeon's generated `*.pigeon.swift` and `*.pigeon.kt` files are exempt.
+
 ## Error handling
 
 Handle errors on purpose. Dart has no checked exceptions and no lint can tell

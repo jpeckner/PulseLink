@@ -25,6 +25,7 @@ dev_dependencies:
     sdk: flutter
   freezed: ^4.0.3
   mocktail: ^1.0.5
+  pigeon: ^30.0.2
   very_good_analysis: ^11.0.0
 flutter:
   uses-material-design: true
