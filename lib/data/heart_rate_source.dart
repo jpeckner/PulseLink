@@ -8,6 +8,10 @@ abstract interface class HeartRateSource {
 
   /// Samples as they arrive. A broadcast stream; it stays open across
   /// [start]/[stop] cycles and closes on [dispose].
+  ///
+  /// Never carries errors. A missing heart rate arrives as an unavailable
+  /// sample; any other failure is reported as a typed result, never as a
+  /// stream error, so listeners need no error handler.
   Stream<HeartRateSample> get samples;
 
   /// Starts producing samples. Calling it while already started does nothing.
