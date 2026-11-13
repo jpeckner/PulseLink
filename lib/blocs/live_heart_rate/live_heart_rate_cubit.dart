@@ -39,7 +39,7 @@ class LiveHeartRateCubit extends Cubit<LiveHeartRateState> {
         // Already showing what's arrived so far.
         break;
     }
-  
+
     // No onError: HeartRateSource.samples never carries errors.
     _subscription ??= _source.samples.listen(_onSample);
     final result = await _source.start();
