@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
+		351483C12BFC634B42A4F35A /* StrapConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A64F731707EAAB8AEE5A138E /* StrapConnection.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */; };
@@ -21,6 +22,8 @@
 		CA373E3E30A7EC7100D100CA /* MainThreadCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA373E3D30A7EC6D00D100CA /* MainThreadCheck.swift */; };
 		CA373E4030A7EC9400D100CA /* ScanAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA373E3F30A7EC9400D100CA /* ScanAction.swift */; };
 		CA373E4230A7ECC800D100CA /* CentralScan.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA373E4130A7ECC700D100CA /* CentralScan.swift */; };
+		CD6CDA9F233E42A28F5C0CDE /* BleStrapLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = B689CBDF1F8F57AB1F03F43E /* BleStrapLink.swift */; };
+		F66ED4DC7B794547A9F31F7F /* ConnectAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = F26AAFE316A97D88945B8B5A /* ConnectAction.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -66,9 +69,12 @@
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9DA734D939828240740F350F /* BleStrapScanner.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BleStrapScanner.swift; sourceTree = "<group>"; };
+		A64F731707EAAB8AEE5A138E /* StrapConnection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StrapConnection.swift; sourceTree = "<group>"; };
+		B689CBDF1F8F57AB1F03F43E /* BleStrapLink.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BleStrapLink.swift; sourceTree = "<group>"; };
 		CA373E3D30A7EC6D00D100CA /* MainThreadCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainThreadCheck.swift; sourceTree = "<group>"; };
 		CA373E3F30A7EC9400D100CA /* ScanAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanAction.swift; sourceTree = "<group>"; };
 		CA373E4130A7ECC700D100CA /* CentralScan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CentralScan.swift; sourceTree = "<group>"; };
+		F26AAFE316A97D88945B8B5A /* ConnectAction.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ConnectAction.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -144,9 +150,12 @@
 		CA373E3B30A7EC3B00D100CA /* BLE */ = {
 			isa = PBXGroup;
 			children = (
+				B689CBDF1F8F57AB1F03F43E /* BleStrapLink.swift */,
 				9DA734D939828240740F350F /* BleStrapScanner.swift */,
 				CA373E4130A7ECC700D100CA /* CentralScan.swift */,
+				F26AAFE316A97D88945B8B5A /* ConnectAction.swift */,
 				CA373E3F30A7EC9400D100CA /* ScanAction.swift */,
+				A64F731707EAAB8AEE5A138E /* StrapConnection.swift */,
 			);
 			path = BLE;
 			sourceTree = "<group>";
@@ -340,6 +349,9 @@
 				BE9EAA0C636C32B38EB61C20 /* BleApi.pigeon.swift in Sources */,
 				CA373E4030A7EC9400D100CA /* ScanAction.swift in Sources */,
 				8A3C036C99A37D7078A3BC2B /* BleStrapScanner.swift in Sources */,
+				F66ED4DC7B794547A9F31F7F /* ConnectAction.swift in Sources */,
+				351483C12BFC634B42A4F35A /* StrapConnection.swift in Sources */,
+				CD6CDA9F233E42A28F5C0CDE /* BleStrapLink.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

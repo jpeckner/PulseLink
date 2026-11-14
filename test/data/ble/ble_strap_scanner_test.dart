@@ -14,7 +14,7 @@ void main() {
     group('over the real platform channel', () {
       // The channel name Pigeon generates for scanForHeartRateStraps.
       const channel = EventChannel(
-        'dev.flutter.pigeon.pulselink.BleScanApi.scanForHeartRateStraps',
+        'dev.flutter.pigeon.pulselink.BleEventApi.scanForHeartRateStraps',
         pigeonMethodCodec,
       );
 

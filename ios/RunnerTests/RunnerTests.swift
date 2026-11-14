@@ -17,6 +17,20 @@ struct ScanActionTests {
   }
 }
 
+struct ConnectActionTests {
+  @Test(arguments: [
+    (CBManagerState.poweredOn, ConnectAction.connect),
+    (.poweredOff, .fail(.poweredOff)),
+    (.unauthorized, .fail(.unauthorized)),
+    (.unsupported, .fail(.unsupported)),
+    (.unknown, .wait),
+    (.resetting, .wait),
+  ])
+  func eachBluetoothStateHasAnAction(state: CBManagerState, action: ConnectAction) {
+    #expect(ConnectAction(state) == action)
+  }
+}
+
 struct StrapNameTests {
   @Test func prefersTheAdvertisedName() {
     #expect(CentralScan.strapName(advertised: "TICKR", cached: "Old name") == "TICKR")

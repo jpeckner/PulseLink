@@ -13,7 +13,33 @@ import io.flutter.plugin.common.StandardMethodCodec
 import io.flutter.plugin.common.StandardMessageCodec
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 private object BleApiPigeonUtils {
+
+  fun wrapResult(result: Any?): List<Any?> {
+    return listOf(result)
+  }
+
+  fun wrapError(exception: Throwable): List<Any?> {
+    return if (exception is FlutterError) {
+      listOf(
+        exception.code,
+        exception.message,
+        exception.details
+      )
+    } else {
+      listOf(
+        exception.javaClass.simpleName,
+        exception.toString(),
+        "Cause: " + exception.cause + ", Stacktrace: " + Log.getStackTraceString(exception)
+      )
+    }
+  }
   fun doubleEquals(a: Double, b: Double): Boolean {
     // Normalize -0.0 to 0.0 and handle NaN equality.
     return (if (a == 0.0) 0.0 else a) == (if (b == 0.0) 0.0 else b) || (a.isNaN() && b.isNaN())
@@ -190,6 +216,34 @@ enum class BleScanFailureReason(val raw: Int) {
   }
 }
 
+/** Why the phone couldn't connect to a strap. */
+enum class BleConnectFailureReason(val raw: Int) {
+  /** Bluetooth is turned off. */
+  POWERED_OFF(0),
+  /** The user hasn't allowed the app to use Bluetooth. */
+  UNAUTHORIZED(1),
+  /** This device or platform can't connect to BLE devices. */
+  UNSUPPORTED(2),
+  /**
+   * The strap couldn't be reached: it's off, out of range, connected to
+   * another app, or didn't answer in time.
+   */
+  UNREACHABLE(3),
+  /**
+   * The device doesn't offer a Heart Rate Measurement characteristic that
+   * sends notifications.
+   */
+  NOT_AHEART_RATE_STRAP(4);
+
+  companion object {
+    private val pigeonValues = values()
+
+    fun ofRaw(raw: Int): BleConnectFailureReason? {
+      return pigeonValues.getOrNull(raw)
+    }
+  }
+}
+
 /**
  * Something that happened during a scan.
  *
@@ -323,6 +377,207 @@ data class BleScanFailed (
     return "BleScanFailed(reason=$reason)"
   }
 }
+
+/**
+ * How a call to [BleConnectionApi.connect] ended.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ * This class should not be extended by any user class outside of the generated file.
+ */
+sealed class BleConnectResult 
+/**
+ * Connected, and subscribed to Heart Rate Measurement notifications.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+class BleConnected  : BleConnectResult() {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): BleConnected {
+      return BleConnected()
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return true
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    return result
+  }
+  override fun toString(): String {
+    return "BleConnected()"
+  }
+}
+
+/**
+ * [BleConnectionApi.disconnect] was called before connecting finished.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+class BleConnectCancelled  : BleConnectResult() {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): BleConnectCancelled {
+      return BleConnectCancelled()
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return true
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    return result
+  }
+  override fun toString(): String {
+    return "BleConnectCancelled()"
+  }
+}
+
+/**
+ * Couldn't connect, for [reason].
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class BleConnectFailed (
+  val reason: BleConnectFailureReason
+) : BleConnectResult()
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): BleConnectFailed {
+      val reason = pigeonVar_list[0] as BleConnectFailureReason
+      return BleConnectFailed(reason)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      reason,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as BleConnectFailed
+    return BleApiPigeonUtils.deepEquals(this.reason, other.reason)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + BleApiPigeonUtils.deepHash(this.reason)
+    return result
+  }
+  override fun toString(): String {
+    return "BleConnectFailed(reason=$reason)"
+  }
+}
+
+/**
+ * Something that happened on the connected strap.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ * This class should not be extended by any user class outside of the generated file.
+ */
+sealed class BleStrapEvent 
+/**
+ * One Heart Rate Measurement notification (characteristic 0x2A37), exactly
+ * as the strap sent it. lib/domain/heart_rate_measurement_parser.dart
+ * parses it.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class BleHeartRateMeasurement (
+  val value: ByteArray
+) : BleStrapEvent()
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): BleHeartRateMeasurement {
+      val value = pigeonVar_list[0] as ByteArray
+      return BleHeartRateMeasurement(value)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      value,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as BleHeartRateMeasurement
+    return BleApiPigeonUtils.deepEquals(this.value, other.value)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + BleApiPigeonUtils.deepHash(this.value)
+    return result
+  }
+  override fun toString(): String {
+    return "BleHeartRateMeasurement(value=${value.contentToString()})"
+  }
+}
+
+/**
+ * The strap disconnected without being asked to, such as by going out of
+ * range.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+class BleStrapDisconnected  : BleStrapEvent() {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): BleStrapDisconnected {
+      return BleStrapDisconnected()
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    return true
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    return result
+  }
+  override fun toString(): String {
+    return "BleStrapDisconnected()"
+  }
+}
 private open class BleApiPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
@@ -332,18 +587,48 @@ private open class BleApiPigeonCodec : StandardMessageCodec() {
         }
       }
       130.toByte() -> {
-        (readValue(buffer) as? List<Any?>)?.let {
-          BleScanStarted.fromList(it)
+        (readValue(buffer) as Long?)?.let {
+          BleConnectFailureReason.ofRaw(it.toInt())
         }
       }
       131.toByte() -> {
         (readValue(buffer) as? List<Any?>)?.let {
-          BleStrapFound.fromList(it)
+          BleScanStarted.fromList(it)
         }
       }
       132.toByte() -> {
         (readValue(buffer) as? List<Any?>)?.let {
+          BleStrapFound.fromList(it)
+        }
+      }
+      133.toByte() -> {
+        (readValue(buffer) as? List<Any?>)?.let {
           BleScanFailed.fromList(it)
+        }
+      }
+      134.toByte() -> {
+        (readValue(buffer) as? List<Any?>)?.let {
+          BleConnected.fromList(it)
+        }
+      }
+      135.toByte() -> {
+        (readValue(buffer) as? List<Any?>)?.let {
+          BleConnectCancelled.fromList(it)
+        }
+      }
+      136.toByte() -> {
+        (readValue(buffer) as? List<Any?>)?.let {
+          BleConnectFailed.fromList(it)
+        }
+      }
+      137.toByte() -> {
+        (readValue(buffer) as? List<Any?>)?.let {
+          BleHeartRateMeasurement.fromList(it)
+        }
+      }
+      138.toByte() -> {
+        (readValue(buffer) as? List<Any?>)?.let {
+          BleStrapDisconnected.fromList(it)
         }
       }
       else -> super.readValueOfType(type, buffer)
@@ -355,16 +640,40 @@ private open class BleApiPigeonCodec : StandardMessageCodec() {
         stream.write(129)
         writeValue(stream, value.raw.toLong())
       }
-      is BleScanStarted -> {
+      is BleConnectFailureReason -> {
         stream.write(130)
-        writeValue(stream, value.toList())
+        writeValue(stream, value.raw.toLong())
       }
-      is BleStrapFound -> {
+      is BleScanStarted -> {
         stream.write(131)
         writeValue(stream, value.toList())
       }
-      is BleScanFailed -> {
+      is BleStrapFound -> {
         stream.write(132)
+        writeValue(stream, value.toList())
+      }
+      is BleScanFailed -> {
+        stream.write(133)
+        writeValue(stream, value.toList())
+      }
+      is BleConnected -> {
+        stream.write(134)
+        writeValue(stream, value.toList())
+      }
+      is BleConnectCancelled -> {
+        stream.write(135)
+        writeValue(stream, value.toList())
+      }
+      is BleConnectFailed -> {
+        stream.write(136)
+        writeValue(stream, value.toList())
+      }
+      is BleHeartRateMeasurement -> {
+        stream.write(137)
+        writeValue(stream, value.toList())
+      }
+      is BleStrapDisconnected -> {
+        stream.write(138)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -373,6 +682,7 @@ private open class BleApiPigeonCodec : StandardMessageCodec() {
 }
 
 val BleApiPigeonMethodCodec = StandardMethodCodec(BleApiPigeonCodec())
+
 
 
 private class BleApiPigeonStreamHandler<T>(
@@ -411,12 +721,16 @@ class PigeonEventSink<T>(private val sink: EventChannel.EventSink) {
   }
 }
       
+/**
+ * Every event stream from the native BLE code. Pigeon allows one event
+ * channel class per contract.
+ */
 /** A typed channel for communicating with the Flutter application using asynchronous event streams. */
 class ScanForHeartRateStrapsEventChannel(messenger: BinaryMessenger, instanceName: String = "") {
   private val channel: EventChannel
 
   init {
-    var channelName = "dev.flutter.pigeon.pulselink.BleScanApi.scanForHeartRateStraps"
+    var channelName = "dev.flutter.pigeon.pulselink.BleEventApi.scanForHeartRateStraps"
     if (instanceName.isNotEmpty()) {
       channelName += ".$instanceName"
     }
@@ -456,3 +770,109 @@ abstract class ScanForHeartRateStrapsStreamHandler : BleApiPigeonEventChannelWra
   override fun onCancel(p0: Any?) {}
 }
       
+/** A typed channel for communicating with the Flutter application using asynchronous event streams. */
+class StrapEventsEventChannel(messenger: BinaryMessenger, instanceName: String = "") {
+  private val channel: EventChannel
+
+  init {
+    var channelName = "dev.flutter.pigeon.pulselink.BleEventApi.strapEvents"
+    if (instanceName.isNotEmpty()) {
+      channelName += ".$instanceName"
+    }
+    channel = EventChannel(messenger, channelName, BleApiPigeonMethodCodec)
+  }
+
+  /**
+   * Sets the stream handler for this channel, replacing any previous handler.
+   *
+   * Pass `null` to remove the event channel registration.
+   */
+  fun setStreamHandler(streamHandler: StrapEventsStreamHandler?) {
+    val internalHandler = streamHandler?.let { BleApiPigeonStreamHandler<BleStrapEvent>(it) }
+    channel.setStreamHandler(internalHandler)
+  }
+}
+
+abstract class StrapEventsStreamHandler : BleApiPigeonEventChannelWrapper<BleStrapEvent> {
+  companion object {
+    /**
+     * Creates and returns a new event channel that calls the provided stream handler.
+     *
+     * The returned channel can be stored to allow changing or removing the stream handler.
+     * If the handler will not be changed for the lifetime of the engine associated with the messenger,
+     * the return value can be ignored.
+     */
+    fun register(messenger: BinaryMessenger, streamHandler: StrapEventsStreamHandler, instanceName: String = ""): StrapEventsEventChannel {
+      val channel = StrapEventsEventChannel(messenger, instanceName)
+      channel.setStreamHandler(streamHandler)
+      return channel
+    }
+  }
+
+  // Implement methods from BleApiPigeonEventChannelWrapper
+  override fun onListen(p0: Any?, sink: PigeonEventSink<BleStrapEvent>) {}
+
+  override fun onCancel(p0: Any?) {}
+}
+      
+/** Generated interface from Pigeon that represents a handler of messages from Flutter. */
+interface BleConnectionApi {
+  /**
+   * Connects to the strap with [strapId] (an id from [BleStrapFound]) and
+   * subscribes to its heart-rate notifications. Completes once that's done,
+   * or with why it couldn't be. Replaces any earlier connection.
+   */
+  suspend fun connect(strapId: String): BleConnectResult
+  /**
+   * Disconnects, cancelling a connection still in progress. Does nothing
+   * when not connected.
+   */
+  fun disconnect()
+
+  companion object {
+    /** The codec used by BleConnectionApi. */
+    val codec: MessageCodec<Any?> by lazy {
+      BleApiPigeonCodec()
+    }
+    /** Sets up an instance of `BleConnectionApi` to handle messages through the `binaryMessenger`. */
+    @JvmOverloads
+    fun setUp(binaryMessenger: BinaryMessenger, api: BleConnectionApi?, messageChannelSuffix: String = "") {
+      val separatedMessageChannelSuffix = if (messageChannelSuffix.isNotEmpty()) ".$messageChannelSuffix" else ""
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.pulselink.BleConnectionApi.connect$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val strapIdArg = args[0] as String
+            CoroutineScope(Dispatchers.Main).launch {
+              val wrapped: List<Any?> = try {
+                listOf(api.connect(strapIdArg))
+              } catch (exception: Throwable) {
+                BleApiPigeonUtils.wrapError(exception)
+              }
+              reply.reply(wrapped)
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.pulselink.BleConnectionApi.disconnect$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            val wrapped: List<Any?> = try {
+              api.disconnect()
+              listOf(null)
+            } catch (exception: Throwable) {
+              BleApiPigeonUtils.wrapError(exception)
+            }
+            reply.reply(wrapped)
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+    }
+  }
+}
