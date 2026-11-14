@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/data/strap_scanner.dart';
 import 'package:pulselink/domain/bluetooth_problem.dart';
+import 'package:pulselink/domain/discovered_strap.dart';
 import 'package:pulselink/ui/picker/strap_picker_screen.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
@@ -39,10 +40,43 @@ void main() {
       expect(find.text('Looking for heart-rate straps…'), findsNothing);
       // Still scanning, and connecting comes later.
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
-      expect(
-        find.text("Connecting to a strap isn't available yet."),
-        findsOneWidget,
+      expect(find.text('Tap your strap to connect to it.'), findsOneWidget);
+    });
+
+    testWidgets('tapping a strap closes the picker with that strap', (
+      tester,
+    ) async {
+      DiscoveredStrap? picked;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                picked = await Navigator.of(context).push(
+                  MaterialPageRoute<DiscoveredStrap>(
+                    builder: (_) => StrapPickerScreen(scanner: scanner),
+                  ),
+                );
+              },
+              child: const Text('open picker'),
+            ),
+          ),
+        ),
       );
+      await tester.tap(find.text('open picker'));
+      // Not pumpAndSettle: the picker's progress indicators never settle.
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      final strap = discoveredStrapOf('polar', 'Polar H10');
+      scanner.emit(StrapScanEvent.found(strap));
+      await tester.pump();
+
+      await tester.tap(find.text('Polar H10'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(picked, strap);
+      expect(find.text('Find your strap'), findsNothing);
+      expect(scanner.isScanning, isFalse);
     });
 
     group('a failed scan', () {

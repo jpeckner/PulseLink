@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
+import 'package:pulselink/domain/discovered_strap.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
@@ -16,6 +17,7 @@ class LiveHeartRateScreen extends StatelessWidget {
   const new({
     required this.cubit,
     required this.buildStrapPicker,
+    required this.onStrapSelected,
     this.debugControls,
     this.onTitleLongPress,
     super.key,
@@ -25,6 +27,9 @@ class LiveHeartRateScreen extends StatelessWidget {
 
   /// Builds the screen that finds a strap, opened from the app bar.
   final WidgetBuilder buildStrapPicker;
+
+  /// Called with the strap picked in the strap picker, if any.
+  final ValueChanged<DiscoveredStrap> onStrapSelected;
 
   /// Shown just above the disclaimer, overlaid so it takes no layout space.
   /// Only supplied in non-release builds.
@@ -48,9 +53,9 @@ class LiveHeartRateScreen extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.bluetooth_searching),
               tooltip: 'Find strap',
-              onPressed: () =>
-                  Navigator.of(context)
-                      .push(MaterialPageRoute<void>(builder: buildStrapPicker)),
+              // Not awaited: it only opens the picker and passes on what it
+              // returns; connecting reports through the cubit's state.
+              onPressed: () => unawaited(_findStrap(context)),
             ),
             if (state.isSimulated) const _DemoBadge(),
           ],
@@ -100,6 +105,16 @@ class LiveHeartRateScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Opens the strap picker, and passes on the strap picked there, if any.
+  /// Closing the picker without picking one changes nothing.
+  Future<void> _findStrap(BuildContext context) async {
+    final strap = await Navigator.of(context)
+        .push(MaterialPageRoute<DiscoveredStrap>(builder: buildStrapPicker));
+    if (strap case final picked?) {
+      onStrapSelected(picked);
+    }
   }
 }
 

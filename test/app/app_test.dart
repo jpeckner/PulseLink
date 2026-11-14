@@ -26,6 +26,7 @@ void main() {
         PulseLinkApp(
           liveHeartRateCubit: cubit,
           strapScanner: StubStrapScanner(),
+          onStrapSelected: (_) {},
         ),
       );
 
@@ -55,7 +56,11 @@ void main() {
       final cubit = LiveHeartRateCubit(source: StubHeartRateSource());
       final scanner = StubStrapScanner();
       await tester.pumpWidget(
-        PulseLinkApp(liveHeartRateCubit: cubit, strapScanner: scanner),
+        PulseLinkApp(
+          liveHeartRateCubit: cubit,
+          strapScanner: scanner,
+          onStrapSelected: (_) {},
+        ),
       );
       await tester.tap(find.byTooltip('Find strap'));
       // Not pumpAndSettle: the picker's progress indicator never settles.
@@ -80,6 +85,7 @@ void main() {
         PulseLinkApp(
           liveHeartRateCubit: cubit,
           strapScanner: StubStrapScanner(),
+          onStrapSelected: (_) {},
           debugControls: DebugOverrideButtons(cubit: overrideCubit),
           onTitleLongPress: overrideCubit.toggleVisibility,
         ),

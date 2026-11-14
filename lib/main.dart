@@ -7,11 +7,14 @@ import 'package:pulselink/app/app.dart';
 import 'package:pulselink/app/app_bloc_observer.dart';
 import 'package:pulselink/blocs/debug_override/debug_override_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
+import 'package:pulselink/blocs/live_heart_rate/strap_selection.dart';
 import 'package:pulselink/data/ble/ble_strap_scanner.dart';
 import 'package:pulselink/data/debug_override_heart_rate_source.dart';
 import 'package:pulselink/data/fake_heart_rate_source.dart';
 import 'package:pulselink/data/heart_rate_source.dart';
 import 'package:pulselink/data/strap_scanner.dart';
+import 'package:pulselink/data/switchable_heart_rate_source.dart';
+import 'package:pulselink/domain/discovered_strap.dart';
 import 'package:pulselink/ui/debug/debug_override_buttons.dart';
 
 /// The composition root: builds the app's object graph and hands it to the
@@ -20,31 +23,48 @@ import 'package:pulselink/ui/debug/debug_override_buttons.dart';
 void main() {
   Bloc.observer = const AppBlocObserver();
 
-  // Demo mode until connecting to a strap arrives later in Milestone 3.
-  final HeartRateSource source = FakeHeartRateSource();
+  // Demo mode at launch, until a strap is picked in the strap picker.
+  final source = SwitchableHeartRateSource(FakeHeartRateSource());
   final StrapScanner strapScanner = BleStrapScanner();
 
   if (kReleaseMode) {
+    final cubit = _startedCubit(source);
     runApp(
       PulseLinkApp(
-        liveHeartRateCubit: _startedCubit(source),
+        liveHeartRateCubit: cubit,
         strapScanner: strapScanner,
+        onStrapSelected: _selectStrap(source, cubit),
       ),
     );
   } else {
     // Debug and profile builds only. kReleaseMode is a compile-time constant,
     // so release builds contain neither this branch nor anything only it uses.
+    // The override wraps the switchable source, so it also works on a strap.
     final overrideSource = DebugOverrideHeartRateSource(source);
     final overrideCubit = DebugOverrideCubit(source: overrideSource);
+    final cubit = _startedCubit(overrideSource);
     runApp(
       PulseLinkApp(
-        liveHeartRateCubit: _startedCubit(overrideSource),
+        liveHeartRateCubit: cubit,
         strapScanner: strapScanner,
+        onStrapSelected: _selectStrap(source, cubit),
         debugControls: DebugOverrideButtons(cubit: overrideCubit),
         onTitleLongPress: overrideCubit.toggleVisibility,
       ),
     );
   }
+}
+
+/// Switches the live heart rate to a strap picked in the strap picker.
+ValueChanged<DiscoveredStrap> _selectStrap(
+  SwitchableHeartRateSource source,
+  LiveHeartRateCubit cubit,
+) {
+  final selection = StrapSelection(source: source, cubit: cubit);
+  // Not awaited: the screen shows how connecting goes through the cubit's
+  // state. select() only throws if disposing demo mode fails; that's left
+  // for the zone's error handler, and the strap is still connected to.
+  return (strap) => unawaited(selection.select(strap));
 }
 
 LiveHeartRateCubit _startedCubit(HeartRateSource source) {

@@ -466,6 +466,68 @@ void main() {
       }
     });
 
+    group('restart', () {
+      test('forgets the last reading, shows waiting for the source as it is '
+          'now, and starts it again', () {
+        _withStartedCubit((async, source, cubit, states) {
+          source.emit(_sampleAt(clock.now()));
+          async.flushMicrotasks();
+          states.clear();
+
+          unawaited(cubit.restart());
+          async.flushMicrotasks();
+          expect(states, [
+            const LiveHeartRateState.waiting(isSimulated: false),
+          ]);
+          expect(source.startCount, 2);
+
+          source.emit(_sampleAt(clock.now(), beatsPerMinute: 90));
+          async.flushMicrotasks();
+          expect(states, hasLength(2));
+        });
+      });
+
+      test('stops the old reading going stale later', () {
+        _withStartedCubit((async, source, cubit, states) {
+          source.emit(_sampleAt(clock.now()));
+          async.flushMicrotasks();
+          unawaited(cubit.restart());
+          async.flushMicrotasks();
+          states.clear();
+
+          async.elapse(const Duration(seconds: 30));
+          expect(states, isEmpty);
+          expect(cubit.state, isA<LiveHeartRateWaiting>());
+        });
+      });
+
+      test('leaves a connection failure for waiting, then shows the new '
+          'result', () {
+        _withStartedCubit((async, source, cubit, states) {
+          source.startResult = const HeartRateSourceStartResult.failed(
+            StrapConnectionFailure.strapUnreachable(),
+          );
+          unawaited(cubit.restart());
+          async.flushMicrotasks();
+          expect(states, [
+            const LiveHeartRateState.waiting(isSimulated: false),
+            const LiveHeartRateState.connectionFailed(
+              failure: StrapConnectionFailure.strapUnreachable(),
+              isSimulated: false,
+            ),
+          ]);
+        });
+      });
+
+      test('does nothing after close', () async {
+        final source = StubHeartRateSource();
+        final cubit = LiveHeartRateCubit(source: source);
+        await cubit.close();
+        await cubit.restart();
+        expect(source.startCount, 0);
+      });
+    });
+
     test('start after close does nothing', () async {
       final source = StubHeartRateSource();
       final cubit = LiveHeartRateCubit(source: source);
