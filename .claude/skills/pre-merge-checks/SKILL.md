@@ -1,6 +1,6 @@
 ---
 name: pre-merge-checks
-description: Run PulseLink's final checks on the current branch before it is merged into `develop`. Rebases the branch onto `develop` when it's safe, regenerates freezed code and lockfiles and commits the results, finds and removes unused code, fixes formatting, runs every CI check (analyze with all lints, shuffled tests with coverage, the lint plugin's own checks), builds iOS and Android release apps and checks no debug-only code is in them, reviews the diff against the no-assertions and error-handling rules, checks the branch's commits for secrets, message format, WIP leftovers and debug prints, and reports pass/fail per check. Use when asked to run pre-merge checks, final checks, "get this branch ready to merge", or "check the branch before I merge it", even if the user doesn't name this skill.
+description: Run PulseLink's final checks on the current branch before it is merged into `develop`. Rebases the branch onto `develop` when it's safe, regenerates freezed code and lockfiles and commits the results, finds and removes unused code, fixes formatting, runs every CI check (analyze with all lints, shuffled tests with coverage, the lint plugin's own checks) and the Swift tests, builds iOS and Android release apps and checks no debug-only code is in them, reviews the diff against the no-assertions and error-handling rules, checks the branch's commits for secrets, message format, WIP leftovers and debug prints, and reports pass/fail per check. Use when asked to run pre-merge checks, final checks, "get this branch ready to merge", or "check the branch before I merge it", even if the user doesn't name this skill.
 argument-hint: [notes, e.g. "skip sync", "no commits", "skip builds"]
 ---
 
@@ -22,7 +22,7 @@ Anything given is a note from the user, and notes override this skill's defaults
 ## Ground rules
 
 - Run `export PATH="$HOME/development/flutter/bin:$PATH"` first; Flutter isn't on the default `PATH`.
-- Write logs to your scratchpad directory (`$LOGS` below means that directory). Run long commands (`tool/regenerate.sh`, `flutter test`, `flutter build`) in the background and wait for them to finish. Don't run two Flutter builds at once; they share `build/`.
+- Write logs to your scratchpad directory (`$LOGS` below means that directory). Run long commands (`tool/regenerate.sh`, `flutter test`, `tool/test_swift.sh`, `flutter build`) in the background and wait for them to finish. Don't run two of them at once; they share `build/`.
 - Stage files by path, never with `git add -A`, `git add .` or `git commit -a`.
 - Commit messages follow `.gitmessage` and the branch's own commits: `<type>(heart_rate_monitor): Milestone <N> - <topic>`, with `<N>` taken from the branch's latest commit. The subject must be 50 characters or less. The body is a short bullet list wrapped at 72, ending with `[AI-Generated 100% Claude <model>]`. Don't add a `Co-Authored-By` line; this repo's commits don't use one.
 - Fixes follow `CLAUDE.md`: no assertions, and errors handled on purpose.
@@ -196,7 +196,18 @@ tool/check_native_lints.sh > "$LOGS/check-native-lints.log" 2>&1
 
 The first runs SwiftLint on the hand-written Swift and detekt (through Gradle) on the hand-written Kotlin, for `CLAUDE.md`'s native-code rules. It fails on any finding, and if either linter checked no files. The second plants a violation of every rule and fails unless each one reports, so a linter that silently did nothing can't pass. Both download their linter the first time (SwiftLint into `~/.cache/pulselink`, detekt into Gradle's cache), and Gradle needs a JDK: the script uses `JAVA_HOME`, `java` on the `PATH`, or Android Studio's. A failure in either is a fail; report each finding with its file, line and rule. Don't fix findings in code the branch didn't change.
 
-### 5g. Coverage of the branch's changes (informational)
+### 5g. Swift tests
+
+CI doesn't run these yet; it runs on Linux until Milestone 7 adds a macOS job. If the branch has `tool/test_swift.sh`, run it in the background, after the Flutter tests:
+
+```bash
+tool/test_swift.sh > "$LOGS/test-swift.log" 2>&1
+tail -3 "$LOGS/test-swift.log"
+```
+
+It runs `ios/RunnerTests` (Swift Testing) on the first available iPhone simulator on the newest iOS runtime, and fails if any test fails or none ran. It needs the iOS project config that step 3's `tool/regenerate.sh` writes. A failing test is a fail: report each `Test case '...' failed` line. If a failure was caused by this run's commits, fix it and commit the fix; otherwise report it. If no iPhone simulator is available, skip this check and say so.
+
+### 5h. Coverage of the branch's changes (informational)
 
 ```bash
 python3 .claude/skills/pre-merge-checks/changed_line_coverage.py coverage/lcov.info
@@ -313,6 +324,7 @@ Then a table with one row per check, giving its status (pass / fixed / fail / in
 - analyze
 - native lints
 - tests (with totals and the seed)
+- Swift tests (with the number of test cases)
 - lint plugin
 - coverage of changes
 - iOS release build

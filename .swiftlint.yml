@@ -1,7 +1,7 @@
-# SwiftLint rules for the hand-written Swift in the iOS and watch apps: the
-# native part of CLAUDE.md's "No assertions" rule. tool/lint_native.sh runs
-# this with --strict, so any finding fails, and tool/check_native_lints.sh
-# proves each rule still reports.
+# SwiftLint rules for the hand-written Swift in the iOS and watch apps, and
+# the code they share: the native part of CLAUDE.md's "No assertions" rule.
+# tool/lint_native.sh runs this with --strict, so any finding fails, and
+# tool/check_native_lints.sh proves each rule still reports.
 #
 # Only these rules run, so SwiftLint's style rules don't creep in unasked.
 # When adding a rule, add a violation for it to tool/check_native_lints.sh.
@@ -10,6 +10,7 @@
 included:
   - ios/Runner
   - ios/PulseLinkWatch
+  - ios/Shared
 
 excluded:
   # Pigeon's generated code (see pigeons/ble_api.dart).
