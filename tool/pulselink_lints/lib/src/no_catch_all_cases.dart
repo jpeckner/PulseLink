@@ -62,7 +62,9 @@ class _Visitor extends SimpleAstVisitor<void> {
   @override
   void visitSwitchStatement(SwitchStatement node) {
     final scrutineeType = _closedScrutineeType(node.expression);
-    if (scrutineeType == null) return;
+    if (scrutineeType == null) {
+      return;
+    }
     for (final member in node.members) {
       switch (member) {
         case SwitchDefault():
@@ -79,14 +81,18 @@ class _Visitor extends SimpleAstVisitor<void> {
   @override
   void visitSwitchExpression(SwitchExpression node) {
     final scrutineeType = _closedScrutineeType(node.expression);
-    if (scrutineeType == null) return;
+    if (scrutineeType == null) {
+      return;
+    }
     for (final switchCase in node.cases) {
       _checkCase(switchCase.guardedPattern, scrutineeType);
     }
   }
 
   void _checkCase(GuardedPattern guardedPattern, DartType scrutineeType) {
-    if (guardedPattern.whenClause != null) return;
+    if (guardedPattern.whenClause != null) {
+      return;
+    }
     final pattern = guardedPattern.pattern;
     if (_matchesEverything(pattern, scrutineeType)) {
       rule.reportAtNode(pattern);
@@ -96,7 +102,9 @@ class _Visitor extends SimpleAstVisitor<void> {
   /// The scrutinee's type without `?`, if it's closed; otherwise null.
   DartType? _closedScrutineeType(Expression scrutinee) {
     final type = scrutinee.staticType;
-    if (type == null) return null;
+    if (type == null) {
+      return null;
+    }
     final nonNull = typeSystem.promoteToNonNull(
       typeSystem.resolveToBound(type),
     );
@@ -104,7 +112,9 @@ class _Visitor extends SimpleAstVisitor<void> {
   }
 
   bool _isClosed(DartType type) {
-    if (type.isDartCoreBool) return true;
+    if (type.isDartCoreBool) {
+      return true;
+    }
     return switch (type) {
       InterfaceType(:final element) =>
         element is EnumElement || (element is ClassElement && element.isSealed),
