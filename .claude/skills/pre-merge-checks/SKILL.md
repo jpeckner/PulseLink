@@ -185,7 +185,18 @@ If the branch has `tool/pulselink_lints`, run its own checks, as CI does:
 
 If the branch changed `.claude/skills/pre-merge-checks/find_unused_code/`, run `dart test` there too.
 
-### 5f. Coverage of the branch's changes (informational)
+### 5f. Native lints
+
+If the branch has `tool/lint_native.sh`, run it and its probe, as CI does:
+
+```bash
+tool/lint_native.sh > "$LOGS/lint-native.log" 2>&1
+tool/check_native_lints.sh > "$LOGS/check-native-lints.log" 2>&1
+```
+
+The first runs SwiftLint on the hand-written Swift and detekt (through Gradle) on the hand-written Kotlin, for `CLAUDE.md`'s native-code rules. It fails on any finding, and if either linter checked no files. The second plants a violation of every rule and fails unless each one reports, so a linter that silently did nothing can't pass. Both download their linter the first time (SwiftLint into `~/.cache/pulselink`, detekt into Gradle's cache), and Gradle needs a JDK: the script uses `JAVA_HOME`, `java` on the `PATH`, or Android Studio's. A failure in either is a fail; report each finding with its file, line and rule. Don't fix findings in code the branch didn't change.
+
+### 5g. Coverage of the branch's changes (informational)
 
 ```bash
 python3 .claude/skills/pre-merge-checks/changed_line_coverage.py coverage/lcov.info
@@ -300,6 +311,7 @@ Then a table with one row per check, giving its status (pass / fixed / fail / in
 - CocoaPods
 - formatting
 - analyze
+- native lints
 - tests (with totals and the seed)
 - lint plugin
 - coverage of changes

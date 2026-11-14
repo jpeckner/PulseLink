@@ -1,0 +1,47 @@
+# SwiftLint rules for the hand-written Swift in the iOS app: the native part
+# of CLAUDE.md's "No assertions" rule. tool/lint_native.sh runs this with
+# --strict, so any finding fails, and tool/check_native_lints.sh proves each
+# rule still reports.
+#
+# Only these rules run, so SwiftLint's style rules don't creep in unasked.
+# When adding a rule, add a violation for it to tool/check_native_lints.sh.
+
+# App code only. Test code is exempt from the no-assertions rule, as in Dart.
+included:
+  - ios/Runner
+
+excluded:
+  # Pigeon's generated code (see pigeons/ble_api.dart).
+  - ios/Runner/*.pigeon.swift
+
+only_rules:
+  - force_unwrapping
+  - force_cast
+  - force_try
+  - implicitly_unwrapped_optional
+  - custom_rules
+
+custom_rules:
+  no_assertions:
+    name: No assertions
+    regex: '\b(fatalError|precondition|preconditionFailure|assert|assertionFailure)\s*\('
+    # Code only, not comments or strings that mention these.
+    match_kinds:
+      - identifier
+    message: >-
+      Assertions are banned in app code; return a typed result or nil instead
+      (CLAUDE.md, "No assertions").
+    severity: error
+
+  no_catch_all_cases:
+    name: No catch-all cases
+    # `default:` but not `@unknown default:`, which Swift requires for
+    # Apple's enums.
+    regex: '(?<!@unknown )\bdefault\s*:'
+    match_kinds:
+      - keyword
+    message: >-
+      List every case instead of `default`, so a new case is a compile error.
+      For a type that can't be listed (such as Int), disable this rule on
+      that line with a comment saying why (CLAUDE.md, "No assertions").
+    severity: error
