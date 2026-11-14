@@ -114,12 +114,13 @@ use_jdk() {
   return 1
 }
 
-# Runs detekt and the unchecked-cast check, and fails at the end if either
-# found something, so one run reports everything.
+# Runs detekt and the unchecked-cast check (both Gradle tasks in
+# android/app/build.gradle.kts, which also runs them in every Android
+# build), and fails if either found something.
 lint_kotlin() {
   use_jdk
   local status=0
-  echo '==> detekt'
+  echo '==> detekt and no_unchecked_cast'
   # detektMain analyses the app's production Kotlin with type resolution,
   # which UnsafeCallOnNullableType and ElseCaseInsteadOfExhaustiveWhen need,
   # once per build variant (debug, profile and release).
@@ -128,7 +129,10 @@ lint_kotlin() {
   # to date, so the reports checked below are always from this run.
   rm -rf "$reports"
   # Fails on any finding; the reports below are written either way.
-  (cd android && ./gradlew --quiet :app:detektMain) || status=1
+  # --continue runs the cast check even if detekt fails, so one run reports
+  # everything.
+  (cd android && ./gradlew --quiet --continue :app:detektMain :app:checkUncheckedCasts) ||
+    status=1
 
   # Guards against detekt passing because it analysed nothing, such as after
   # a change to its source paths or excludes.
@@ -148,19 +152,6 @@ lint_kotlin() {
   fi
   echo "detekt analysed ${count} Kotlin files in each of $checked build variants."
 
-  echo '==> no_unchecked_cast'
-  # detekt has no rule for every unchecked `as`, so this matches it as text:
-  # `as` followed by a type, outside imports and comment lines. It can be
-  # fooled by `as` inside a string, but not by `as?`.
-  local casts
-  casts=$(grep -rnE --include='*.kt' '(^|[^A-Za-z0-9_])as[[:space:]]+[A-Za-z(]' \
-    android/app/src/main/kotlin |
-    grep -v '\.pigeon\.kt:' |
-    grep -vE '^[^:]+:[0-9]+:[[:space:]]*(import |//|\*|/\*)' || true)
-  if [[ -n "$casts" ]]; then
-    sed -E 's/^([^:]+:[0-9]+):(.*)$/\1: no_unchecked_cast: use `as?` and handle null:\2/' <<<"$casts"
-    status=1
-  fi
   return "$status"
 }
 
