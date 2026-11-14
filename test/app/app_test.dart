@@ -109,13 +109,13 @@ void main() {
       final readoutBefore = tester.getCenter(find.text('bpm'));
       await tester.longPress(find.text('PulseLink'));
       await tester.pump();
-      expect(find.text('Override: Normal'), findsOneWidget);
+      expect(find.text('Override: None'), findsOneWidget);
       expect(find.text('Skin-contact detection: supported'), findsOneWidget);
       // Revealing the buttons doesn't move the readout.
       expect(tester.getCenter(find.text('bpm')), readoutBefore);
 
-      // Normal -> No data (stale) -> No skin contact.
-      await tester.tap(find.text('Override: Normal'));
+      // None -> No data (stale) -> No skin contact.
+      await tester.tap(find.text('Override: None'));
       await tester.pump();
       await tester.tap(find.text('Override: No data (stale)'));
       await tester.pump();
@@ -130,7 +130,7 @@ void main() {
       // a skin-contact chip.
       await tester.tap(find.text('Skin-contact detection: supported'));
       await tester.pump();
-      expect(find.text('Override: Normal'), findsOneWidget);
+      expect(find.text('Override: None'), findsOneWidget);
       source.emit(sample());
       await tester.pumpAndSettle();
       expect(find.text('72'), findsOneWidget);

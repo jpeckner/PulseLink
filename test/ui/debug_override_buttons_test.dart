@@ -40,7 +40,7 @@ void main() {
       cubit.toggleVisibility();
       await tester.pump();
       expect(find.text(_supported), findsOneWidget);
-      expect(find.text('Override: Normal'), findsOneWidget);
+      expect(find.text('Override: None'), findsOneWidget);
     });
 
     testWidgets('the condition button cycles what a detecting strap can do', (
@@ -54,7 +54,7 @@ void main() {
         'Override: No skin contact',
         'Override: Zero bpm',
         'Override: Implausible bpm',
-        'Override: Normal',
+        'Override: None',
       ]) {
         await tester.tap(find.textContaining('Override:'));
         await tester.pump();
@@ -73,7 +73,7 @@ void main() {
         'Override: No data (stale)',
         'Override: Zero bpm',
         'Override: Implausible bpm',
-        'Override: Normal',
+        'Override: None',
       ]) {
         await tester.tap(find.textContaining('Override:'));
         await tester.pump();
@@ -95,7 +95,7 @@ void main() {
       await tester.tap(find.text(_supported));
       await tester.pump();
       expect(find.text(_notSupported), findsOneWidget);
-      expect(find.text('Override: Normal'), findsOneWidget);
+      expect(find.text('Override: None'), findsOneWidget);
     });
 
     testWidgets('disappear when hidden again', (tester) async {
