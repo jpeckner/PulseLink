@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:pulselink/data/debug_override_heart_rate_source.dart';
+import 'package:pulselink/data/debug_override_strap_data_source.dart';
 
 part 'debug_override_state.freezed.dart';
 

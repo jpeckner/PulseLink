@@ -1,7 +1,7 @@
 # data
 
 Everything that talks to the outside world, behind interfaces so it can be
-faked in tests: `HeartRateSource` (BLE or fake), `StrapScanner` (BLE),
+faked in tests: `StrapDataSource` (BLE or fake), `StrapScanner` (BLE),
 `SessionRepository` (drift), and `WatchBridge` (WatchConnectivity via platform
 channels).
 

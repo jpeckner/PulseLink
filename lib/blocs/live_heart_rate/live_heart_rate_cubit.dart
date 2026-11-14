@@ -3,25 +3,25 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:clock/clock.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
-import 'package:pulselink/data/heart_rate_source.dart';
+import 'package:pulselink/data/strap_data_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
 
-/// Turns a [HeartRateSource] into screen state: the latest sample, and whether
+/// Turns a [StrapDataSource] into screen state: the latest sample, and whether
 /// it has gone stale.
 ///
 /// A sample is stale once it's older than [staleAfter], measured from its own
 /// timestamp, even if the source still says it's connected.
 class LiveHeartRateCubit extends Cubit<LiveHeartRateState> {
   new({
-    required HeartRateSource source,
+    required StrapDataSource source,
     this.staleAfter = const Duration(seconds: 10),
   }) : _source = source,
        super(LiveHeartRateState.waiting(isSimulated: source.isSimulated));
 
   final Duration staleAfter;
 
-  final HeartRateSource _source;
+  final StrapDataSource _source;
   StreamSubscription<HeartRateSample>? _subscription;
   StreamSubscription<StrapConnectionFailure>? _connectionLostSubscription;
   Timer? _staleTimer;
@@ -42,7 +42,7 @@ class LiveHeartRateCubit extends Cubit<LiveHeartRateState> {
         break;
     }
 
-    // No onError: neither of HeartRateSource's streams carries errors.
+    // No onError: neither of StrapDataSource's streams carries errors.
     _subscription ??= _source.samples.listen(_onSample);
     _connectionLostSubscription ??= _source.connectionLost.listen(
       _onConnectionLost,
@@ -55,10 +55,10 @@ class LiveHeartRateCubit extends Cubit<LiveHeartRateState> {
       return;
     }
     switch (result) {
-      case HeartRateSourceStarted() || HeartRateSourceStartCancelled():
+      case StrapDataSourceStarted() || StrapDataSourceStartCancelled():
         // Samples will arrive, or stopping was asked for: nothing to show.
         break;
-      case HeartRateSourceStartFailed(:final failure):
+      case StrapDataSourceStartFailed(:final failure):
         emit(
           LiveHeartRateState.connectionFailed(
             failure: failure,

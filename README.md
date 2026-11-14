@@ -45,7 +45,7 @@ flutter pub get
 flutter run
 ```
 
-For now the app always runs in **demo mode**: `FakeHeartRateSource` simulates a
+For now the app always runs in **demo mode**: `FakeStrapDataSource` simulates a
 strap, and the screen shows a "Demo" badge. Real BLE arrives in Milestone 3 and
 needs a physical phone (BLE doesn't work in the iOS Simulator).
 

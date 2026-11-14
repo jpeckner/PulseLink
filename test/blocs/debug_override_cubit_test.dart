@@ -2,11 +2,11 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/blocs/debug_override/debug_override_cubit.dart';
 import 'package:pulselink/blocs/debug_override/debug_override_state.dart';
-import 'package:pulselink/data/debug_override_heart_rate_source.dart';
+import 'package:pulselink/data/debug_override_strap_data_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 
 import '../helpers/beats_per_minute.dart';
-import '../helpers/stub_heart_rate_source.dart';
+import '../helpers/stub_strap_data_source.dart';
 
 const ReadingOverride Function(DetectingStrapCondition condition) _detecting =
     ReadingOverride.detectingStrap;
@@ -18,12 +18,12 @@ DebugOverrideState _shown(ReadingOverride readingOverride) =>
 
 void main() {
   group('DebugOverrideCubit', () {
-    late StubHeartRateSource inner;
-    late DebugOverrideHeartRateSource source;
+    late StubStrapDataSource inner;
+    late DebugOverrideStrapDataSource source;
 
     setUp(() {
-      inner = StubHeartRateSource();
-      source = DebugOverrideHeartRateSource(inner);
+      inner = StubStrapDataSource();
+      source = DebugOverrideStrapDataSource(inner);
       source.samples.listen((_) {});
     });
 

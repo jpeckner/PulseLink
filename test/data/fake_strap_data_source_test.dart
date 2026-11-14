@@ -4,8 +4,8 @@ import 'dart:math';
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pulselink/data/fake_heart_rate_source.dart';
-import 'package:pulselink/data/heart_rate_source.dart';
+import 'package:pulselink/data/fake_strap_data_source.dart';
+import 'package:pulselink/data/strap_data_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
 
@@ -16,14 +16,14 @@ void _withFakeTime(void Function(FakeAsync async) body) {
   fakeAsync((async) => withClock(async.getClock(_start), () => body(async)));
 }
 
-const _started = HeartRateSourceStartResult.started();
+const _started = StrapDataSourceStartResult.started();
 
 /// Starts [source] under fake time, and returns how starting went.
-HeartRateSourceStartResult _startNow(
+StrapDataSourceStartResult _startNow(
   FakeAsync async,
-  FakeHeartRateSource source,
+  FakeStrapDataSource source,
 ) {
-  HeartRateSourceStartResult? result;
+  StrapDataSourceStartResult? result;
   unawaited(
     source.start().then((value) {
       result = value;
@@ -37,7 +37,7 @@ HeartRateSourceStartResult _startNow(
 /// fake only produces measured samples, so anything else fails the test.
 List<MeasuredHeartRateSample> _run(
   FakeAsync async,
-  FakeHeartRateSource source,
+  FakeStrapDataSource source,
   Duration duration,
 ) {
   final samples = <MeasuredHeartRateSample>[];
@@ -53,9 +53,9 @@ List<MeasuredHeartRateSample> _run(
 }
 
 void main() {
-  test('FakeHeartRateSource never reports a lost connection, and closes '
+  test('FakeStrapDataSource never reports a lost connection, and closes '
       'connectionLost on dispose', () async {
-    final source = FakeHeartRateSource();
+    final source = FakeStrapDataSource();
     final lost = <StrapConnectionFailure>[];
     var closed = false;
     source.connectionLost.listen(lost.add, onDone: () => closed = true);
@@ -63,14 +63,14 @@ void main() {
     expect(lost, isEmpty);
     expect(closed, isTrue);
   });
-  group('FakeHeartRateSource', () {
+  group('FakeStrapDataSource', () {
     test('is simulated', () {
-      expect(FakeHeartRateSource().isSimulated, isTrue);
+      expect(FakeStrapDataSource().isSimulated, isTrue);
     });
 
     test('emits nothing before start', () {
       _withFakeTime((async) {
-        final source = FakeHeartRateSource();
+        final source = FakeStrapDataSource();
         final samples = <HeartRateSample>[];
         source.samples.listen(samples.add);
         async.elapse(const Duration(seconds: 5));
@@ -82,7 +82,7 @@ void main() {
       _withFakeTime((async) {
         final samples = _run(
           async,
-          FakeHeartRateSource(random: Random(1)),
+          FakeStrapDataSource(random: Random(1)),
           const Duration(seconds: 3),
         );
         expect(samples.map((s) => s.timestamp), [
@@ -97,7 +97,7 @@ void main() {
       _withFakeTime((async) {
         final samples = _run(
           async,
-          FakeHeartRateSource(interval: const Duration(milliseconds: 250)),
+          FakeStrapDataSource(interval: const Duration(milliseconds: 250)),
           const Duration(seconds: 1),
         );
         expect(samples, hasLength(4));
@@ -108,7 +108,7 @@ void main() {
       _withFakeTime((async) {
         final samples = _run(
           async,
-          FakeHeartRateSource(random: Random(7)),
+          FakeStrapDataSource(random: Random(7)),
           const Duration(minutes: 5),
         );
         expect(samples, hasLength(300));
@@ -116,8 +116,8 @@ void main() {
           expect(
             sample.beatsPerMinute.value,
             inInclusiveRange(
-              FakeHeartRateSource.minBeatsPerMinute,
-              FakeHeartRateSource.maxBeatsPerMinute,
+              FakeStrapDataSource.minBeatsPerMinute,
+              FakeStrapDataSource.maxBeatsPerMinute,
             ),
           );
           expect(sample.skinContact, SkinContact.detected);
@@ -139,7 +139,7 @@ void main() {
       _withFakeTime((async) {
         final samples = _run(
           async,
-          FakeHeartRateSource(random: Random(3)),
+          FakeStrapDataSource(random: Random(3)),
           const Duration(minutes: 5),
         );
         for (var i = 1; i < samples.length; i++) {
@@ -159,7 +159,7 @@ void main() {
         _withFakeTime((async) {
           result = _run(
             async,
-            FakeHeartRateSource(random: Random(seed)),
+            FakeStrapDataSource(random: Random(seed)),
             const Duration(seconds: 30),
           ).map((s) => s.beatsPerMinute.value).toList();
         });
@@ -172,7 +172,7 @@ void main() {
 
     test('stops emitting after stop, and resumes after start', () {
       _withFakeTime((async) {
-        final source = FakeHeartRateSource();
+        final source = FakeStrapDataSource();
         final samples = _run(async, source, const Duration(seconds: 2));
         unawaited(source.stop());
         async.elapse(const Duration(seconds: 5));
@@ -186,7 +186,7 @@ void main() {
 
     test('calling start twice does not double the rate', () {
       _withFakeTime((async) {
-        final source = FakeHeartRateSource();
+        final source = FakeStrapDataSource();
         expect(_startNow(async, source), _started);
         final samples = _run(async, source, const Duration(seconds: 3));
         expect(samples, hasLength(3));
@@ -195,12 +195,12 @@ void main() {
 
     test('start after dispose does nothing and reports it was cancelled', () {
       _withFakeTime((async) {
-        final source = FakeHeartRateSource();
+        final source = FakeStrapDataSource();
         unawaited(source.dispose());
         async.flushMicrotasks();
         expect(
           _startNow(async, source),
-          const HeartRateSourceStartResult.cancelled(),
+          const StrapDataSourceStartResult.cancelled(),
         );
         async.elapse(const Duration(seconds: 5));
         expect(async.pendingTimers, isEmpty);
@@ -209,7 +209,7 @@ void main() {
 
     test('closes its stream on dispose', () {
       _withFakeTime((async) {
-        final source = FakeHeartRateSource();
+        final source = FakeStrapDataSource();
         var isDone = false;
         source.samples.listen(null, onDone: () => isDone = true);
         expect(_startNow(async, source), _started);

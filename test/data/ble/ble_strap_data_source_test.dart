@@ -5,8 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pulselink/data/ble/ble_api.pigeon.dart';
-import 'package:pulselink/data/ble/ble_heart_rate_source.dart';
-import 'package:pulselink/data/heart_rate_source.dart';
+import 'package:pulselink/data/ble/ble_strap_data_source.dart';
+import 'package:pulselink/data/strap_data_source.dart';
 import 'package:pulselink/domain/bluetooth_problem.dart';
 import 'package:pulselink/domain/heart_rate_measurement_parser.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
@@ -26,20 +26,20 @@ final _packet = Uint8List.fromList([0x16, 0x48, 0x00, 0x04]);
 /// every source's, so a sample reaches listeners just after it's added.
 Future<void> _delivered() => Future<void>.delayed(Duration.zero);
 
-const _started = HeartRateSourceStartResult.started();
-const _cancelled = HeartRateSourceStartResult.cancelled();
+const _started = StrapDataSourceStartResult.started();
+const _cancelled = StrapDataSourceStartResult.cancelled();
 
 void main() {
-  group('BleHeartRateSource', () {
+  group('BleStrapDataSource', () {
     late _MockConnectionApi api;
     late StreamController<BleStrapEvent> events;
-    late BleHeartRateSource source;
+    late BleStrapDataSource source;
     late List<HeartRateSample> samples;
 
     setUp(() {
       api = _MockConnectionApi();
       events = StreamController<BleStrapEvent>.broadcast(sync: true);
-      source = BleHeartRateSource(
+      source = BleStrapDataSource(
         strapId: strapIdOf('E621E1F8-C36C-495A-93FC-0C247A3E6E5F'),
         api: api,
         events: events.stream,
@@ -107,7 +107,7 @@ void main() {
               .thenAnswer((_) async => BleConnectFailed(reason: reason));
           expect(
             await source.start(),
-            HeartRateSourceStartResult.failed(failure),
+            StrapDataSourceStartResult.failed(failure),
           );
         });
       }
@@ -118,7 +118,7 @@ void main() {
             .thenThrow(PlatformException(code: 'channel-error'));
         expect(
           await source.start(),
-          const HeartRateSourceStartResult.failed(
+          const StrapDataSourceStartResult.failed(
             StrapConnectionFailure.bluetooth(BluetoothProblem.unavailable),
           ),
         );
@@ -132,7 +132,7 @@ void main() {
         );
         expect(
           await source.start(),
-          const HeartRateSourceStartResult.failed(
+          const StrapDataSourceStartResult.failed(
             StrapConnectionFailure.strapUnreachable(),
           ),
         );
@@ -320,10 +320,10 @@ void main() {
     });
   });
 
-  group('BleHeartRateSource when stopping its event stream fails', () {
+  group('BleStrapDataSource when stopping its event stream fails', () {
     late _MockConnectionApi api;
     late StreamController<BleStrapEvent> events;
-    late BleHeartRateSource source;
+    late BleStrapDataSource source;
     final failure = Exception('cancel failed');
 
     setUp(() {
@@ -331,7 +331,7 @@ void main() {
       when(() => api.disconnect()).thenAnswer((_) async {});
       // A stream whose subscription fails to cancel.
       events = StreamController<BleStrapEvent>(onCancel: () => throw failure);
-      source = BleHeartRateSource(
+      source = BleStrapDataSource(
         strapId: strapIdOf('strap-1'),
         api: api,
         events: events.stream,
@@ -347,13 +347,13 @@ void main() {
             BleConnectFailed(reason: BleConnectFailureReason.unreachable),
       );
       final reported = <Object>[];
-      HeartRateSourceStartResult? result;
+      StrapDataSourceStartResult? result;
       await runZonedGuarded(() async {
         result = await source.start();
       }, (error, _) => reported.add(error));
       expect(
         result,
-        const HeartRateSourceStartResult.failed(
+        const StrapDataSourceStartResult.failed(
           StrapConnectionFailure.strapUnreachable(),
         ),
       );
@@ -368,7 +368,7 @@ void main() {
     });
   });
 
-  group('BleHeartRateSource over the real platform channels', () {
+  group('BleStrapDataSource over the real platform channels', () {
     // The channel names Pigeon generates (see pigeons/ble_api.dart).
     const connectChannel = BasicMessageChannel<Object?>(
       'dev.flutter.pigeon.pulselink.BleConnectionApi.connect',
@@ -412,7 +412,7 @@ void main() {
           MockStreamHandler.inline(onListen: (_, events) => strap = events),
         );
 
-      final source = BleHeartRateSource(strapId: strapIdOf('strap-1'));
+      final source = BleStrapDataSource(strapId: strapIdOf('strap-1'));
       final samples = <HeartRateSample>[];
       source.samples.listen(samples.add);
 

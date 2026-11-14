@@ -4,7 +4,7 @@ import 'dart:developer' as developer;
 import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
 import 'package:pulselink/data/ble/ble_api.pigeon.dart';
-import 'package:pulselink/data/heart_rate_source.dart';
+import 'package:pulselink/data/strap_data_source.dart';
 import 'package:pulselink/domain/heart_rate_measurement_parser.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_ble_identifier.dart';
@@ -18,7 +18,7 @@ import 'package:pulselink/domain/strap_connection_failure.dart';
 /// When a connected strap drops, it reports [StrapConnectionLost] on
 /// [connectionLost]; starting it again reconnects. Reconnecting by itself
 /// comes in Milestone 4.
-class BleHeartRateSource implements HeartRateSource {
+class BleStrapDataSource implements StrapDataSource {
   /// Connects to the strap with `strapId`, from a scan. [api] and [events]
   /// stand in for the platform channels in tests.
   ///
@@ -38,7 +38,7 @@ class BleHeartRateSource implements HeartRateSource {
   final _connectionLost = StreamController<StrapConnectionFailure>.broadcast();
 
   StreamSubscription<BleStrapEvent>? _subscription;
-  Completer<HeartRateSourceStartResult>? _pendingStart;
+  Completer<StrapDataSourceStartResult>? _pendingStart;
   bool _isStarted = false;
   bool _isDisposed = false;
 
@@ -53,7 +53,7 @@ class BleHeartRateSource implements HeartRateSource {
   Stream<StrapConnectionFailure> get connectionLost => _connectionLost.stream;
 
   @override
-  Future<HeartRateSourceStartResult> start() {
+  Future<StrapDataSourceStartResult> start() {
     if (_isDisposed) {
       return Future.value(const .cancelled());
     }
@@ -64,7 +64,7 @@ class BleHeartRateSource implements HeartRateSource {
     if (_pendingStart case final pending?) {
       return pending.future;
     }
-    final pending = Completer<HeartRateSourceStartResult>();
+    final pending = Completer<StrapDataSourceStartResult>();
     _pendingStart = pending;
     // Listening before connecting means no measurement sent just after
     // connecting is missed. Measurements only count once started.
@@ -113,7 +113,7 @@ class BleHeartRateSource implements HeartRateSource {
     }
   }
 
-  Future<void> _connect(Completer<HeartRateSourceStartResult> pending) async {
+  Future<void> _connect(Completer<StrapDataSourceStartResult> pending) async {
     final result = await _connectResult();
     // stop() or dispose() may have ended this start already, and completed
     // it as cancelled.
@@ -122,10 +122,10 @@ class BleHeartRateSource implements HeartRateSource {
     }
     _pendingStart = null;
     switch (result) {
-      case HeartRateSourceStarted():
+      case StrapDataSourceStarted():
         _isStarted = true;
         pending.complete(result);
-      case HeartRateSourceStartCancelled() || HeartRateSourceStartFailed():
+      case StrapDataSourceStartCancelled() || StrapDataSourceStartFailed():
         // Not connected, so nothing to listen for until the next start.
         final cancelling = _subscription?.cancel();
         _subscription = null;
@@ -139,7 +139,7 @@ class BleHeartRateSource implements HeartRateSource {
     }
   }
 
-  Future<HeartRateSourceStartResult> _connectResult() async {
+  Future<StrapDataSourceStartResult> _connectResult() async {
     try {
       return switch (await _api.connect(_strapId.value)) {
         BleConnected() => const .started(),
