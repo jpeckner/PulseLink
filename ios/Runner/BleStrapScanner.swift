@@ -168,22 +168,6 @@ final class CentralScan: NSObject {
   nonisolated static func strapName(advertised: String?, cached: String?) -> String? {
     advertised ?? cached
   }
-
-  private func apply(_ action: ScanAction) {
-    guard let sink, let central else {
-      // Dart isn't listening, or there's no central manager yet.
-      return
-    }
-    switch action {
-    case .scan:
-      central.scanForPeripherals(withServices: [heartRateService])
-      sink.success(BleScanStarted())
-    case .fail(let reason):
-      sink.success(BleScanFailed(reason: reason))
-    case .wait:
-      break
-    }
-  }
 }
 
 /// CoreBluetooth reports Bluetooth state changes and discovered straps here.
@@ -225,6 +209,25 @@ extension CentralScan: CBCentralManagerDelegate {
     )
     MainActor.assumeIsolated {
       sink?.success(found)
+    }
+  }
+}
+
+private extension CentralScan {
+  /// Acts on a Bluetooth state: starts scanning, or tells Dart why it can't.
+  func apply(_ action: ScanAction) {
+    guard let sink, let central else {
+      // Dart isn't listening, or there's no central manager yet.
+      return
+    }
+    switch action {
+    case .scan:
+      central.scanForPeripherals(withServices: [heartRateService])
+      sink.success(BleScanStarted())
+    case .fail(let reason):
+      sink.success(BleScanFailed(reason: reason))
+    case .wait:
+      break
     }
   }
 }
