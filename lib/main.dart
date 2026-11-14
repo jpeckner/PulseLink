@@ -8,6 +8,7 @@ import 'package:pulselink/app/app_bloc_observer.dart';
 import 'package:pulselink/blocs/debug_override/debug_override_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/strap_selection.dart';
+import 'package:pulselink/blocs/strap_battery/strap_battery_cubit.dart';
 import 'package:pulselink/data/ble/ble_strap_scanner.dart';
 import 'package:pulselink/data/debug_override_strap_data_source.dart';
 import 'package:pulselink/data/fake_strap_data_source.dart';
@@ -28,10 +29,14 @@ void main() {
   final StrapScanner strapScanner = BleStrapScanner();
 
   if (kReleaseMode) {
+    // Created before starting the source, which reports its battery level as
+    // it starts; a broadcast stream doesn't replay it to later listeners.
+    final batteryCubit = StrapBatteryCubit(source: source);
     final cubit = _startedCubit(source);
     runApp(
       PulseLinkApp(
         liveHeartRateCubit: cubit,
+        strapBatteryCubit: batteryCubit,
         strapScanner: strapScanner,
         onStrapSelected: _selectStrap(source, cubit),
       ),
@@ -42,10 +47,13 @@ void main() {
     // The override wraps the switchable source, so it also works on a strap.
     final overrideSource = DebugOverrideStrapDataSource(source);
     final overrideCubit = DebugOverrideCubit(source: overrideSource);
+    // Before starting the source; see the release branch above.
+    final batteryCubit = StrapBatteryCubit(source: overrideSource);
     final cubit = _startedCubit(overrideSource);
     runApp(
       PulseLinkApp(
         liveHeartRateCubit: cubit,
+        strapBatteryCubit: batteryCubit,
         strapScanner: strapScanner,
         onStrapSelected: _selectStrap(source, cubit),
         debugControls: DebugOverrideButtons(cubit: overrideCubit),

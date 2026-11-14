@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pulselink/data/ble/ble_api.pigeon.dart';
 import 'package:pulselink/data/ble/ble_strap_data_source.dart';
 import 'package:pulselink/data/strap_data_source.dart';
+import 'package:pulselink/domain/battery_level.dart';
 import 'package:pulselink/domain/bluetooth_problem.dart';
 import 'package:pulselink/domain/heart_rate_measurement_parser.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
@@ -251,6 +252,43 @@ void main() {
         expect(lost, [const StrapConnectionFailure.connectionLost()]);
       });
 
+      group('battery level', () {
+        late List<BatteryLevel?> levels;
+
+        setUp(() async {
+          levels = [];
+          source.batteryLevel.listen(levels.add);
+          expect(await source.start(), _started);
+        });
+
+        test('passes on a percentage', () async {
+          events.add(BleBatteryLevel(percent: 85));
+          await _delivered();
+          expect(levels, [BatteryLevel.tryFrom(85)]);
+        });
+
+        test('drops a value outside 0 to 100', () async {
+          events
+            ..add(BleBatteryLevel(percent: 255))
+            ..add(BleBatteryLevel(percent: 40));
+          await _delivered();
+          expect(levels, [BatteryLevel.tryFrom(40)]);
+        });
+
+        test('becomes unknown when the strap drops, or on stop', () async {
+          events
+            ..add(BleBatteryLevel(percent: 85))
+            ..add(BleStrapDisconnected());
+          await _delivered();
+          expect(levels, [BatteryLevel.tryFrom(85), null]);
+
+          expect(await source.start(), _started);
+          await source.stop();
+          await _delivered();
+          expect(levels, [BatteryLevel.tryFrom(85), null, null]);
+        });
+      });
+
       test('stop disconnects and ignores later measurements', () async {
         expect(await source.start(), _started);
         await source.stop();
@@ -274,6 +312,21 @@ void main() {
       events.add(BleStrapDisconnected());
       await _delivered();
       expect(lost, isEmpty);
+    });
+
+    test('a battery level while not connected is ignored', () async {
+      final levels = <BatteryLevel?>[];
+      source.batteryLevel.listen(levels.add);
+      events.add(BleBatteryLevel(percent: 85));
+      await _delivered();
+      expect(levels, isEmpty);
+    });
+
+    test('dispose closes batteryLevel', () async {
+      var closed = false;
+      source.batteryLevel.listen(null, onDone: () => closed = true);
+      await source.dispose();
+      expect(closed, isTrue);
     });
 
     test('dispose closes connectionLost', () async {

@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/data/strap_data_source.dart';
 import 'package:pulselink/data/switchable_strap_data_source.dart';
+import 'package:pulselink/domain/battery_level.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
 
@@ -18,6 +19,44 @@ HeartRateSample _sample(int beatsPerMinute) => HeartRateSample.measured(
 Future<void> _delivered() => Future<void>.delayed(Duration.zero);
 
 void main() {
+  group('SwitchableStrapDataSource batteryLevel', () {
+    late StubStrapDataSource demo;
+    late StubStrapDataSource strap;
+    late SwitchableStrapDataSource source;
+    late List<BatteryLevel?> levels;
+
+    setUp(() {
+      demo = StubStrapDataSource(isSimulated: true);
+      strap = StubStrapDataSource();
+      source = SwitchableStrapDataSource(demo);
+      levels = [];
+      source.batteryLevel.listen(levels.add);
+    });
+
+    tearDown(() => source.dispose());
+
+    test("passes on the current source's level, and becomes unknown on a "
+        'switch', () async {
+      demo.reportBatteryLevel(BatteryLevel.tryFrom(80));
+      await source.switchTo(strap);
+      // Nothing from the old source is passed on any more.
+      expect(demo.hasBatteryLevelListener, isFalse);
+      strap.reportBatteryLevel(BatteryLevel.tryFrom(55));
+      await _delivered();
+      expect(levels, [
+        BatteryLevel.tryFrom(80),
+        null,
+        BatteryLevel.tryFrom(55),
+      ]);
+    });
+
+    test('closes on dispose', () async {
+      var closed = false;
+      source.batteryLevel.listen(null, onDone: () => closed = true);
+      await source.dispose();
+      expect(closed, isTrue);
+    });
+  });
   group('SwitchableStrapDataSource connectionLost', () {
     late StubStrapDataSource demo;
     late StubStrapDataSource strap;

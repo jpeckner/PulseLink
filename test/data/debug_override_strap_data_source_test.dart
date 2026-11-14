@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/data/debug_override_strap_data_source.dart';
 import 'package:pulselink/data/strap_data_source.dart';
+import 'package:pulselink/domain/battery_level.dart';
 import 'package:pulselink/domain/bluetooth_problem.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
@@ -27,6 +28,15 @@ const ReadingOverride Function(NonDetectingStrapCondition condition)
 _nonDetecting = ReadingOverride.nonDetectingStrap;
 
 void main() {
+  test('DebugOverrideStrapDataSource passes on the battery level', () async {
+    final inner = StubStrapDataSource();
+    final source = DebugOverrideStrapDataSource(inner);
+    final levels = <BatteryLevel?>[];
+    source.batteryLevel.listen(levels.add);
+    inner.reportBatteryLevel(BatteryLevel.tryFrom(60));
+    expect(levels, [BatteryLevel.tryFrom(60)]);
+    await source.dispose();
+  });
   test('DebugOverrideStrapDataSource passes on lost connections', () async {
     final inner = StubStrapDataSource();
     final source = DebugOverrideStrapDataSource(inner);

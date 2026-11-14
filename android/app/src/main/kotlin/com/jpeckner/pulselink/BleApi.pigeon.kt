@@ -578,6 +578,50 @@ class BleStrapDisconnected  : BleStrapEvent() {
     return "BleStrapDisconnected()"
   }
 }
+
+/**
+ * The strap's battery level (Battery Level characteristic 0x2A19), as it
+ * sent it: meant to be a percentage from 0 to 100, but checked in Dart.
+ * Sent when read after connecting, and whenever the strap reports a
+ * change. Straps without the Battery Service never send one.
+ *
+ * Generated class from Pigeon that represents data sent in messages.
+ */
+data class BleBatteryLevel (
+  val percent: Long
+) : BleStrapEvent()
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): BleBatteryLevel {
+      val percent = pigeonVar_list[0] as Long
+      return BleBatteryLevel(percent)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      percent,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as BleBatteryLevel
+    return BleApiPigeonUtils.deepEquals(this.percent, other.percent)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + BleApiPigeonUtils.deepHash(this.percent)
+    return result
+  }
+  override fun toString(): String {
+    return "BleBatteryLevel(percent=$percent)"
+  }
+}
 private open class BleApiPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
@@ -631,6 +675,11 @@ private open class BleApiPigeonCodec : StandardMessageCodec() {
           BleStrapDisconnected.fromList(it)
         }
       }
+      139.toByte() -> {
+        (readValue(buffer) as? List<Any?>)?.let {
+          BleBatteryLevel.fromList(it)
+        }
+      }
       else -> super.readValueOfType(type, buffer)
     }
   }
@@ -674,6 +723,10 @@ private open class BleApiPigeonCodec : StandardMessageCodec() {
       }
       is BleStrapDisconnected -> {
         stream.write(138)
+        writeValue(stream, value.toList())
+      }
+      is BleBatteryLevel -> {
+        stream.write(139)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)

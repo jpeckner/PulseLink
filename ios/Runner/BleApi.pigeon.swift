@@ -523,6 +523,46 @@ struct BleStrapDisconnected: BleStrapEvent, Hashable, CustomStringConvertible {
   }
 }
 
+/// The strap's battery level (Battery Level characteristic 0x2A19), as it
+/// sent it: meant to be a percentage from 0 to 100, but checked in Dart.
+/// Sent when read after connecting, and whenever the strap reports a
+/// change. Straps without the Battery Service never send one.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct BleBatteryLevel: BleStrapEvent, Hashable, CustomStringConvertible {
+  var percent: Int64
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> BleBatteryLevel? {
+    let percent = pigeonVar_list[0] as! Int64
+
+    return BleBatteryLevel(
+      percent: percent
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      percent
+    ]
+  }
+  static func == (lhs: BleBatteryLevel, rhs: BleBatteryLevel) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return BleApiPigeonInternal.deepEquals(lhs.percent, rhs.percent)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("BleBatteryLevel")
+    BleApiPigeonInternal.deepHash(value: percent, hasher: &hasher)
+  }
+
+  public var description: String {
+    return "BleBatteryLevel(percent: \(String(describing: percent)))"
+  }
+}
+
 private class BleApiPigeonCodecReader: FlutterStandardReader {
   override func readValue(ofType type: UInt8) -> Any? {
     switch type {
@@ -554,6 +594,8 @@ private class BleApiPigeonCodecReader: FlutterStandardReader {
       return BleHeartRateMeasurement.fromList(self.readValue() as! [Any?])
     case 138:
       return BleStrapDisconnected.fromList(self.readValue() as! [Any?])
+    case 139:
+      return BleBatteryLevel.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
     }
@@ -591,6 +633,9 @@ private class BleApiPigeonCodecWriter: FlutterStandardWriter {
       super.writeValue(value.toList())
     } else if let value = value as? BleStrapDisconnected {
       super.writeByte(138)
+      super.writeValue(value.toList())
+    } else if let value = value as? BleBatteryLevel {
+      super.writeByte(139)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)

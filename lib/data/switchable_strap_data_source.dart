@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:pulselink/data/strap_data_source.dart';
+import 'package:pulselink/domain/battery_level.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
 
@@ -15,15 +16,18 @@ class SwitchableStrapDataSource implements StrapDataSource {
   new(StrapDataSource initial) : _current = initial {
     _forwarding = initial.samples.listen(_samples.add);
     _forwardingLost = initial.connectionLost.listen(_connectionLost.add);
+    _forwardingBattery = initial.batteryLevel.listen(_batteryLevel.add);
   }
 
   StrapDataSource _current;
   final _samples = StreamController<HeartRateSample>.broadcast();
   final _connectionLost = StreamController<StrapConnectionFailure>.broadcast();
+  final _batteryLevel = StreamController<BatteryLevel?>.broadcast();
   // No onError where these are set: neither of a source's streams carries
   // errors.
   StreamSubscription<HeartRateSample>? _forwarding;
   StreamSubscription<StrapConnectionFailure>? _forwardingLost;
+  StreamSubscription<BatteryLevel?>? _forwardingBattery;
   bool _isDisposed = false;
 
   /// Whether the current source is simulated. It changes when [switchTo]
@@ -40,6 +44,12 @@ class SwitchableStrapDataSource implements StrapDataSource {
   /// switches, and closes on [dispose].
   @override
   Stream<StrapConnectionFailure> get connectionLost => _connectionLost.stream;
+
+  /// The current source's battery level. Null when [switchTo] switches, since
+  /// the new source's level isn't known yet. Stays open across switches, and
+  /// closes on [dispose].
+  @override
+  Stream<BatteryLevel?> get batteryLevel => _batteryLevel.stream;
 
   /// Starts the current source. After [dispose], completes with
   /// [StrapDataSourceStartCancelled] at once.
@@ -63,10 +73,17 @@ class SwitchableStrapDataSource implements StrapDataSource {
     final previous = _current;
     // Cancelled and replaced before awaiting, so nothing from the previous
     // source is passed on after this call.
-    final cancelling = [?_forwarding?.cancel(), ?_forwardingLost?.cancel()];
+    final cancelling = [
+      ?_forwarding?.cancel(),
+      ?_forwardingLost?.cancel(),
+      ?_forwardingBattery?.cancel(),
+    ];
     _current = next;
     _forwarding = next.samples.listen(_samples.add);
     _forwardingLost = next.connectionLost.listen(_connectionLost.add);
+    _forwardingBattery = next.batteryLevel.listen(_batteryLevel.add);
+    // The previous source's level no longer applies.
+    _batteryLevel.add(null);
     try {
       // Waits for both, even if one fails.
       await Future.wait(cancelling);
@@ -84,9 +101,14 @@ class SwitchableStrapDataSource implements StrapDataSource {
     }
     _isDisposed = true;
     try {
-      final cancelling = [?_forwarding?.cancel(), ?_forwardingLost?.cancel()];
+      final cancelling = [
+        ?_forwarding?.cancel(),
+        ?_forwardingLost?.cancel(),
+        ?_forwardingBattery?.cancel(),
+      ];
       _forwarding = null;
       _forwardingLost = null;
+      _forwardingBattery = null;
       try {
         await Future.wait(cancelling);
       } finally {
@@ -96,6 +118,7 @@ class SwitchableStrapDataSource implements StrapDataSource {
       // Close even if disposing failed; the error still reaches the caller.
       await _samples.close();
       await _connectionLost.close();
+      await _batteryLevel.close();
     }
   }
 }

@@ -456,6 +456,50 @@ class BleStrapDisconnected extends BleStrapEvent {
   }
 }
 
+/// The strap's battery level (Battery Level characteristic 0x2A19), as it
+/// sent it: meant to be a percentage from 0 to 100, but checked in Dart.
+/// Sent when read after connecting, and whenever the strap reports a
+/// change. Straps without the Battery Service never send one.
+class BleBatteryLevel extends BleStrapEvent {
+  BleBatteryLevel({required this.percent});
+
+  int percent;
+
+  List<Object?> _toList() {
+    return <Object?>[percent];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static BleBatteryLevel decode(Object result) {
+    result as List<Object?>;
+    return BleBatteryLevel(percent: result[0]! as int);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! BleBatteryLevel || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(percent, other.percent);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'BleBatteryLevel(percent: $percent)';
+  }
+}
+
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
   @override
@@ -493,6 +537,9 @@ class _PigeonCodec extends StandardMessageCodec {
     } else if (value is BleStrapDisconnected) {
       buffer.putUint8(138);
       writeValue(buffer, value.encode());
+    } else if (value is BleBatteryLevel) {
+      buffer.putUint8(139);
+      writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
     }
@@ -523,6 +570,8 @@ class _PigeonCodec extends StandardMessageCodec {
         return BleHeartRateMeasurement.decode(readValue(buffer)!);
       case 138:
         return BleStrapDisconnected.decode(readValue(buffer)!);
+      case 139:
+        return BleBatteryLevel.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
     }

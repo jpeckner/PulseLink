@@ -1,4 +1,5 @@
 import CoreBluetooth
+import Foundation
 import Testing
 
 @testable import Runner
@@ -28,6 +29,20 @@ struct ConnectActionTests {
   ])
   func eachBluetoothStateHasAnAction(state: CBManagerState, action: ConnectAction) {
     #expect(ConnectAction(state) == action)
+  }
+}
+
+struct BatteryPercentTests {
+  @Test func readsTheFirstByte() {
+    #expect(StrapConnection.batteryPercent(from: Data([0x55])) == 85)
+  }
+
+  @Test func passesOnAnyByteForDartToCheck() {
+    #expect(StrapConnection.batteryPercent(from: Data([0xFF])) == 255)
+  }
+
+  @Test func hasNoLevelForAnEmptyValue() {
+    #expect(StrapConnection.batteryPercent(from: Data()) == nil)
   }
 }
 

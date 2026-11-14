@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:pulselink/data/strap_data_source.dart';
+import 'package:pulselink/domain/battery_level.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
 
@@ -62,6 +63,9 @@ class FailingStrapDataSource implements StrapDataSource {
 
   @override
   Stream<StrapConnectionFailure> get connectionLost => const Stream.empty();
+
+  @override
+  Stream<BatteryLevel?> get batteryLevel => const Stream.empty();
 
   @override
   Future<StrapDataSourceStartResult> start() async =>
