@@ -66,6 +66,24 @@ protocol's members sit together, apart from the type's own. A conformance
 that adds nothing, such as `Equatable` synthesized for an enum, can stay
 on the type's declaration.
 
+## Calling Flutter from native code
+
+Flutter only accepts calls from the platform's main thread: the main thread
+on iOS, and the main (UI) thread on Android. That covers platform-channel
+messages, Pigeon event sinks and Flutter API calls. Native code must never
+send to Dart from any other thread.
+
+- Swift: a type that holds Flutter channel state or sends to Dart is
+  `@MainActor`. Where Flutter or a system framework calls in without actor
+  isolation, check `isOnMainThread()` first. If that's false, skip the call,
+  since the check has already logged a fault. Then use
+  `MainActor.assumeIsolated`. Create CoreBluetooth managers with
+  `queue: nil`, so their delegate methods run on the main queue.
+- Kotlin: system callbacks such as `BluetoothGattCallback` and
+  `ScanCallback` arrive on background threads. Post to the main looper, for
+  example with `Handler(Looper.getMainLooper())`, before calling a Pigeon
+  sink or channel.
+
 ## Error handling
 
 Handle errors on purpose. Dart has no checked exceptions and no lint can tell
