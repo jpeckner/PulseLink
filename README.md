@@ -12,7 +12,7 @@ Work in progress, built one milestone at a time. See the
 [build plan](<BLE Heart-Rate Monitor Flutter + Apple Watch Build Plan.md>) and the
 [learning log](docs/learning-log.md).
 
-- [x] 1. Setup and skeleton
+- [ ] 1. Setup and skeleton
 - [ ] 2. Domain and fake data (demo mode)
 - [ ] 3. Real BLE
 - [ ] 4. Reliability
@@ -23,8 +23,8 @@ Work in progress, built one milestone at a time. See the
 ## Tech stack
 
 Flutter (iOS + Android), Material 3 via `material_ui`, `flutter_bloc` for state,
-`very_good_analysis` for lints. iOS native dependencies use Swift Package
-Manager only; no CocoaPods. The watchOS app (Milestone 6) is native SwiftUI,
+`freezed` for immutable models and states, `very_good_analysis` for lints. iOS
+native dependencies use Swift Package Manager only; no CocoaPods. The watchOS app (Milestone 6) is native SwiftUI,
 bridged to Flutter with WatchConnectivity and platform channels.
 
 ```
@@ -45,8 +45,25 @@ flutter pub get
 flutter run
 ```
 
-BLE does not work in the iOS Simulator; use a physical iPhone. A demo mode that
-needs no hardware arrives in Milestone 2.
+For now the app always runs in **demo mode**: `FakeHeartRateSource` simulates a
+strap, and the screen shows a "Demo" badge. Real BLE arrives in Milestone 3 and
+needs a physical phone (BLE doesn't work in the iOS Simulator).
+
+Models and states use `freezed`, which generates `*.freezed.dart` files. They're
+committed, and CI fails if they're out of date. After changing an annotated
+class:
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
+
+To clean every build output and cache and regenerate everything (packages,
+freezed code and, on macOS, the iOS project config), for example when builds
+act strangely or after switching branches or upgrading Flutter:
+
+```bash
+tool/regenerate.sh
+```
 
 Checks (the same ones CI runs):
 
@@ -55,6 +72,41 @@ dart format --set-exit-if-changed lib test
 flutter analyze
 flutter test
 ```
+
+`flutter analyze` also runs the project's own lint rules from
+`tool/pulselink_lints`, an analyzer plugin enabled in `analysis_options.yaml`
+(VS Code shows them too). After changing the plugin, restart the Dart analysis
+server (in VS Code: "Dart: Restart Analysis Server"). The plugin is its own
+package with its own checks; run `dart pub get` in its folder first
+(`tool/regenerate.sh` does it):
+
+```bash
+cd tool/pulselink_lints && dart format lib test && dart analyze && dart test
+```
+
+## Debug tools
+
+Debug and profile builds (never release builds) include a reading override
+for exercising the app's warning states, with demo data or a real strap:
+
+1. Long-press the **PulseLink** title. Two buttons appear above the
+   disclaimer. They start out matching what the strap reports, so revealing
+   them doesn't change anything on screen.
+2. **Skin-contact detection: supported / not supported** switches between a
+   strap that can detect skin contact and one that can't.
+3. **Override: …** cycles through the conditions that kind of strap can be in:
+   - Supported: **Normal → No data (stale) → No skin contact → Zero bpm**
+   - Not supported: **Normal → No data (stale) → Zero bpm** (such a strap
+     can't report no skin contact; switching to it from No skin contact
+     resets to Normal)
+
+   No data (stale) drops samples, so "No data from strap" appears after the
+   real 10-second threshold.
+4. Long-press the title again to hide the buttons and turn the override off.
+
+Release builds don't contain this code: it's created only in the
+non-release branch of `main()`, and because `kReleaseMode` is a compile-time
+constant, the release compiler removes that branch.
 
 ## Commit messages
 
