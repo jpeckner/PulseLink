@@ -63,6 +63,21 @@ class LiveHeartRateCubit extends Cubit<LiveHeartRateState> {
     }
   }
 
+  /// Starts over from [LiveHeartRateWaiting], for a source whose data has
+  /// just changed underneath it, such as a strap picked in place of demo
+  /// data. Forgets the last reading, so nothing from before is shown as
+  /// current, then starts the source as [start] does. Does nothing after
+  /// [close].
+  Future<void> restart() async {
+    if (isClosed) {
+      return;
+    }
+    _staleTimer?.cancel();
+    _staleTimer = null;
+    emit(LiveHeartRateState.waiting(isSimulated: _source.isSimulated));
+    await start();
+  }
+
   void _onSample(HeartRateSample sample) {
     _staleTimer?.cancel();
     // A timestamp ahead of the clock (the clock was set back, or the sample

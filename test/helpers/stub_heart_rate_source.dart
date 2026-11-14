@@ -18,6 +18,9 @@ class StubHeartRateSource implements HeartRateSource {
   int stopCount = 0;
   bool isDisposed = false;
 
+  /// When set, [dispose] fails with this error, after closing [samples].
+  Exception? disposeError;
+
   /// What [start] completes with.
   HeartRateSourceStartResult startResult =
       const HeartRateSourceStartResult.started();
@@ -70,6 +73,9 @@ class StubHeartRateSource implements HeartRateSource {
     isDisposed = true;
     _completePendingStart(const HeartRateSourceStartResult.cancelled());
     await _controller.close();
+    if (disposeError case final error?) {
+      throw error;
+    }
   }
 
   void _completePendingStart(HeartRateSourceStartResult result) {

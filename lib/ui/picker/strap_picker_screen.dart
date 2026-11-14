@@ -108,12 +108,15 @@ class _StrapList extends StatelessWidget {
                 ListTile(
                   leading: const Icon(Icons.monitor_heart_outlined),
                   title: Text(strap.name?.value ?? 'Unnamed heart-rate strap'),
+                  // Closes the picker with this strap; the screen that
+                  // opened it connects to it.
+                  onTap: () => Navigator.of(context).pop(strap),
                 ),
             ],
           ),
         ),
         Text(
-          "Connecting to a strap isn't available yet.",
+          'Tap your strap to connect to it.',
           style: theme.textTheme.bodyMedium,
           textAlign: .center,
         ),

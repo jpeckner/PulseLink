@@ -8,12 +8,14 @@ import 'package:mocktail/mocktail.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
 import 'package:pulselink/domain/bluetooth_problem.dart';
+import 'package:pulselink/domain/discovered_strap.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
 import 'package:pulselink/ui/live/live_heart_rate_screen.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
 import '../helpers/beats_per_minute.dart';
+import '../helpers/discovered_strap.dart';
 import '../helpers/strap_connection_failures.dart';
 
 class _MockLiveHeartRateCubit extends MockCubit<LiveHeartRateState>
@@ -49,6 +51,9 @@ LiveHeartRateState _unavailable(
 /// For tests that never open the strap picker.
 Widget _noPicker(BuildContext context) => const SizedBox.shrink();
 
+/// For tests that never pick a strap.
+void _noSelection(DiscoveredStrap strap) {}
+
 void main() {
   group('LiveHeartRateScreen', () {
     late _MockLiveHeartRateCubit cubit;
@@ -66,6 +71,7 @@ void main() {
             key: UniqueKey(),
             cubit: cubit,
             buildStrapPicker: _noPicker,
+            onStrapSelected: _noSelection,
           ),
         ),
       );
@@ -326,12 +332,60 @@ void main() {
           home: LiveHeartRateScreen(
             cubit: cubit,
             buildStrapPicker: (_) => const Text('strap picker'),
+            onStrapSelected: _noSelection,
           ),
         ),
       );
       await tester.tap(find.byTooltip('Find strap'));
       await tester.pumpAndSettle();
       expect(find.text('strap picker'), findsOneWidget);
+    });
+
+    group('picking a strap', () {
+      late List<DiscoveredStrap> selected;
+      final strap = discoveredStrapOf('strap-1', 'TICKR');
+
+      Future<void> pumpWithPicker(
+        WidgetTester tester, {
+        required DiscoveredStrap? pickedStrap,
+      }) {
+        selected = [];
+        when(() => cubit.state)
+            .thenReturn(const LiveHeartRateState.waiting(isSimulated: true));
+        return tester.pumpWidget(
+          MaterialApp(
+            home: LiveHeartRateScreen(
+              cubit: cubit,
+              // A stand-in picker that closes with pickedStrap.
+              buildStrapPicker: (context) => TextButton(
+                onPressed: () => Navigator.of(context).pop(pickedStrap),
+                child: const Text('close picker'),
+              ),
+              onStrapSelected: selected.add,
+            ),
+          ),
+        );
+      }
+
+      testWidgets('passes on the strap picked in the picker', (tester) async {
+        await pumpWithPicker(tester, pickedStrap: strap);
+        await tester.tap(find.byTooltip('Find strap'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('close picker'));
+        await tester.pumpAndSettle();
+        expect(selected, [strap]);
+      });
+
+      testWidgets('closing the picker without picking passes nothing on', (
+        tester,
+      ) async {
+        await pumpWithPicker(tester, pickedStrap: null);
+        await tester.tap(find.byTooltip('Find strap'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('close picker'));
+        await tester.pumpAndSettle();
+        expect(selected, isEmpty);
+      });
     });
 
     group('demo badge', () {
@@ -364,7 +418,11 @@ void main() {
       );
       await tester.pumpWidget(
         MaterialApp(
-          home: LiveHeartRateScreen(cubit: cubit, buildStrapPicker: _noPicker),
+          home: LiveHeartRateScreen(
+            cubit: cubit,
+            buildStrapPicker: _noPicker,
+            onStrapSelected: _noSelection,
+          ),
         ),
       );
       expect(find.text('--'), findsOneWidget);
@@ -420,6 +478,7 @@ void main() {
             home: LiveHeartRateScreen(
               cubit: cubit,
               buildStrapPicker: _noPicker,
+              onStrapSelected: _noSelection,
               debugControls: const Text('debug controls'),
             ),
           ),
@@ -437,6 +496,7 @@ void main() {
               home: LiveHeartRateScreen(
                 cubit: cubit,
                 buildStrapPicker: _noPicker,
+                onStrapSelected: _noSelection,
                 debugControls: debugControls,
               ),
             ),
@@ -465,6 +525,7 @@ void main() {
             home: LiveHeartRateScreen(
               cubit: cubit,
               buildStrapPicker: _noPicker,
+              onStrapSelected: _noSelection,
               onTitleLongPress: () => longPresses++,
             ),
           ),
