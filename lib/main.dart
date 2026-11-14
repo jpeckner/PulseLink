@@ -7,9 +7,11 @@ import 'package:pulselink/app/app.dart';
 import 'package:pulselink/app/app_bloc_observer.dart';
 import 'package:pulselink/blocs/debug_override/debug_override_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
+import 'package:pulselink/data/ble/ble_strap_scanner.dart';
 import 'package:pulselink/data/debug_override_heart_rate_source.dart';
 import 'package:pulselink/data/fake_heart_rate_source.dart';
 import 'package:pulselink/data/heart_rate_source.dart';
+import 'package:pulselink/data/strap_scanner.dart';
 import 'package:pulselink/ui/debug/debug_override_buttons.dart';
 
 /// The composition root: builds the app's object graph and hands it to the
@@ -18,11 +20,17 @@ import 'package:pulselink/ui/debug/debug_override_buttons.dart';
 void main() {
   Bloc.observer = const AppBlocObserver();
 
-  // Demo mode until real BLE arrives in Milestone 3.
+  // Demo mode until connecting to a strap arrives later in Milestone 3.
   final HeartRateSource source = FakeHeartRateSource();
+  final StrapScanner strapScanner = BleStrapScanner();
 
   if (kReleaseMode) {
-    runApp(PulseLinkApp(liveHeartRateCubit: _startedCubit(source)));
+    runApp(
+      PulseLinkApp(
+        liveHeartRateCubit: _startedCubit(source),
+        strapScanner: strapScanner,
+      ),
+    );
   } else {
     // Debug and profile builds only. kReleaseMode is a compile-time constant,
     // so release builds contain neither this branch nor anything only it uses.
@@ -31,6 +39,7 @@ void main() {
     runApp(
       PulseLinkApp(
         liveHeartRateCubit: _startedCubit(overrideSource),
+        strapScanner: strapScanner,
         debugControls: DebugOverrideButtons(cubit: overrideCubit),
         onTitleLongPress: overrideCubit.toggleVisibility,
       ),

@@ -46,6 +46,9 @@ LiveHeartRateState _unavailable(
   isSimulated: false,
 );
 
+/// For tests that never open the strap picker.
+Widget _noPicker(BuildContext context) => const SizedBox.shrink();
+
 void main() {
   group('LiveHeartRateScreen', () {
     late _MockLiveHeartRateCubit cubit;
@@ -59,7 +62,11 @@ void main() {
       // pump several states would silently only check the first.
       return tester.pumpWidget(
         MaterialApp(
-          home: LiveHeartRateScreen(key: UniqueKey(), cubit: cubit),
+          home: LiveHeartRateScreen(
+            key: UniqueKey(),
+            cubit: cubit,
+            buildStrapPicker: _noPicker,
+          ),
         ),
       );
     }
@@ -311,6 +318,22 @@ void main() {
       });
     });
 
+    testWidgets('Find strap opens the strap picker', (tester) async {
+      when(() => cubit.state)
+          .thenReturn(const LiveHeartRateState.waiting(isSimulated: false));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: LiveHeartRateScreen(
+            cubit: cubit,
+            buildStrapPicker: (_) => const Text('strap picker'),
+          ),
+        ),
+      );
+      await tester.tap(find.byTooltip('Find strap'));
+      await tester.pumpAndSettle();
+      expect(find.text('strap picker'), findsOneWidget);
+    });
+
     group('demo badge', () {
       testWidgets('shows for simulated data', (tester) async {
         await pumpScreen(tester, _reading(isSimulated: true));
@@ -340,7 +363,9 @@ void main() {
         initialState: const LiveHeartRateState.waiting(isSimulated: false),
       );
       await tester.pumpWidget(
-        MaterialApp(home: LiveHeartRateScreen(cubit: cubit)),
+        MaterialApp(
+          home: LiveHeartRateScreen(cubit: cubit, buildStrapPicker: _noPicker),
+        ),
       );
       expect(find.text('--'), findsOneWidget);
 
@@ -394,6 +419,7 @@ void main() {
           MaterialApp(
             home: LiveHeartRateScreen(
               cubit: cubit,
+              buildStrapPicker: _noPicker,
               debugControls: const Text('debug controls'),
             ),
           ),
@@ -410,6 +436,7 @@ void main() {
             MaterialApp(
               home: LiveHeartRateScreen(
                 cubit: cubit,
+                buildStrapPicker: _noPicker,
                 debugControls: debugControls,
               ),
             ),
@@ -437,6 +464,7 @@ void main() {
           MaterialApp(
             home: LiveHeartRateScreen(
               cubit: cubit,
+              buildStrapPicker: _noPicker,
               onTitleLongPress: () => longPresses++,
             ),
           ),

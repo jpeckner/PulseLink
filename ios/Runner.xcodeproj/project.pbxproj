@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -13,10 +13,14 @@
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
+		8A3C036C99A37D7078A3BC2B /* BleStrapScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DA734D939828240740F350F /* BleStrapScanner.swift */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		BE9EAA0C636C32B38EB61C20 /* BleApi.pigeon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09214D17CA0BB94F188019FA /* BleApi.pigeon.swift */; };
+		CA373E3E30A7EC7100D100CA /* MainThreadCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA373E3D30A7EC6D00D100CA /* MainThreadCheck.swift */; };
+		CA373E4030A7EC9400D100CA /* ScanAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA373E3F30A7EC9400D100CA /* ScanAction.swift */; };
+		CA373E4230A7ECC800D100CA /* CentralScan.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA373E4130A7ECC700D100CA /* CentralScan.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -61,6 +65,10 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		9DA734D939828240740F350F /* BleStrapScanner.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BleStrapScanner.swift; sourceTree = "<group>"; };
+		CA373E3D30A7EC6D00D100CA /* MainThreadCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainThreadCheck.swift; sourceTree = "<group>"; };
+		CA373E3F30A7EC9400D100CA /* ScanAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanAction.swift; sourceTree = "<group>"; };
+		CA373E4130A7ECC700D100CA /* CentralScan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CentralScan.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -117,6 +125,8 @@
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
+				CA373E3C30A7EC5100D100CA /* Components */,
+				CA373E3B30A7EC3B00D100CA /* BLE */,
 				97C146FA1CF9000F007C117D /* Main.storyboard */,
 				97C146FD1CF9000F007C117D /* Assets.xcassets */,
 				97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */,
@@ -129,6 +139,24 @@
 				09214D17CA0BB94F188019FA /* BleApi.pigeon.swift */,
 			);
 			path = Runner;
+			sourceTree = "<group>";
+		};
+		CA373E3B30A7EC3B00D100CA /* BLE */ = {
+			isa = PBXGroup;
+			children = (
+				9DA734D939828240740F350F /* BleStrapScanner.swift */,
+				CA373E4130A7ECC700D100CA /* CentralScan.swift */,
+				CA373E3F30A7EC9400D100CA /* ScanAction.swift */,
+			);
+			path = BLE;
+			sourceTree = "<group>";
+		};
+		CA373E3C30A7EC5100D100CA /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				CA373E3D30A7EC6D00D100CA /* MainThreadCheck.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -284,10 +312,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CA373E3E30A7EC7100D100CA /* MainThreadCheck.swift in Sources */,
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
+				CA373E4230A7ECC800D100CA /* CentralScan.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
 				BE9EAA0C636C32B38EB61C20 /* BleApi.pigeon.swift in Sources */,
+				CA373E4030A7EC9400D100CA /* ScanAction.swift in Sources */,
+				8A3C036C99A37D7078A3BC2B /* BleStrapScanner.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -391,6 +423,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.jpeckner.pulselink;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
+				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
@@ -408,6 +441,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
 			};
@@ -423,6 +457,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jpeckner.pulselink.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
 			};
@@ -438,6 +473,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jpeckner.pulselink.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
 			};
@@ -574,6 +610,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
@@ -596,6 +633,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.jpeckner.pulselink;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
+				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
