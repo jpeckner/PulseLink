@@ -114,11 +114,32 @@ use_jdk() {
   return 1
 }
 
+# The Gradle wrapper (android/gradlew and gradle-wrapper.jar) and
+# android/local.properties, which says where Flutter is, are gitignored:
+# Flutter writes them during an Android build. A fresh checkout, such as
+# CI's, has none of them, so this generates them without building anything.
+use_gradle_files() {
+  if [[ -x android/gradlew && -f android/gradle/wrapper/gradle-wrapper.jar &&
+    -f android/local.properties ]]; then
+    return 0
+  fi
+  if ! command -v flutter > /dev/null; then
+    echo 'android/gradlew is missing, and generating it needs flutter on' \
+      'the PATH.' >&2
+    return 1
+  fi
+  echo '==> Generating the Gradle wrapper (flutter build apk --config-only)'
+  flutter build apk --config-only
+}
+
 # Runs detekt and the unchecked-cast check (both Gradle tasks in
 # android/app/build.gradle.kts, which also runs them in every Android
 # build), and fails if either found something.
 lint_kotlin() {
-  use_jdk
+  # Explicit returns: set -e doesn't stop a function called as
+  # `lint_kotlin || status=1`, as the `all` case below does.
+  use_jdk || return 1
+  use_gradle_files || return 1
   local status=0
   echo '==> detekt and no_unchecked_cast'
   # detektMain analyses the app's production Kotlin with type resolution,
