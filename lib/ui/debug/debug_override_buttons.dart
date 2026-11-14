@@ -52,14 +52,14 @@ class DebugOverrideButtons extends StatelessWidget {
     ReadingOverride readingOverride,
   ) => switch (readingOverride) {
     DetectingStrapOverride(:final condition) => switch (condition) {
-      DetectingStrapCondition.normal => 'Normal',
+      DetectingStrapCondition.normal => 'None',
       DetectingStrapCondition.stale => 'No data (stale)',
       DetectingStrapCondition.noSkinContact => 'No skin contact',
       DetectingStrapCondition.zeroBeatsPerMinute => 'Zero bpm',
       DetectingStrapCondition.implausibleBeatsPerMinute => 'Implausible bpm',
     },
     NonDetectingStrapOverride(:final condition) => switch (condition) {
-      NonDetectingStrapCondition.normal => 'Normal',
+      NonDetectingStrapCondition.normal => 'None',
       NonDetectingStrapCondition.stale => 'No data (stale)',
       NonDetectingStrapCondition.zeroBeatsPerMinute => 'Zero bpm',
       NonDetectingStrapCondition.implausibleBeatsPerMinute => 'Implausible bpm',
