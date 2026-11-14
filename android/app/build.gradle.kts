@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    id("dev.detekt")
 }
 
 android {
@@ -46,4 +47,17 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+// Lints the hand-written Kotlin; see android/config/detekt.yml and
+// tool/lint_native.sh.
+detekt {
+    config.setFrom(rootProject.file("config/detekt.yml"))
+    // Only the rules turned on in detekt.yml run.
+    buildUponDefaultConfig = false
+}
+
+tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
+    // Pigeon's generated code (see pigeons/ble_api.dart).
+    exclude("**/*.pigeon.kt")
 }

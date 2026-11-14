@@ -43,8 +43,13 @@ work, and wait for explicit sign-off before proceeding any further. Once
 approved, leave a short comment at that line explaining why it's needed, and
 ignore the lint there.
 
-Native code (Swift in `ios/`, Kotlin in `android/`) follows the same rule,
-though no lint enforces it there yet:
+Native code (Swift in `ios/`, Kotlin in `android/`) follows the same rule.
+`tool/lint_native.sh` enforces it with SwiftLint (`.swiftlint.yml`) and
+detekt (`android/config/detekt.yml`) on app code, and
+`tool/check_native_lints.sh` proves each rule reports. The Runner target's
+SwiftLint build phase also runs the Swift half on every Xcode build, so
+findings show inline as errors. Where a catch-all is truly needed, disable
+the rule on that line with a comment saying why.
 
 - Swift: no `!` force unwraps, `as!` casts, implicitly unwrapped optionals
   (`Type!`) or `try!`, and no `fatalError`, `precondition` or `assert`. Use
@@ -64,7 +69,7 @@ anything (methods, properties, initializers or subscripts), such as
 `extension CentralScan: CBCentralManagerDelegate { ... }`. Then each
 protocol's members sit together, apart from the type's own. A conformance
 that adds nothing, such as `Equatable` synthesized for an enum, can stay
-on the type's declaration.
+on the type's declaration. No lint checks this, so reviews do.
 
 ## Calling Flutter from native code
 
@@ -83,6 +88,8 @@ send to Dart from any other thread.
   `ScanCallback` arrive on background threads. Post to the main looper, for
   example with `Handler(Looper.getMainLooper())`, before calling a Pigeon
   sink or channel.
+
+No lint can tell which thread code runs on, so reviews check this.
 
 ## Error handling
 

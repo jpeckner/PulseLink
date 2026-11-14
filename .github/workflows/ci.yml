@@ -16,7 +16,8 @@ jobs:
   analyze-and-test:
     name: Analyze and test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Room for Gradle's first detekt run, which downloads its dependencies.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
 
@@ -64,6 +65,32 @@ jobs:
 
       - name: Test
         run: flutter test --coverage
+
+      # Gradle needs a JDK to run detekt; the Android Gradle Plugin needs 17
+      # or newer, and detekt 2.0 is tested on 25.
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: gradle
+
+      # tool/lint_native.sh downloads SwiftLint on first use into this cache,
+      # keyed on the script, which pins the version and its SHA-256.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/pulselink
+          key: native-linters-${{ runner.os }}-${{ hashFiles('tool/lint_native.sh') }}
+
+      # SwiftLint and detekt, for CLAUDE.md's native-code rules. The script
+      # fails on any finding, and if either linter checked no files.
+      - name: Lint native code (SwiftLint and detekt)
+        run: tool/lint_native.sh
+
+      # A linter that silently does nothing (a skipped download, a config
+      # whose paths match nothing, a rule switched off) makes the step above
+      # pass, so prove every rule still reports and fails the lint.
+      - name: Check the native linters are running
+        run: tool/check_native_lints.sh
 
       # The project's own lint rules (enabled for the app in
       # analysis_options.yaml, so the analyze step above runs them).
