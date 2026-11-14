@@ -3,6 +3,27 @@
 // unknown rather than as an error.
 @preconcurrency import CoreBluetooth
 import Flutter
+import os
+
+/// Records a broken main-thread contract; see `CentralScan`.
+private let threadingLog = Logger(
+  subsystem: "com.jpeckner.pulselink",
+  category: "BleStrapScanner"
+)
+
+/// Whether the caller is on the main thread. If not, logs a fault naming
+/// `method`, so the caller can skip its work instead of letting
+/// `MainActor.assumeIsolated` stop the app. `CentralScan` explains why
+/// everything here has to run on the main thread.
+private func isOnMainThread(_ method: String = #function) -> Bool {
+  if Thread.isMainThread {
+    return true
+  }
+  threadingLog.fault(
+    "\(method, privacy: .public) was called off the main thread, so it was skipped"
+  )
+  return false
+}
 
 /// Scans for heart-rate straps with CoreBluetooth while Dart listens to
 /// `scanForHeartRateStraps` (see pigeons/ble_api.dart), and stops when Dart
@@ -15,17 +36,20 @@ final class BleStrapScanner: ScanForHeartRateStrapsStreamHandler {
   private let scan = CentralScan()
 
   override func onListen(withArguments arguments: Any?, sink: PigeonEventSink<BleScanEvent>) {
-    // Approved exception to the no-assertions rule (see CentralScan).
     // Flutter calls stream handlers on its platform thread, which on iOS is
     // the main thread, but FlutterStreamHandler has no actor isolation, so
-    // Swift can't know that. assumeIsolated tells it, and stops the app here
-    // if that's ever untrue, rather than letting the scan race.
-    //
+    // Swift can't know that. The guard checks it; assumeIsolated then tells
+    // the compiler, and can't fail because the guard has just checked. If
+    // Flutter ever broke that contract, the scan wouldn't start and the
+    // picker would keep showing that it's looking, with a fault in the log.
+    guard isOnMainThread() else {
+      return
+    }
     // Pigeon's generated PigeonEventSink isn't marked Sendable, so Swift
     // won't hand it to main-actor code, even though it's created and used
     // only on the main thread. `nonisolated(unsafe)` switches off that one
     // check for this one value: safe because everything that uses the sink
-    // runs on the main thread, which assumeIsolated has just checked.
+    // runs on the main thread, which the guard has just checked.
     nonisolated(unsafe) let mainThreadSink = sink
     let scan = scan
     MainActor.assumeIsolated {
@@ -34,7 +58,11 @@ final class BleStrapScanner: ScanForHeartRateStrapsStreamHandler {
   }
 
   override func onCancel(withArguments arguments: Any?) {
-    // Approved exception to the no-assertions rule; see onListen.
+    // See onListen. If this were ever skipped, the scan would keep running
+    // until the next start or stop.
+    guard isOnMainThread() else {
+      return
+    }
     let scan = scan
     MainActor.assumeIsolated {
       scan.stop()
@@ -90,12 +118,14 @@ enum ScanAction: Equatable {
 /// turns that convention into something the compiler checks: code that
 /// could touch this class from another thread doesn't compile.
 ///
-/// Neither framework says so in a way Swift can see, so the four entry
-/// points (`BleStrapScanner.onListen` and `onCancel`, and the two delegate
-/// methods below) use `MainActor.assumeIsolated`. That checks at runtime and
-/// stops the app if the main-thread contract is ever broken: a crash that
-/// points at the cause, instead of a silent data race. These are the
-/// approved exceptions to the no-assertions rule in CLAUDE.md.
+/// Neither framework says so in a way Swift can see, so each of the four
+/// entry points (`BleStrapScanner.onListen` and `onCancel`, and the two
+/// delegate methods below) first checks `Thread.isMainThread`, then uses
+/// `MainActor.assumeIsolated` to tell the compiler. On the main thread
+/// `assumeIsolated` can't fail, so it never stops the app. If a framework
+/// ever broke its contract, the entry point logs a fault and skips the
+/// call: the scan might miss an event, but there's no crash and no data
+/// race, and the log says what happened.
 @MainActor
 final class CentralScan: NSObject, CBCentralManagerDelegate {
   private let heartRateService = CBUUID(string: "180D")
@@ -136,11 +166,14 @@ final class CentralScan: NSObject, CBCentralManagerDelegate {
   nonisolated func centralManagerDidUpdateState(_ central: CBCentralManager) {
     // Also called when Bluetooth is turned off or on mid-scan. Turning it
     // off stops the scan, so turning it back on starts it again here.
-    let action = ScanAction(central.state)
-    // Approved exception to the no-assertions rule (see the class comment).
     // CoreBluetooth calls this on the main queue because `start` passes
     // `queue: nil`, but its delegate protocol has no actor isolation, so
-    // Swift can't know that.
+    // Swift can't know that. The guard checks it; see the class comment. If
+    // this were ever skipped, the scan would miss one Bluetooth state change.
+    guard isOnMainThread() else {
+      return
+    }
+    let action = ScanAction(central.state)
     MainActor.assumeIsolated {
       apply(action)
     }
@@ -152,6 +185,11 @@ final class CentralScan: NSObject, CBCentralManagerDelegate {
     advertisementData: [String: Any],
     rssi RSSI: NSNumber
   ) {
+    // See centralManagerDidUpdateState. If this were ever skipped, the
+    // picker would miss one strap until CoreBluetooth reports it again.
+    guard isOnMainThread() else {
+      return
+    }
     let found = BleStrapFound(
       id: peripheral.identifier.uuidString,
       name: Self.strapName(
@@ -159,8 +197,6 @@ final class CentralScan: NSObject, CBCentralManagerDelegate {
         cached: peripheral.name
       )
     )
-    // Approved exception to the no-assertions rule; see
-    // centralManagerDidUpdateState.
     MainActor.assumeIsolated {
       sink?.success(found)
     }
