@@ -102,4 +102,4 @@ jobs:
           dart test
 
   # Android (Ubuntu) and iOS (macOS, no code signing) build jobs are added in
-  # Milestone 7.
+  # Milestone 6.

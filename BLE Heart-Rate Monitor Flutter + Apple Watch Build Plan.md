@@ -93,15 +93,18 @@ MVP (phone):
 - Live screen: big bpm number, last-updated time, connection status, sensor-contact indicator, battery level if available
 - Clear states: scanning, connecting, connected, reconnecting, disconnected, Bluetooth off, permission denied
 - Automatic reconnect to the last device after a drop or app restart
-- Start and stop a session; store samples (bpm, RR intervals, timestamp)
-- History list and session detail: duration, average, min and max, and a chart
 - Demo mode using `FakeStrapDataSource`, so the app works with no hardware (also useful for screenshots and tests)
 
 MVP (watch):
 
 - Live bpm with a stale-data indicator and connection status
-- Start and stop session buttons that control the phone
 - Shows a clear "phone not reachable" state
+
+Nice-to-have (Milestone 7, Sessions and history):
+
+- Start and stop a session; store samples (bpm, RR intervals, timestamp)
+- History list and session detail: duration, average, min and max, and a chart
+- Start and stop session buttons on the watch that control the phone
 
 Stretch, in priority order:
 
@@ -120,16 +123,18 @@ Each milestone ends with something I can run on a device and a commit. Each one 
    - Done when: the app runs on my iPhone and an Android phone, and CI is green.
 2. **Domain and fake data.** Models, the HR packet parser with unit tests, the `StrapDataSource` interface, `FakeStrapDataSource` and the live screen in demo mode.
    - Done when: demo mode shows a moving bpm with timestamps, and the parser tests pass.
-3. **Real BLE.** Permissions on both platforms, scan filtered by service UUID, device picker, connect, subscribe to notifications, battery level.
-   - Done when: a real strap shows live bpm on both platforms.
-4. **Reliability.** Connection state machine, automatic reconnect with backoff, Bluetooth off and on, permission denied, app backgrounded, remembering the last device, stale-data display.
-   - Done when: I can walk out of range and back, toggle Bluetooth, and kill and reopen the app, and it always recovers or explains itself.
-5. **Sessions and history.** drift schema, recording, history list, session detail with chart and stats.
-   - Done when: a 20-minute session saves and charts correctly.
-6. **Apple Watch app.** Add the watchOS target, write the Swift WatchConnectivity bridge and platform channels, build the SwiftUI live view and start/stop controls.
-   - Done when: the watch shows live bpm and can start and stop a session, and handles "phone not reachable".
-7. **Polish and portfolio.** Tests filled in, CI building iOS and Android, README with screenshots and a demo GIF, architecture doc, hazard table.
+3. **Real BLE on iOS, with reliability.** On iOS: Bluetooth permission, scan filtered by service UUID, device picker, connect, subscribe to notifications, battery level. Then the reliability work, mostly shared Dart that Android reuses in Milestone 4: connection state machine, automatic reconnect with backoff, Bluetooth off and on, permission denied, app backgrounded, remembering the last device, stale-data display, and the in-app debug log. Android reports that BLE isn't supported yet, and runs in demo mode.
+   - Done when: on an iPhone, a real strap shows live bpm and battery level, and I can walk out of range and back, toggle Bluetooth, background the app, and kill and reopen it, and it always recovers or explains itself.
+4. **Real BLE on Android, with reliability.** Kotlin scanning and connecting behind the same Pigeon contract, runtime permissions (`BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT` on Android 12+, location on 11 and below), a `connectedDevice` foreground service for streaming in the background, retries after GATT error 133, and staying under Android's scan throttling. The shared reliability work from Milestone 3 applies as is.
+   - Done when: the same checks as Milestone 3 pass on an Android phone.
+5. **Apple Watch app.** Add the watchOS target, write the Swift WatchConnectivity bridge and platform channels, and build the SwiftUI live view. It needs only the iOS app, so it may come before Milestone 4.
+   - Done when: the watch shows live bpm with its age and connection status, and handles "phone not reachable".
+6. **Polish and portfolio** (nice-to-have). Tests filled in, CI building iOS and Android, README with screenshots and a demo GIF, architecture doc, hazard table.
    - Done when: the repo is public and I can walk through it in an interview in 5 minutes.
+7. **Sessions and history** (nice-to-have). drift schema, recording, history list, session detail with chart and stats, and start and stop buttons on the watch that control the phone.
+   - Done when: a 20-minute session saves and charts correctly, and the watch can start and stop it.
+
+Milestones 6 and 7 are nice-to-haves: plan as if the project may be shown in interviews without them, so Milestones 1-5 must stand on their own.
 
 Then pick stretch items, starting with the watch complication.
 

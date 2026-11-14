@@ -14,17 +14,17 @@ Work in progress, built one milestone at a time. See the
 
 - [x] 1. Setup and skeleton
 - [x] 2. Domain and fake data (demo mode)
-- [ ] 3. Real BLE
-- [ ] 4. Reliability
-- [ ] 5. Sessions and history
-- [ ] 6. Apple Watch app
-- [ ] 7. Polish and portfolio
+- [ ] 3. Real BLE on iOS, with reliability (in progress)
+- [ ] 4. Real BLE on Android, with reliability
+- [ ] 5. Apple Watch app
+- [ ] 6. Polish and portfolio (nice-to-have)
+- [ ] 7. Sessions and history (nice-to-have)
 
 ## Tech stack
 
 Flutter (iOS + Android), Material 3 via `material_ui`, `flutter_bloc` for state,
 `freezed` for immutable models and states, `very_good_analysis` for lints. iOS
-native dependencies use Swift Package Manager only; no CocoaPods. The watchOS app (Milestone 6) is native SwiftUI,
+native dependencies use Swift Package Manager only; no CocoaPods. The watchOS app (Milestone 5) is native SwiftUI,
 bridged to Flutter with WatchConnectivity and platform channels.
 
 ```
@@ -45,9 +45,10 @@ flutter pub get
 flutter run
 ```
 
-For now the app always runs in **demo mode**: `FakeStrapDataSource` simulates a
-strap, and the screen shows a "Demo" badge. Real BLE arrives in Milestone 3 and
-needs a physical phone (BLE doesn't work in the iOS Simulator).
+The app starts in **demo mode**: `FakeStrapDataSource` simulates a strap, and
+the screen shows a "Demo" badge. On an iPhone, tap **Find strap** to pick a real
+strap; that needs a physical phone, since BLE doesn't work in the iOS Simulator.
+Android runs in demo mode only until Milestone 4.
 
 Models and states use `freezed`, which generates `*.freezed.dart` files. They're
 committed, and CI fails if they're out of date. After changing an annotated
