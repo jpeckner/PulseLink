@@ -41,3 +41,176 @@ Flutter vs native:
 Regulated-app note: the Flutter SDK version (in CI) and the lint rule set (in
 `analysis_options.yaml`) are both pinned. A regulated team would record every
 third-party component and version as SOUP under IEC 62304.
+
+## Milestone 2: Domain and fake data (2026-11-11)
+
+Built: a sealed `HeartRateSample` (measured or unavailable), the Heart Rate
+Measurement parser (sealed success/failure result), the `HeartRateSource`
+interface with a simulated `FakeHeartRateSource`, `LiveHeartRateCubit` with a
+10-second stale timer, and the live screen (bpm, update time, sensor status,
+Demo badge, "no data from strap" state). 83 tests.
+
+Flutter vs native:
+
+- **Sealed classes + `switch`** work like a Swift enum with associated values
+  or a Kotlin sealed class: `switch (result) { HeartRateParseSuccess(:final
+  sample) => ..., HeartRateParseFailure(:final error) => ... }` must cover every
+  case, or it doesn't compile. `(:final sample)` destructures a field, like
+  `case .success(let sample)`.
+- **Primary constructors (Dart 3.13+)** declare fields in the class header:
+  `class Point({required final int x, required final int y})`, close to a
+  Kotlin `data class` or a Swift `struct` with a memberwise init. freezed
+  supports them for single-case classes; unions still use `const factory`
+  constructors, so `HeartRateSample` moved to that form once it became sealed.
+- **Making illegal states unrepresentable**: `HeartRateSample` was first one
+  class with a `hasUsableBpm` getter, so any code could read `bpm` and forget
+  to check. As a sealed type, only `MeasuredHeartRateSample` has a `bpm`, so
+  showing an untrustworthy value doesn't compile. Same idea as replacing a
+  Swift struct + `isValid` flag with an enum. Shared fields (`timestamp`) stay
+  readable on the base type without a `switch`. Same for skin contact: a
+  measured sample's `SkinContact` has only `detected` and `notSupported`, so
+  "no skin contact" can't sneak in, and no runtime assert is needed to stop
+  it.
+- **`PositiveInt`** replaced a debug-only `assert(bpm > 0)`. Dart has no
+  refinement types, so the check still happens at runtime, but once, at the
+  boundary, and it can't fail: the only way to get one is `PositiveInt.tryFrom`,
+  which returns null (like Swift's `UInt(exactly:)`), and callers must handle
+  that case. There's deliberately no throwing constructor. It's a `final class`
+  rather than a zero-cost extension type, because an extension type can be
+  forged with `0 as PositiveInt`; the cost is writing `bpm.value`.
+  `@immutable` (from `package:meta`) lets the analyzer enforce what the
+  hand-written `==`/`hashCode` assume.
+- **freezed** generates `==`, `hashCode`, `toString` and `copyWith` into a
+  `part` file (`*.freezed.dart`). It's code generation via `build_runner`, like
+  Kotlin's KSP or Swift macros, but the output is a checked-in source file
+  rather than compiler-internal. Lists get deep equality automatically.
+- **Reading bytes safely**: `ByteData.getUint16` (like Swift's
+  `loadUnaligned` or Kotlin's `ByteBuffer`) throws `RangeError` past the end,
+  so the parser uses a tiny private `_ByteReader` whose `uint8()`/`uint16()`
+  return null when bytes run out. Reading past the end can't happen, and the
+  separate length checks disappeared. Indexing a `Uint8List` respects a
+  view's offset; reaching for `packet.buffer` would not, a classic bug the
+  tests cover.
+- **Streams** are Dart's `AsyncSequence` / Kotlin `Flow`. A *broadcast* stream
+  allows many listeners, like a `SharedFlow`.
+- **Dependency injection without runtime lookups**: `RepositoryProvider` /
+  `BlocProvider` + `context.read<T>()` work like SwiftUI's `@EnvironmentObject`,
+  including crashing at runtime if nothing was provided. PulseLink instead
+  builds its objects in `main()` (a composition root, like an `AppDelegate`
+  building the object graph) and passes them through constructors;
+  `BlocBuilder(bloc: cubit)` then never does a lookup. A missing dependency is
+  a compile error.
+- **Testing time**: `fake_async` plus `package:clock` make timers and "now"
+  controllable, like Kotlin's `TestDispatcher` virtual time. One trap: a stream
+  subscription's `cancel()` completes on the real event loop, which fake time
+  never runs, so the cubit's `close()` is tested with real async.
+- **Async gaps in teardown**: `close()` first stopped the source and only then
+  unsubscribed, so a sample arriving during the `await` started a new stale
+  timer that later emitted into the closed cubit (a `StateError` crash). Fix:
+  unsubscribe first; `cancel()` detaches the listener immediately. Same lesson
+  as cancelling Combine subscriptions or coroutine jobs before releasing
+  resources. A regression test uses a deliberately slow-stopping source.
+- **Widget tests** pump a widget tree headlessly and query it with finders,
+  like ViewInspector or Compose's `onNodeWithText`. `MockCubit` + `whenListen`
+  script the states a screen sees.
+
+Regulated-app notes: the parser never throws and never guesses; a malformed
+packet is a typed failure, not a wrong number. A well-formed packet with no
+skin contact or bpm 0 becomes an "unavailable" sample with no bpm at all, and
+the UI says why ("No skin contact", "Strap connected, no heart rate yet")
+without medical-sounding wording. Unavailable is distinct from stale: the strap
+is still sending, so the stale timer keeps resetting. Staleness is measured
+from each sample's own timestamp, so a delayed sample can't masquerade as
+current. A regulated app would add a plausibility range check (say 25-250 bpm)
+and log every rejected packet; logging comes with the Milestone 4 debug screen.
+App code has no assertions or other programmer-error crash points (`assert`,
+`!`, `as`, throwing constructors, provider lookups); invalid states are ruled
+out by types instead, and any unavoidable exception needs explicit sign-off
+(see `CLAUDE.md`).
+
+### Debug override tooling
+
+A long-press on the title reveals two debug-only buttons, for real or fake
+sources: one sets whether the strap can detect skin contact, the other cycles
+the conditions that kind of strap can be in (Normal, No data (stale), No skin
+contact, Zero bpm; no "No skin contact" for a strap that can't detect it).
+
+- **No preprocessor, but the same result.** Dart has no `#if DEBUG`, but
+  `kReleaseMode` / `kDebugMode` are compile-time constants, so the release
+  compiler deletes `if (!kReleaseMode) { ... }` and anything only it uses.
+  Unlike `#if`, the code must still compile in every mode. All debug wiring
+  lives in that one branch of `main()`; screens only see a generic optional
+  `Widget` and `VoidCallback`, so no debug class or label is referenced
+  elsewhere. Verified by searching the compiled release code for the button's
+  label.
+- **Decorator over the data layer.** `DebugOverrideHeartRateSource` wraps any
+  `HeartRateSource`, so the override works the same for BLE and demo data and
+  the cubit and UI don't know it exists.
+- **Hidden means Normal, by construction.** The button state is sealed
+  (`hidden | shown(mode)`), and the source's mode is derived from it, so
+  "hidden but still overriding" can't happen.
+- **Stale is an absence, not a value.** The Stale override drops samples and
+  lets the real 10-second timer fire, so it tests the actual code path.
+- **Newer Dart syntax met along the way:** `?debugControls` in a list adds the
+  element only if it's non-null (no `!` needed), and `required this._source`
+  initializes a private field from a parameter callers still name `source`.
+- Native shake detection was considered and rejected: `sensors_plus` would ship
+  its native code in release builds (plugins are registered in every build),
+  and the iOS Simulator's Shake menu doesn't produce accelerometer data.
+
+Regulated-app note: debug-only fault injection is standard in device
+development; regulated teams keep evidence it's absent from release builds,
+which the release-binary check provides.
+
+### Skin contact vs. Bluetooth wording
+
+"Contact" was ambiguous: "Sensor contact" could read as "the app can reach the
+sensor", and "Signal lost" with a Wi-Fi icon suggested Wi-Fi. Now "skin
+contact" always means the strap touching skin (`SkinContact`,
+`noSkinContact`), Bluetooth and data wording never mentions contact, and the
+stale state says "No data from strap" with a sensor-off icon. It deliberately
+doesn't claim "Bluetooth disconnected": until Milestone 4's connection state,
+the app can't tell a dropped link from a strap that stopped sending. Making the
+text longer exposed an overflow on narrow screens, so a test now renders every
+state at 320 px wide (Flutter fails a test on any overflow). The test font
+draws every glyph as a full-width square, roughly twice as wide as Roboto, so
+this also stands in for very large accessibility text sizes.
+
+While stale, the skin-contact chip is hidden too: it describes the last
+reading, which is out of date. `Visibility(maintainSize: true)` keeps its space
+so the readout doesn't jump, and `Visibility.of(context)` lets tests check it's
+hidden. Testing trap found along the way: re-pumping the same widget tree with
+a mocked cubit keeps the `BlocBuilder`'s first state, so a test that pumps
+several states silently checks only the first. A `UniqueKey` per pump fixes it,
+and the 320 px test then caught an overflow it had been missing.
+
+### Two-part debug override
+
+The single override button mixed a property of the strap (can it detect skin
+contact?) with what's happening right now (normal, no data, no skin contact,
+zero bpm), so it split into two buttons. The override is a sealed type,
+`detectingStrap(condition)` or `nonDetectingStrap(condition)`, with a separate
+condition enum for each, so "no skin contact on a strap that can't detect it"
+can't be built. Same pattern as the app's other sealed types, applied to debug
+tooling. A strap without skin-contact detection can still report bpm 0; it's
+how such a strap shows it has no heart rate. The buttons start from what the
+strap last reported, so revealing them changes nothing on screen.
+
+
+### Plausible bpm range
+
+`PositiveInt` became `Bpm`, which only holds 1 to 250. The parser accepted
+any uint16, so a corrupt packet could put 65535 bpm on screen as a real
+reading. Now a well-formed packet above 250 becomes an unavailable sample with
+reason `implausibleBpm`, and the screen shows "--" with "Strap reading out of
+range". Putting the range in the type rather than only in the parser means
+no source (parser, fake or a future one) can build a measured sample with an
+impossible value, the same way `PositiveInt` already ruled out 0. Adding the
+new reason was a compile error at every switch that had to handle it, which
+is the point of the no-catch-all rule. The ceiling is a judgment call: adults
+top out around 220 bpm, so 250 leaves headroom while catching corrupt values.
+The debug override gained an "Implausible bpm" condition so the new state can
+be checked on a device.
+Later renamed `BeatsPerMinute` for clarity, along with everything named after
+it: the sample's `beatsPerMinute` field and the `zeroBeatsPerMinute` and
+`implausibleBeatsPerMinute` reasons. On-screen text still says "bpm".
