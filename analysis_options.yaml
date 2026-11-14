@@ -5,8 +5,8 @@ include: package:very_good_analysis/analysis_options.11.0.0.yaml
 analyzer:
   errors:
     # very_good_analysis ignores close_sinks for its false positives. It's on
-    # here (see below): an unclosed StreamController leaks, and BLE streams
-    # arrive in Milestone 3.
+    # here (see below): an unclosed StreamController leaks, and the data
+    # sources use several.
     close_sinks: info
   exclude:
     - build/**
