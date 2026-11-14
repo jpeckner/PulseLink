@@ -324,7 +324,7 @@ Then a table with one row per check, giving its status (pass / fixed / fail / in
 - analyze
 - native lints
 - tests (with totals and the seed)
-- Swift tests (with the number of test cases)
+- Swift tests (with the number of tests)
 - lint plugin
 - coverage of changes
 - iOS release build

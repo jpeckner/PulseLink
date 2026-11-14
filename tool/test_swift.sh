@@ -46,6 +46,9 @@ fi
 
 log=$(mktemp)
 trap 'rm -f "$log"' EXIT
+# xcodebuild won't write a result bundle over an old one.
+results=build/ios-tests/results.xcresult
+rm -rf "$results"
 
 echo "==> Swift tests on simulator $simulator"
 set +e
@@ -56,24 +59,27 @@ xcodebuild test \
   -scheme Runner \
   -destination "id=$simulator" \
   -derivedDataPath build/ios-tests \
+  -resultBundlePath "$results" \
   -collect-test-diagnostics never \
   > "$log" 2>&1
 status=$?
 set -e
 
-# Each test, or each argument of a parameterized test, prints one line.
-passed=$(grep -c "^Test case '.*' passed on" "$log" || true)
-failures=$(grep -E "^Test case '.*' failed on|error:" "$log" || true)
-
 if (( status != 0 )); then
-  [[ -n "$failures" ]] && echo "$failures"
+  grep -E "^Test case '.*' failed on|error:" "$log" || true
   tail -20 "$log"
   echo "xcodebuild test failed (exit $status)." >&2
   exit "$status"
 fi
+
+# The counts come from the result bundle rather than xcodebuild's output,
+# where lines from parallel test runs can interleave. A parameterized test
+# counts once.
+summary=$(xcrun xcresulttool get test-results summary --path "$results")
+passed=$(python3 -c 'import json, sys; print(json.load(sys.stdin).get("passedTests", 0))' <<<"$summary")
 if (( passed == 0 )); then
   tail -20 "$log"
   echo 'xcodebuild reported success, but no test ran.' >&2
   exit 1
 fi
-echo "$passed test cases passed."
+echo "$passed tests passed."
