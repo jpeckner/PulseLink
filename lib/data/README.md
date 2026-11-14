@@ -17,3 +17,9 @@ the generated fields private.
 `pigeons/app_settings_api.dart`. Pigeon allows one Swift or Kotlin error
 class per module, so that contract leaves it to `ble_api.dart`'s generated
 code.
+
+`watch/` holds `PigeonWatchBridge`, which sends heart-rate snapshots to the
+Apple Watch app through the iPhone's WatchConnectivity code
+(`ios/Runner/Watch/`). Its contract is `pigeons/watch_api.dart`, which has no
+Android side: there's no watch app on Android. Only this folder imports
+`watch_api.pigeon.dart`.

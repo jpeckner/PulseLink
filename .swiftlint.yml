@@ -13,7 +13,7 @@ included:
   - ios/Shared
 
 excluded:
-  # Pigeon's generated code (see pigeons/ble_api.dart).
+  # Pigeon's generated code (see pigeons/).
   - ios/Runner/*.pigeon.swift
 
 only_rules:
