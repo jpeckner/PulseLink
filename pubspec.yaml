@@ -1,0 +1,25 @@
+name: pulselink
+description: "BLE heart-rate monitor with Apple Watch companion. For learning and fitness use only. Not a medical device."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.14.0
+
+dependencies:
+  bloc: ^9.2.1
+  flutter:
+    sdk: flutter
+  flutter_bloc: ^9.1.1
+  material_ui: ^1.11.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  very_good_analysis: ^11.0.0
+flutter:
+  uses-material-design: true
+  config:
+    # iOS native dependencies come from Swift Package Manager only; this
+    # project never uses CocoaPods (CI fails if an ios/Podfile appears).
+    enable-swift-package-manager: true

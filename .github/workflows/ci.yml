@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Keep in sync with the local SDK (`flutter --version`).
+  FLUTTER_VERSION: 3.50.0
+
+jobs:
+  analyze-and-test:
+    name: Analyze and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Check iOS uses Swift Package Manager only (no CocoaPods)
+        run: |
+          if [ -e ios/Podfile ]; then
+            echo "::error::ios/Podfile found. This project uses Swift Package Manager only."
+            exit 1
+          fi
+
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test --coverage
+
+  # Android (Ubuntu) and iOS (macOS, no code signing) build jobs are added in
+  # Milestone 7.
