@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:pulselink/domain/battery_level.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
 
@@ -43,6 +44,13 @@ abstract interface class StrapDataSource {
   /// for a strap, that means reconnecting. A source that can't lose a
   /// connection, such as demo data, never emits one.
   Stream<StrapConnectionFailure> get connectionLost;
+
+  /// The strap's battery level, when it's read and whenever it changes, or
+  /// null once it's no longer known, such as after stopping, losing the
+  /// connection or switching straps. A broadcast stream; it stays open
+  /// across [start]/[stop] cycles and closes on [dispose]. Never carries
+  /// errors. A strap without a battery level never emits one.
+  Stream<BatteryLevel?> get batteryLevel;
 
   /// Starts producing samples, and completes once the source is producing
   /// them or has failed to. Calling it while already started completes with

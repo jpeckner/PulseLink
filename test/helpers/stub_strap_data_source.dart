@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:pulselink/data/strap_data_source.dart';
+import 'package:pulselink/domain/battery_level.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
 
@@ -17,6 +18,7 @@ class StubStrapDataSource implements StrapDataSource {
   final _connectionLost = StreamController<StrapConnectionFailure>.broadcast(
     sync: true,
   );
+  final _batteryLevel = StreamController<BatteryLevel?>.broadcast(sync: true);
 
   int startCount = 0;
   int stopCount = 0;
@@ -50,6 +52,11 @@ class StubStrapDataSource implements StrapDataSource {
   void loseConnection(StrapConnectionFailure failure) =>
       _connectionLost.add(failure);
 
+  /// Reports a battery level, or null once it's no longer known.
+  void reportBatteryLevel(BatteryLevel? level) => _batteryLevel.add(level);
+
+  bool get hasBatteryLevelListener => _batteryLevel.hasListener;
+
   /// Completes a held [start] with [startResult].
   void finishStart() => _completePendingStart(startResult);
 
@@ -58,6 +65,9 @@ class StubStrapDataSource implements StrapDataSource {
 
   @override
   Stream<StrapConnectionFailure> get connectionLost => _connectionLost.stream;
+
+  @override
+  Stream<BatteryLevel?> get batteryLevel => _batteryLevel.stream;
 
   /// Counts each call, including ones that join a held start in progress.
   @override
@@ -87,6 +97,7 @@ class StubStrapDataSource implements StrapDataSource {
     _completePendingStart(const StrapDataSourceStartResult.cancelled());
     await _controller.close();
     await _connectionLost.close();
+    await _batteryLevel.close();
     if (disposeError case final error?) {
       throw error;
     }

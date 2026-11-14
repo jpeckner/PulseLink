@@ -5,6 +5,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
 import 'package:pulselink/data/ble/ble_api.pigeon.dart';
 import 'package:pulselink/data/strap_data_source.dart';
+import 'package:pulselink/domain/battery_level.dart';
 import 'package:pulselink/domain/heart_rate_measurement_parser.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_ble_identifier.dart';
@@ -36,6 +37,7 @@ class BleStrapDataSource implements StrapDataSource {
   final Stream<BleStrapEvent> _events;
   final _samples = StreamController<HeartRateSample>.broadcast();
   final _connectionLost = StreamController<StrapConnectionFailure>.broadcast();
+  final _batteryLevel = StreamController<BatteryLevel?>.broadcast();
 
   StreamSubscription<BleStrapEvent>? _subscription;
   Completer<StrapDataSourceStartResult>? _pendingStart;
@@ -51,6 +53,11 @@ class BleStrapDataSource implements StrapDataSource {
   /// Emits [StrapConnectionLost] when a connected strap drops.
   @override
   Stream<StrapConnectionFailure> get connectionLost => _connectionLost.stream;
+
+  /// The strap's battery level, read after connecting and updated if the
+  /// strap reports changes. Null after stopping or a drop.
+  @override
+  Stream<BatteryLevel?> get batteryLevel => _batteryLevel.stream;
 
   @override
   Future<StrapDataSourceStartResult> start() {
@@ -87,6 +94,7 @@ class BleStrapDataSource implements StrapDataSource {
     if (!wasActive) {
       return;
     }
+    _batteryLevel.add(null);
     // Cleared before awaiting, so a start() meanwhile listens afresh.
     final cancelling = _subscription?.cancel();
     _subscription = null;
@@ -110,6 +118,7 @@ class BleStrapDataSource implements StrapDataSource {
       // Close even if stopping failed; the error still reaches the caller.
       await _samples.close();
       await _connectionLost.close();
+      await _batteryLevel.close();
     }
   }
 
@@ -200,6 +209,18 @@ class BleStrapDataSource implements StrapDataSource {
         if (_isStarted) {
           _isStarted = false;
           _connectionLost.add(const .connectionLost());
+          _batteryLevel.add(null);
+        }
+      case BleBatteryLevel(:final percent):
+        if (!_isStarted) {
+          return;
+        }
+        if (BatteryLevel.tryFrom(percent) case final level?) {
+          _batteryLevel.add(level);
+        } else {
+          // Not a percentage, so not a level to show; most likely a corrupt
+          // value. Logged rather than sent: the stream never carries errors.
+          developer.log('Dropped a battery level of $percent', name: 'ble');
         }
     }
   }

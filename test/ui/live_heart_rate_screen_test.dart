@@ -7,6 +7,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
+import 'package:pulselink/blocs/strap_battery/strap_battery_cubit.dart';
+import 'package:pulselink/domain/battery_level.dart';
 import 'package:pulselink/domain/bluetooth_problem.dart';
 import 'package:pulselink/domain/discovered_strap.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
@@ -20,6 +22,9 @@ import '../helpers/strap_connection_failures.dart';
 
 class _MockLiveHeartRateCubit extends MockCubit<LiveHeartRateState>
     implements LiveHeartRateCubit;
+
+class _MockStrapBatteryCubit extends MockCubit<BatteryLevel?>
+    implements StrapBatteryCubit;
 
 final _timestamp = DateTime(2026, 11, 11, 10, 52, 31);
 final String _time = DateFormat.jms().format(_timestamp);
@@ -57,8 +62,13 @@ void _noSelection(DiscoveredStrap strap) {}
 void main() {
   group('LiveHeartRateScreen', () {
     late _MockLiveHeartRateCubit cubit;
+    late _MockStrapBatteryCubit battery;
 
-    setUp(() => cubit = _MockLiveHeartRateCubit());
+    setUp(() {
+      cubit = _MockLiveHeartRateCubit();
+      battery = _MockStrapBatteryCubit();
+      when(() => battery.state).thenReturn(null);
+    });
 
     Future<void> pumpScreen(WidgetTester tester, LiveHeartRateState state) {
       when(() => cubit.state).thenReturn(state);
@@ -70,6 +80,7 @@ void main() {
           home: LiveHeartRateScreen(
             key: UniqueKey(),
             cubit: cubit,
+            batteryCubit: battery,
             buildStrapPicker: _noPicker,
             onStrapSelected: _noSelection,
           ),
@@ -335,6 +346,7 @@ void main() {
         MaterialApp(
           home: LiveHeartRateScreen(
             cubit: cubit,
+            batteryCubit: battery,
             buildStrapPicker: (_) => const Text('strap picker'),
             onStrapSelected: _noSelection,
           ),
@@ -343,6 +355,54 @@ void main() {
       await tester.tap(find.byTooltip('Find strap'));
       await tester.pumpAndSettle();
       expect(find.text('strap picker'), findsOneWidget);
+    });
+
+    group('battery level', () {
+      Future<void> pumpWithBattery(WidgetTester tester, int? percent) {
+        when(() => battery.state)
+            .thenReturn(percent == null ? null : BatteryLevel.tryFrom(percent));
+        return pumpScreen(tester, _reading());
+      }
+
+      testWidgets('shows the percentage once known', (tester) async {
+        await pumpWithBattery(tester, 85);
+        expect(find.text('85%'), findsOneWidget);
+        expect(find.byIcon(Icons.battery_std), findsOneWidget);
+        expect(
+          find.bySemanticsLabel('Strap battery 85 percent'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('warns once it is low', (tester) async {
+        await pumpWithBattery(tester, 15);
+        expect(find.text('15%'), findsOneWidget);
+        expect(find.byIcon(Icons.battery_alert), findsOneWidget);
+        expect(
+          find.bySemanticsLabel('Strap battery 15 percent, low'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('shows nothing while it is unknown', (tester) async {
+        await pumpWithBattery(tester, null);
+        expect(find.textContaining('%'), findsNothing);
+        expect(find.byIcon(Icons.battery_std), findsNothing);
+      });
+
+      testWidgets('fits a 320 px wide app bar with the Demo badge', (
+        tester,
+      ) async {
+        tester.view
+          ..physicalSize = const Size(320, 640)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        when(() => battery.state).thenReturn(BatteryLevel.tryFrom(100));
+        await pumpScreen(tester, _reading(isSimulated: true));
+        expect(tester.takeException(), isNull);
+        expect(find.text('100%'), findsOneWidget);
+        expect(find.text('Demo'), findsOneWidget);
+      });
     });
 
     group('picking a strap', () {
@@ -360,6 +420,7 @@ void main() {
           MaterialApp(
             home: LiveHeartRateScreen(
               cubit: cubit,
+              batteryCubit: battery,
               // A stand-in picker that closes with pickedStrap.
               buildStrapPicker: (context) => TextButton(
                 onPressed: () => Navigator.of(context).pop(pickedStrap),
@@ -424,6 +485,7 @@ void main() {
         MaterialApp(
           home: LiveHeartRateScreen(
             cubit: cubit,
+            batteryCubit: battery,
             buildStrapPicker: _noPicker,
             onStrapSelected: _noSelection,
           ),
@@ -481,6 +543,7 @@ void main() {
           MaterialApp(
             home: LiveHeartRateScreen(
               cubit: cubit,
+              batteryCubit: battery,
               buildStrapPicker: _noPicker,
               onStrapSelected: _noSelection,
               debugControls: const Text('debug controls'),
@@ -499,6 +562,7 @@ void main() {
             MaterialApp(
               home: LiveHeartRateScreen(
                 cubit: cubit,
+                batteryCubit: battery,
                 buildStrapPicker: _noPicker,
                 onStrapSelected: _noSelection,
                 debugControls: debugControls,
@@ -528,6 +592,7 @@ void main() {
           MaterialApp(
             home: LiveHeartRateScreen(
               cubit: cubit,
+              batteryCubit: battery,
               buildStrapPicker: _noPicker,
               onStrapSelected: _noSelection,
               onTitleLongPress: () => longPresses++,

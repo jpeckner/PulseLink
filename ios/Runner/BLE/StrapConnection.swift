@@ -31,6 +31,9 @@ final class StrapConnection: NSObject {
 
   private let heartRateService = CBUUID(string: "180D")
   private let heartRateMeasurement = CBUUID(string: "2A37")
+  // Optional: a strap without it connects the same, with no battery level.
+  private let batteryService = CBUUID(string: "180F")
+  private let batteryLevel = CBUUID(string: "2A19")
 
   /// Created on the first connection rather than at launch, like
   /// `CentralScan`'s.
@@ -96,6 +99,12 @@ final class StrapConnection: NSObject {
   func disconnect() {
     finish(.cancelled)
     dropStrap()
+  }
+
+  /// The battery level a Battery Level value holds: its first byte, which
+  /// Dart checks is a percentage. Nil for an empty value.
+  nonisolated static func batteryPercent(from value: Data) -> Int? {
+    value.first.map { Int($0) }
   }
 
   func startSending(to sink: PigeonEventSink<BleStrapEvent>) {
@@ -188,8 +197,9 @@ extension StrapConnection: CBPeripheralDelegate {
       return
     }
     let id = peripheral.identifier
+    let serviceId = service.uuid.uuidString
     MainActor.assumeIsolated {
-      characteristicsDiscovered(id)
+      characteristicsDiscovered(id, serviceId: serviceId)
     }
   }
 
@@ -202,11 +212,10 @@ extension StrapConnection: CBPeripheralDelegate {
       return
     }
     let id = peripheral.identifier
+    let characteristicId = characteristic.uuid.uuidString
     let subscribed = error == nil && characteristic.isNotifying
     MainActor.assumeIsolated {
-      if isCurrentStrap(id) {
-        finish(subscribed ? .connected : .failed(.notAHeartRateStrap))
-      }
+      notificationsChanged(id, characteristicId: characteristicId, subscribed: subscribed)
     }
   }
 
@@ -222,7 +231,7 @@ extension StrapConnection: CBPeripheralDelegate {
     let characteristicId = characteristic.uuid.uuidString
     let value = characteristic.value
     MainActor.assumeIsolated {
-      measurementReceived(id, characteristicId: characteristicId, value: value)
+      valueReceived(id, characteristicId: characteristicId, value: value)
     }
   }
 }
@@ -280,7 +289,7 @@ private extension StrapConnection {
     guard pending != nil, let strap, strap.identifier == id else {
       return
     }
-    strap.discoverServices([heartRateService])
+    strap.discoverServices([heartRateService, batteryService])
   }
 
   func servicesDiscovered(_ id: UUID) {
@@ -294,7 +303,11 @@ private extension StrapConnection {
     strap.discoverCharacteristics([heartRateMeasurement], for: service)
   }
 
-  func characteristicsDiscovered(_ id: UUID) {
+  func characteristicsDiscovered(_ id: UUID, serviceId: String) {
+    if serviceId == batteryService.uuidString {
+      batteryCharacteristicsDiscovered(id)
+      return
+    }
     guard pending != nil, let strap, strap.identifier == id else {
       return
     }
@@ -310,16 +323,64 @@ private extension StrapConnection {
     strap.setNotifyValue(true, for: measurement)
   }
 
-  func measurementReceived(_ id: UUID, characteristicId: String, value: Data?) {
+  /// Finishes connecting once heart-rate notifications are on, then reads
+  /// the battery level. The battery's own notifications don't affect
+  /// connecting.
+  func notificationsChanged(_ id: UUID, characteristicId: String, subscribed: Bool) {
+    guard isCurrentStrap(id), characteristicId == heartRateMeasurement.uuidString else {
+      return
+    }
+    guard subscribed else {
+      finish(.failed(.notAHeartRateStrap))
+      return
+    }
+    finish(.connected)
+    readBatteryLevel()
+  }
+
+  /// Starts reading the battery level, if the strap has the Battery
+  /// Service. Only once connected, so the battery never delays connecting.
+  func readBatteryLevel() {
     guard
       pending == nil,
-      isCurrentStrap(id),
-      characteristicId == heartRateMeasurement.uuidString,
-      let value
+      let strap,
+      let service = strap.services?.first(where: { $0.uuid == batteryService })
     else {
       return
     }
-    sink?.success(BleHeartRateMeasurement(value: FlutterStandardTypedData(bytes: value)))
+    strap.discoverCharacteristics([batteryLevel], for: service)
+  }
+
+  func batteryCharacteristicsDiscovered(_ id: UUID) {
+    guard pending == nil, let strap, strap.identifier == id else {
+      return
+    }
+    let level = strap.services?
+      .first(where: { $0.uuid == batteryService })?
+      .characteristics?
+      .first(where: { $0.uuid == batteryLevel })
+    guard let level else {
+      return
+    }
+    // The value arrives in peripheral(_:didUpdateValueFor:error:), now and,
+    // if the strap supports it, whenever it changes.
+    strap.readValue(for: level)
+    if level.properties.contains(.notify) {
+      strap.setNotifyValue(true, for: level)
+    }
+  }
+
+  func valueReceived(_ id: UUID, characteristicId: String, value: Data?) {
+    guard pending == nil, isCurrentStrap(id), let value else {
+      return
+    }
+    if characteristicId == heartRateMeasurement.uuidString {
+      sink?.success(BleHeartRateMeasurement(value: FlutterStandardTypedData(bytes: value)))
+    } else if characteristicId == batteryLevel.uuidString,
+      let percent = Self.batteryPercent(from: value)
+    {
+      sink?.success(BleBatteryLevel(percent: Int64(percent)))
+    }
   }
 
   func strapDisconnected(_ id: UUID) {

@@ -133,3 +133,13 @@ class BleHeartRateMeasurement extends BleStrapEvent {
 /// The strap disconnected without being asked to, such as by going out of
 /// range.
 class BleStrapDisconnected extends BleStrapEvent;
+
+/// The strap's battery level (Battery Level characteristic 0x2A19), as it
+/// sent it: meant to be a percentage from 0 to 100, but checked in Dart.
+/// Sent when read after connecting, and whenever the strap reports a
+/// change. Straps without the Battery Service never send one.
+class BleBatteryLevel extends BleStrapEvent {
+  new(this.percent);
+
+  final int percent;
+}

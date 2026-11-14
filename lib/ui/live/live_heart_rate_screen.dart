@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
+import 'package:pulselink/blocs/strap_battery/strap_battery_cubit.dart';
+import 'package:pulselink/domain/battery_level.dart';
 import 'package:pulselink/domain/discovered_strap.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
@@ -16,6 +18,7 @@ import 'package:pulselink/ui/widgets/problem_view.dart';
 class LiveHeartRateScreen extends StatelessWidget {
   const new({
     required this.cubit,
+    required this.batteryCubit,
     required this.buildStrapPicker,
     required this.onStrapSelected,
     this.debugControls,
@@ -24,6 +27,9 @@ class LiveHeartRateScreen extends StatelessWidget {
   });
 
   final LiveHeartRateCubit cubit;
+
+  /// The strap's battery level, shown in the app bar once it's known.
+  final StrapBatteryCubit batteryCubit;
 
   /// Builds the screen that finds a strap, opened from the app bar.
   final WidgetBuilder buildStrapPicker;
@@ -50,6 +56,15 @@ class LiveHeartRateScreen extends StatelessWidget {
             child: const Text('PulseLink'),
           ),
           actions: [
+            BlocBuilder<StrapBatteryCubit, BatteryLevel?>(
+              bloc: batteryCubit,
+              builder: (context, level) {
+                if (level case final known?) {
+                  return _BatteryIndicator(level: known);
+                }
+                return const SizedBox.shrink();
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.bluetooth_searching),
               tooltip: 'Find strap',
@@ -341,6 +356,43 @@ class _StrapStatusChip extends StatelessWidget {
           label: const Text('Strap reading out of range'),
         ),
     };
+  }
+}
+
+/// The strap's battery level: an icon and a percentage, with a warning
+/// icon in the error colour once it's low.
+class _BatteryIndicator extends StatelessWidget {
+  const new({required this.level});
+
+  final BatteryLevel level;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colour = level.isLow ? theme.colorScheme.error : null;
+    return Semantics(
+      label:
+          'Strap battery ${level.percent} percent'
+          '${level.isLow ? ', low' : ''}',
+      excludeSemantics: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              level.isLow ? Icons.battery_alert : Icons.battery_std,
+              size: 20,
+              color: colour,
+            ),
+            Text(
+              '${level.percent}%',
+              style: theme.textTheme.labelLarge?.copyWith(color: colour),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

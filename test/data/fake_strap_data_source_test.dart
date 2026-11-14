@@ -6,6 +6,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/data/fake_strap_data_source.dart';
 import 'package:pulselink/data/strap_data_source.dart';
+import 'package:pulselink/domain/battery_level.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
 
@@ -53,6 +54,22 @@ List<MeasuredHeartRateSample> _run(
 }
 
 void main() {
+  test('FakeStrapDataSource shows a steady battery level while started, '
+      'unknown once stopped, and closes batteryLevel on dispose', () async {
+    final source = FakeStrapDataSource();
+    final levels = <BatteryLevel?>[];
+    var closed = false;
+    source.batteryLevel.listen(levels.add, onDone: () => closed = true);
+
+    expect(await source.start(), const StrapDataSourceStartResult.started());
+    // Starting again while started doesn't report it again.
+    expect(await source.start(), const StrapDataSourceStartResult.started());
+    await source.stop();
+    await source.dispose();
+    expect(levels, [FakeStrapDataSource.simulatedBatteryLevel, null]);
+    expect(FakeStrapDataSource.simulatedBatteryLevel, isNotNull);
+    expect(closed, isTrue);
+  });
   test('FakeStrapDataSource never reports a lost connection, and closes '
       'connectionLost on dispose', () async {
     final source = FakeStrapDataSource();

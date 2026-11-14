@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
+import 'package:pulselink/blocs/strap_battery/strap_battery_cubit.dart';
 import 'package:pulselink/data/strap_scanner.dart';
 import 'package:pulselink/domain/discovered_strap.dart';
 import 'package:pulselink/ui/live/live_heart_rate_screen.dart';
@@ -10,6 +11,7 @@ import 'package:pulselink/ui/picker/strap_picker_screen.dart';
 class PulseLinkApp extends StatelessWidget {
   const new({
     required this.liveHeartRateCubit,
+    required this.strapBatteryCubit,
     required this.strapScanner,
     required this.onStrapSelected,
     this.debugControls,
@@ -19,6 +21,9 @@ class PulseLinkApp extends StatelessWidget {
 
   /// Owned by the caller, which starts and closes it.
   final LiveHeartRateCubit liveHeartRateCubit;
+
+  /// Owned by the caller, which closes it.
+  final StrapBatteryCubit strapBatteryCubit;
 
   /// Used by the strap picker, which scans only while it's open.
   final StrapScanner strapScanner;
@@ -38,6 +43,7 @@ class PulseLinkApp extends StatelessWidget {
       darkTheme: _theme(Brightness.dark),
       home: LiveHeartRateScreen(
         cubit: liveHeartRateCubit,
+        batteryCubit: strapBatteryCubit,
         buildStrapPicker: (_) => StrapPickerScreen(scanner: strapScanner),
         onStrapSelected: onStrapSelected,
         debugControls: debugControls,
