@@ -15,8 +15,9 @@ import 'package:pulselink/domain/strap_connection_failure.dart';
 /// iOS). Each Heart Rate Measurement notification is stamped with the time
 /// it arrives and parsed by [parseHeartRateMeasurement].
 ///
-/// When the strap drops, samples stop and the live screen marks the last
-/// one stale. Reconnecting comes in Milestone 4.
+/// When a connected strap drops, it reports [StrapConnectionLost] on
+/// [connectionLost]; starting it again reconnects. Reconnecting by itself
+/// comes in Milestone 4.
 class BleHeartRateSource implements HeartRateSource {
   /// Connects to the strap with `strapId`, from a scan. [api] and [events]
   /// stand in for the platform channels in tests.
@@ -34,6 +35,7 @@ class BleHeartRateSource implements HeartRateSource {
   final BleConnectionApi _api;
   final Stream<BleStrapEvent> _events;
   final _samples = StreamController<HeartRateSample>.broadcast();
+  final _connectionLost = StreamController<StrapConnectionFailure>.broadcast();
 
   StreamSubscription<BleStrapEvent>? _subscription;
   Completer<HeartRateSourceStartResult>? _pendingStart;
@@ -45,6 +47,10 @@ class BleHeartRateSource implements HeartRateSource {
 
   @override
   Stream<HeartRateSample> get samples => _samples.stream;
+
+  /// Emits [StrapConnectionLost] when a connected strap drops.
+  @override
+  Stream<StrapConnectionFailure> get connectionLost => _connectionLost.stream;
 
   @override
   Future<HeartRateSourceStartResult> start() {
@@ -103,6 +109,7 @@ class BleHeartRateSource implements HeartRateSource {
     } finally {
       // Close even if stopping failed; the error still reaches the caller.
       await _samples.close();
+      await _connectionLost.close();
     }
   }
 
@@ -187,9 +194,13 @@ class BleHeartRateSource implements HeartRateSource {
             );
         }
       case BleStrapDisconnected():
-        // A later start() connects again.
-        _isStarted = false;
         developer.log('The strap disconnected', name: 'ble');
+        // Only a strap that was connected can be lost. A later start()
+        // connects again.
+        if (_isStarted) {
+          _isStarted = false;
+          _connectionLost.add(const .connectionLost());
+        }
     }
   }
 

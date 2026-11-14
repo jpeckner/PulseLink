@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/data/fake_heart_rate_source.dart';
 import 'package:pulselink/data/heart_rate_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/strap_connection_failure.dart';
 
 final _start = DateTime(2026, 11, 11, 10);
 
@@ -52,6 +53,16 @@ List<MeasuredHeartRateSample> _run(
 }
 
 void main() {
+  test('FakeHeartRateSource never reports a lost connection, and closes '
+      'connectionLost on dispose', () async {
+    final source = FakeHeartRateSource();
+    final lost = <StrapConnectionFailure>[];
+    var closed = false;
+    source.connectionLost.listen(lost.add, onDone: () => closed = true);
+    await source.dispose();
+    expect(lost, isEmpty);
+    expect(closed, isTrue);
+  });
   group('FakeHeartRateSource', () {
     test('is simulated', () {
       expect(FakeHeartRateSource().isSimulated, isTrue);

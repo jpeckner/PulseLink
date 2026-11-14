@@ -56,13 +56,14 @@ extension StrapConnectionFailurePatterns on StrapConnectionFailure {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( BluetoothFailure value)?  bluetooth,TResult Function( StrapUnreachable value)?  strapUnreachable,TResult Function( NotAHeartRateStrap value)?  notAHeartRateStrap,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( BluetoothFailure value)?  bluetooth,TResult Function( StrapUnreachable value)?  strapUnreachable,TResult Function( NotAHeartRateStrap value)?  notAHeartRateStrap,TResult Function( StrapConnectionLost value)?  connectionLost,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case BluetoothFailure() when bluetooth != null:
 return bluetooth(_that);case StrapUnreachable() when strapUnreachable != null:
 return strapUnreachable(_that);case NotAHeartRateStrap() when notAHeartRateStrap != null:
-return notAHeartRateStrap(_that);case _:
+return notAHeartRateStrap(_that);case StrapConnectionLost() when connectionLost != null:
+return connectionLost(_that);case _:
   return orElse();
 
 }
@@ -80,13 +81,14 @@ return notAHeartRateStrap(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( BluetoothFailure value)  bluetooth,required TResult Function( StrapUnreachable value)  strapUnreachable,required TResult Function( NotAHeartRateStrap value)  notAHeartRateStrap,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( BluetoothFailure value)  bluetooth,required TResult Function( StrapUnreachable value)  strapUnreachable,required TResult Function( NotAHeartRateStrap value)  notAHeartRateStrap,required TResult Function( StrapConnectionLost value)  connectionLost,}){
 final _that = this;
 switch (_that) {
 case BluetoothFailure():
 return bluetooth(_that);case StrapUnreachable():
 return strapUnreachable(_that);case NotAHeartRateStrap():
-return notAHeartRateStrap(_that);}
+return notAHeartRateStrap(_that);case StrapConnectionLost():
+return connectionLost(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -100,13 +102,14 @@ return notAHeartRateStrap(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( BluetoothFailure value)?  bluetooth,TResult? Function( StrapUnreachable value)?  strapUnreachable,TResult? Function( NotAHeartRateStrap value)?  notAHeartRateStrap,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( BluetoothFailure value)?  bluetooth,TResult? Function( StrapUnreachable value)?  strapUnreachable,TResult? Function( NotAHeartRateStrap value)?  notAHeartRateStrap,TResult? Function( StrapConnectionLost value)?  connectionLost,}){
 final _that = this;
 switch (_that) {
 case BluetoothFailure() when bluetooth != null:
 return bluetooth(_that);case StrapUnreachable() when strapUnreachable != null:
 return strapUnreachable(_that);case NotAHeartRateStrap() when notAHeartRateStrap != null:
-return notAHeartRateStrap(_that);case _:
+return notAHeartRateStrap(_that);case StrapConnectionLost() when connectionLost != null:
+return connectionLost(_that);case _:
   return null;
 
 }
@@ -123,12 +126,13 @@ return notAHeartRateStrap(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( BluetoothProblem problem)?  bluetooth,TResult Function()?  strapUnreachable,TResult Function()?  notAHeartRateStrap,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( BluetoothProblem problem)?  bluetooth,TResult Function()?  strapUnreachable,TResult Function()?  notAHeartRateStrap,TResult Function()?  connectionLost,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case BluetoothFailure() when bluetooth != null:
 return bluetooth(_that.problem);case StrapUnreachable() when strapUnreachable != null:
 return strapUnreachable();case NotAHeartRateStrap() when notAHeartRateStrap != null:
-return notAHeartRateStrap();case _:
+return notAHeartRateStrap();case StrapConnectionLost() when connectionLost != null:
+return connectionLost();case _:
   return orElse();
 
 }
@@ -146,12 +150,13 @@ return notAHeartRateStrap();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( BluetoothProblem problem)  bluetooth,required TResult Function()  strapUnreachable,required TResult Function()  notAHeartRateStrap,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( BluetoothProblem problem)  bluetooth,required TResult Function()  strapUnreachable,required TResult Function()  notAHeartRateStrap,required TResult Function()  connectionLost,}) {final _that = this;
 switch (_that) {
 case BluetoothFailure():
 return bluetooth(_that.problem);case StrapUnreachable():
 return strapUnreachable();case NotAHeartRateStrap():
-return notAHeartRateStrap();}
+return notAHeartRateStrap();case StrapConnectionLost():
+return connectionLost();}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -165,12 +170,13 @@ return notAHeartRateStrap();}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( BluetoothProblem problem)?  bluetooth,TResult? Function()?  strapUnreachable,TResult? Function()?  notAHeartRateStrap,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( BluetoothProblem problem)?  bluetooth,TResult? Function()?  strapUnreachable,TResult? Function()?  notAHeartRateStrap,TResult? Function()?  connectionLost,}) {final _that = this;
 switch (_that) {
 case BluetoothFailure() when bluetooth != null:
 return bluetooth(_that.problem);case StrapUnreachable() when strapUnreachable != null:
 return strapUnreachable();case NotAHeartRateStrap() when notAHeartRateStrap != null:
-return notAHeartRateStrap();case _:
+return notAHeartRateStrap();case StrapConnectionLost() when connectionLost != null:
+return connectionLost();case _:
   return null;
 
 }
@@ -302,6 +308,38 @@ int get hashCode => runtimeType.hashCode;
 @override
 String toString() {
     return 'StrapConnectionFailure.notAHeartRateStrap()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class StrapConnectionLost implements StrapConnectionFailure {
+  const StrapConnectionLost();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StrapConnectionLost);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+    return 'StrapConnectionFailure.connectionLost()';
 }
 
 

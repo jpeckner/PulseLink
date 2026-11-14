@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:pulselink/data/heart_rate_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/strap_connection_failure.dart';
 
 /// A [HeartRateSource] that passes on whichever source is current: demo data
 /// at launch, then a strap once one is picked. Everything above it keeps the
@@ -13,12 +14,16 @@ import 'package:pulselink/domain/heart_rate_sample.dart';
 class SwitchableHeartRateSource implements HeartRateSource {
   new(HeartRateSource initial) : _current = initial {
     _forwarding = initial.samples.listen(_samples.add);
+    _forwardingLost = initial.connectionLost.listen(_connectionLost.add);
   }
 
   HeartRateSource _current;
   final _samples = StreamController<HeartRateSample>.broadcast();
-  // No onError where it's set: HeartRateSource.samples never carries errors.
+  final _connectionLost = StreamController<StrapConnectionFailure>.broadcast();
+  // No onError where these are set: neither of a source's streams carries
+  // errors.
   StreamSubscription<HeartRateSample>? _forwarding;
+  StreamSubscription<StrapConnectionFailure>? _forwardingLost;
   bool _isDisposed = false;
 
   /// Whether the current source is simulated. It changes when [switchTo]
@@ -30,6 +35,11 @@ class SwitchableHeartRateSource implements HeartRateSource {
   /// open across switches, and closes on [dispose].
   @override
   Stream<HeartRateSample> get samples => _samples.stream;
+
+  /// Lost connections from the current source only. Stays open across
+  /// switches, and closes on [dispose].
+  @override
+  Stream<StrapConnectionFailure> get connectionLost => _connectionLost.stream;
 
   /// Starts the current source. After [dispose], completes with
   /// [HeartRateSourceStartCancelled] at once.
@@ -51,13 +61,15 @@ class SwitchableHeartRateSource implements HeartRateSource {
       return;
     }
     final previous = _current;
-    // Cancelled and replaced before awaiting, so no sample from the previous
+    // Cancelled and replaced before awaiting, so nothing from the previous
     // source is passed on after this call.
-    final cancelling = _forwarding?.cancel();
+    final cancelling = [?_forwarding?.cancel(), ?_forwardingLost?.cancel()];
     _current = next;
     _forwarding = next.samples.listen(_samples.add);
+    _forwardingLost = next.connectionLost.listen(_connectionLost.add);
     try {
-      await cancelling;
+      // Waits for both, even if one fails.
+      await Future.wait(cancelling);
     } finally {
       // Dispose even if unsubscribing failed; the error still reaches the
       // caller.
@@ -72,16 +84,18 @@ class SwitchableHeartRateSource implements HeartRateSource {
     }
     _isDisposed = true;
     try {
-      final cancelling = _forwarding?.cancel();
+      final cancelling = [?_forwarding?.cancel(), ?_forwardingLost?.cancel()];
       _forwarding = null;
+      _forwardingLost = null;
       try {
-        await cancelling;
+        await Future.wait(cancelling);
       } finally {
         await _current.dispose();
       }
     } finally {
       // Close even if disposing failed; the error still reaches the caller.
       await _samples.close();
+      await _connectionLost.close();
     }
   }
 }

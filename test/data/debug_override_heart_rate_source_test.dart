@@ -27,6 +27,15 @@ const ReadingOverride Function(NonDetectingStrapCondition condition)
 _nonDetecting = ReadingOverride.nonDetectingStrap;
 
 void main() {
+  test('DebugOverrideHeartRateSource passes on lost connections', () async {
+    final inner = StubHeartRateSource();
+    final source = DebugOverrideHeartRateSource(inner);
+    final lost = <StrapConnectionFailure>[];
+    source.connectionLost.listen(lost.add);
+    inner.loseConnection(const StrapConnectionFailure.connectionLost());
+    expect(lost, [const StrapConnectionFailure.connectionLost()]);
+    await source.dispose();
+  });
   group('condition cycles', () {
     test('a detecting strap cycles normal, stale, no skin contact, zero bpm, '
         'implausible bpm', () {

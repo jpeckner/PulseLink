@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:pulselink/data/heart_rate_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/strap_connection_failure.dart';
 
 /// What [FailingHeartRateSource] throws, so tests can check it's passed on.
 final heartRateSourceFailure = Exception('source failure');
@@ -58,6 +59,9 @@ class FailingHeartRateSource implements HeartRateSource {
     HeartRateSourceFailure.stopBeforeFuture ||
     HeartRateSourceFailure.unsubscribe => _controller.stream,
   };
+
+  @override
+  Stream<StrapConnectionFailure> get connectionLost => const Stream.empty();
 
   @override
   Future<HeartRateSourceStartResult> start() async =>

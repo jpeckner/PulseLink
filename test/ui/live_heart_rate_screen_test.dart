@@ -284,6 +284,10 @@ void main() {
           'Not a heart-rate strap',
           "This device doesn't send heart-rate data.",
         ),
+        const StrapConnectionFailure.connectionLost(): (
+          'Strap disconnected',
+          "Make sure it's on, being worn and nearby, then try again.",
+        ),
       };
 
       test('every failure has a message', () {

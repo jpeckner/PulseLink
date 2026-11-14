@@ -161,6 +161,11 @@ class _ConnectionFailedView extends StatelessWidget {
           title: 'Not a heart-rate strap',
           detail: "This device doesn't send heart-rate data.",
         ),
+        StrapConnectionLost() => (
+          icon: Icons.link_off,
+          title: 'Strap disconnected',
+          detail: "Make sure it's on, being worn and nearby, then try again.",
+        ),
       },
       onTryAgain: onTryAgain,
     );

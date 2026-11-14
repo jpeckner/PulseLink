@@ -9,4 +9,5 @@ const List<StrapConnectionFailure> allStrapConnectionFailures = [
   StrapConnectionFailure.bluetooth(BluetoothProblem.permissionDenied),
   StrapConnectionFailure.strapUnreachable(),
   StrapConnectionFailure.notAHeartRateStrap(),
+  StrapConnectionFailure.connectionLost(),
 ];

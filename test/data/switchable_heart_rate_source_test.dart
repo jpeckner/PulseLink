@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/data/heart_rate_source.dart';
 import 'package:pulselink/data/switchable_heart_rate_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/strap_connection_failure.dart';
 
 import '../helpers/beats_per_minute.dart';
 import '../helpers/stub_heart_rate_source.dart';
@@ -17,6 +18,37 @@ HeartRateSample _sample(int beatsPerMinute) => HeartRateSample.measured(
 Future<void> _delivered() => Future<void>.delayed(Duration.zero);
 
 void main() {
+  group('SwitchableHeartRateSource connectionLost', () {
+    late StubHeartRateSource demo;
+    late StubHeartRateSource strap;
+    late SwitchableHeartRateSource source;
+    late List<StrapConnectionFailure> lost;
+
+    setUp(() {
+      demo = StubHeartRateSource(isSimulated: true);
+      strap = StubHeartRateSource();
+      source = SwitchableHeartRateSource(demo);
+      lost = [];
+      source.connectionLost.listen(lost.add);
+    });
+
+    tearDown(() => source.dispose());
+
+    test('passes on lost connections from the current source only', () async {
+      await source.switchTo(strap);
+      expect(demo.hasConnectionLostListener, isFalse);
+      strap.loseConnection(const StrapConnectionFailure.connectionLost());
+      await _delivered();
+      expect(lost, [const StrapConnectionFailure.connectionLost()]);
+    });
+
+    test('closes on dispose', () async {
+      var closed = false;
+      source.connectionLost.listen(null, onDone: () => closed = true);
+      await source.dispose();
+      expect(closed, isTrue);
+    });
+  });
   group('SwitchableHeartRateSource', () {
     late StubHeartRateSource demo;
     late StubHeartRateSource strap;
