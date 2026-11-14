@@ -242,6 +242,15 @@ void main() {
         verify(() => api.connect(any())).called(2);
       });
 
+      test('the strap disconnecting reports a lost connection', () async {
+        final lost = <StrapConnectionFailure>[];
+        source.connectionLost.listen(lost.add);
+        expect(await source.start(), _started);
+        events.add(BleStrapDisconnected());
+        await _delivered();
+        expect(lost, [const StrapConnectionFailure.connectionLost()]);
+      });
+
       test('stop disconnects and ignores later measurements', () async {
         expect(await source.start(), _started);
         await source.stop();
@@ -257,6 +266,21 @@ void main() {
         expect(await source.start(), _started);
         await expectLater(source.stop(), completes);
       });
+    });
+
+    test('a disconnect while not connected reports nothing', () async {
+      final lost = <StrapConnectionFailure>[];
+      source.connectionLost.listen(lost.add);
+      events.add(BleStrapDisconnected());
+      await _delivered();
+      expect(lost, isEmpty);
+    });
+
+    test('dispose closes connectionLost', () async {
+      var closed = false;
+      source.connectionLost.listen(null, onDone: () => closed = true);
+      await source.dispose();
+      expect(closed, isTrue);
     });
 
     test('stop while stopped does nothing', () async {

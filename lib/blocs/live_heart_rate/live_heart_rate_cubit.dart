@@ -5,6 +5,7 @@ import 'package:clock/clock.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
 import 'package:pulselink/data/heart_rate_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/strap_connection_failure.dart';
 
 /// Turns a [HeartRateSource] into screen state: the latest sample, and whether
 /// it has gone stale.
@@ -22,6 +23,7 @@ class LiveHeartRateCubit extends Cubit<LiveHeartRateState> {
 
   final HeartRateSource _source;
   StreamSubscription<HeartRateSample>? _subscription;
+  StreamSubscription<StrapConnectionFailure>? _connectionLostSubscription;
   Timer? _staleTimer;
 
   /// Subscribes to the source and starts it. If the source can't start, the
@@ -40,8 +42,11 @@ class LiveHeartRateCubit extends Cubit<LiveHeartRateState> {
         break;
     }
 
-    // No onError: HeartRateSource.samples never carries errors.
+    // No onError: neither of HeartRateSource's streams carries errors.
     _subscription ??= _source.samples.listen(_onSample);
+    _connectionLostSubscription ??= _source.connectionLost.listen(
+      _onConnectionLost,
+    );
     final result = await _source.start();
 
     // close() stops the source, which cancels a start in progress, so a
@@ -76,6 +81,20 @@ class LiveHeartRateCubit extends Cubit<LiveHeartRateState> {
     _staleTimer = null;
     emit(LiveHeartRateState.waiting(isSimulated: _source.isSimulated));
     await start();
+  }
+
+  /// The source lost its connection, such as a strap going out of range:
+  /// shows why straight away, rather than waiting for the last reading to go
+  /// stale. Calling [start] again reconnects.
+  void _onConnectionLost(StrapConnectionFailure failure) {
+    _staleTimer?.cancel();
+    _staleTimer = null;
+    emit(
+      LiveHeartRateState.connectionFailed(
+        failure: failure,
+        isSimulated: _source.isSimulated,
+      ),
+    );
   }
 
   void _onSample(HeartRateSample sample) {
@@ -120,11 +139,16 @@ class LiveHeartRateCubit extends Cubit<LiveHeartRateState> {
       // throws, no timer is left to fire into the closed cubit.
       _staleTimer?.cancel();
       final cancelSubscription = _subscription?.cancel();
+      final cancelConnectionLost = _connectionLostSubscription?.cancel();
 
       // Waits for the source to stop and the unsubscribe to finish.
       // Future.sync turns a stop() that throws before returning a future into
       // a failed future, so every failure is handled the same way.
-      await Future.wait([Future.sync(_source.stop), ?cancelSubscription]);
+      await Future.wait([
+        Future.sync(_source.stop),
+        ?cancelSubscription,
+        ?cancelConnectionLost,
+      ]);
     } finally {
       // Close even if stopping failed; the error still reaches the caller.
       await super.close();

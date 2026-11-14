@@ -54,6 +54,50 @@ void _withStartedCubit(
 }
 
 void main() {
+  group('LiveHeartRateCubit when the source loses its connection', () {
+    test('shows why straight away, and the old reading never goes stale '
+        'later', () {
+      _withStartedCubit((async, source, cubit, states) {
+        source.emit(_sampleAt(clock.now()));
+        async.flushMicrotasks();
+        states.clear();
+
+        source.loseConnection(const StrapConnectionFailure.connectionLost());
+        async.flushMicrotasks();
+        expect(states, [
+          const LiveHeartRateState.connectionFailed(
+            failure: StrapConnectionFailure.connectionLost(),
+            isSimulated: false,
+          ),
+        ]);
+
+        async.elapse(const Duration(seconds: 30));
+        expect(states, hasLength(1));
+      });
+    });
+
+    test('Try again (start) shows waiting and starts the source again', () {
+      _withStartedCubit((async, source, cubit, states) {
+        source.loseConnection(const StrapConnectionFailure.connectionLost());
+        async.flushMicrotasks();
+        states.clear();
+
+        unawaited(cubit.start());
+        async.flushMicrotasks();
+        expect(states, [const LiveHeartRateState.waiting(isSimulated: false)]);
+        expect(source.startCount, 2);
+      });
+    });
+
+    test('close stops listening for lost connections', () async {
+      final source = StubHeartRateSource();
+      final cubit = LiveHeartRateCubit(source: source);
+      await cubit.start();
+      expect(source.hasConnectionLostListener, isTrue);
+      await cubit.close();
+      expect(source.hasConnectionLostListener, isFalse);
+    });
+  });
   group('LiveHeartRateCubit', () {
     test('starts out waiting, passing on whether the source is simulated', () {
       expect(

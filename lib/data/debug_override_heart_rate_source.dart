@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:pulselink/data/heart_rate_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/strap_connection_failure.dart';
 
 part 'debug_override_heart_rate_source.freezed.dart';
 
@@ -137,6 +138,9 @@ class DebugOverrideHeartRateSource implements HeartRateSource {
 
   @override
   Stream<HeartRateSample> get samples => _inner.samples.expand(_apply);
+
+  @override
+  Stream<StrapConnectionFailure> get connectionLost => _inner.connectionLost;
 
   @override
   Future<HeartRateSourceStartResult> start() => _inner.start();

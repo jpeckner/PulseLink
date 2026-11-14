@@ -17,4 +17,8 @@ sealed class StrapConnectionFailure with _$StrapConnectionFailure {
   /// The device doesn't offer the standard Heart Rate Service, so it isn't a
   /// heart-rate strap.
   const factory notAHeartRateStrap() = NotAHeartRateStrap;
+
+  /// The strap was connected, then dropped: it went out of range, was
+  /// switched off, or ran out of battery.
+  const factory connectionLost() = StrapConnectionLost;
 }

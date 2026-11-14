@@ -5,6 +5,7 @@ import 'package:clock/clock.dart';
 import 'package:pulselink/data/heart_rate_source.dart';
 import 'package:pulselink/domain/beats_per_minute.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/strap_connection_failure.dart';
 
 /// Simulated heart rate for demo mode, screenshots and tests.
 ///
@@ -25,6 +26,7 @@ class FakeHeartRateSource implements HeartRateSource {
 
   final Random _random;
   final _controller = StreamController<HeartRateSample>.broadcast();
+  final _connectionLost = StreamController<StrapConnectionFailure>.broadcast();
   Timer? _timer;
   double _beatsPerMinute = _initialBeatsPerMinute;
   double _targetBeatsPerMinute = _initialBeatsPerMinute;
@@ -35,6 +37,10 @@ class FakeHeartRateSource implements HeartRateSource {
 
   @override
   Stream<HeartRateSample> get samples => _controller.stream;
+
+  /// Never emits: simulated data can't lose a connection.
+  @override
+  Stream<StrapConnectionFailure> get connectionLost => _connectionLost.stream;
 
   /// Starts at once, so it's never still starting when [stop] is called.
   /// After [dispose], it does nothing and completes with
@@ -58,6 +64,7 @@ class FakeHeartRateSource implements HeartRateSource {
   Future<void> dispose() async {
     await stop();
     await _controller.close();
+    await _connectionLost.close();
   }
 
   void _emitSample() {

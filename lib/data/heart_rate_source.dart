@@ -35,6 +35,15 @@ abstract interface class HeartRateSource {
   /// stream error, so listeners need no error handler.
   Stream<HeartRateSample> get samples;
 
+  /// Failures that stop a started source producing samples, such as a strap
+  /// going out of range. A broadcast stream; it stays open across
+  /// [start]/[stop] cycles and closes on [dispose]. Never carries errors.
+  ///
+  /// After one, the source counts as stopped, so [start] starts it again:
+  /// for a strap, that means reconnecting. A source that can't lose a
+  /// connection, such as demo data, never emits one.
+  Stream<StrapConnectionFailure> get connectionLost;
+
   /// Starts producing samples, and completes once the source is producing
   /// them or has failed to. Calling it while already started completes with
   /// [HeartRateSourceStarted] at once. Calling it while a start is still in

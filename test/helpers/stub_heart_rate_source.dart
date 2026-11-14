@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:pulselink/data/heart_rate_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/strap_connection_failure.dart';
 
 /// A [HeartRateSource] that tests drive by hand with [emit], and that records
 /// how it was used.
@@ -13,6 +14,9 @@ class StubHeartRateSource implements HeartRateSource {
 
   // Synchronous, so a sample reaches listeners as soon as [emit] returns.
   final _controller = StreamController<HeartRateSample>.broadcast(sync: true);
+  final _connectionLost = StreamController<StrapConnectionFailure>.broadcast(
+    sync: true,
+  );
 
   int startCount = 0;
   int stopCount = 0;
@@ -38,13 +42,22 @@ class StubHeartRateSource implements HeartRateSource {
 
   bool get hasListener => _controller.hasListener;
 
+  bool get hasConnectionLostListener => _connectionLost.hasListener;
+
   void emit(HeartRateSample sample) => _controller.add(sample);
+
+  /// Reports a lost connection, as a strap going out of range would.
+  void loseConnection(StrapConnectionFailure failure) =>
+      _connectionLost.add(failure);
 
   /// Completes a held [start] with [startResult].
   void finishStart() => _completePendingStart(startResult);
 
   @override
   Stream<HeartRateSample> get samples => _controller.stream;
+
+  @override
+  Stream<StrapConnectionFailure> get connectionLost => _connectionLost.stream;
 
   /// Counts each call, including ones that join a held start in progress.
   @override
@@ -73,6 +86,7 @@ class StubHeartRateSource implements HeartRateSource {
     isDisposed = true;
     _completePendingStart(const HeartRateSourceStartResult.cancelled());
     await _controller.close();
+    await _connectionLost.close();
     if (disposeError case final error?) {
       throw error;
     }
