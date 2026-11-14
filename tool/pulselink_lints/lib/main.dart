@@ -1,6 +1,8 @@
 import 'package:analysis_server_plugin/plugin.dart';
 import 'package:analysis_server_plugin/registry.dart';
+import 'package:pulselink_lints/src/no_assertions.dart';
 import 'package:pulselink_lints/src/no_catch_all_cases.dart';
+import 'package:pulselink_lints/src/use_switch_on_closed_types.dart';
 
 /// The entry point the analysis server looks for.
 final plugin = PulseLinkLintsPlugin();
@@ -15,6 +17,9 @@ class PulseLinkLintsPlugin extends Plugin {
 
   @override
   void register(PluginRegistry registry) {
-    registry.registerLintRule(NoCatchAllCases());
+    registry
+      ..registerLintRule(NoAssertions())
+      ..registerLintRule(NoCatchAllCases())
+      ..registerLintRule(UseSwitchOnClosedTypes());
   }
 }

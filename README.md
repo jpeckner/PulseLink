@@ -12,8 +12,8 @@ Work in progress, built one milestone at a time. See the
 [build plan](<BLE Heart-Rate Monitor Flutter + Apple Watch Build Plan.md>) and the
 [learning log](docs/learning-log.md).
 
-- [ ] 1. Setup and skeleton
-- [ ] 2. Domain and fake data (demo mode)
+- [x] 1. Setup and skeleton
+- [x] 2. Domain and fake data (demo mode)
 - [ ] 3. Real BLE
 - [ ] 4. Reliability
 - [ ] 5. Sessions and history
@@ -80,17 +80,24 @@ Lints come from `very_good_analysis`, plus
 
 `flutter analyze` also runs the project's own lint rules from
 `tool/pulselink_lints`, an analyzer plugin enabled in `analysis_options.yaml`
-(VS Code shows them too). After changing the plugin, restart the Dart analysis
-server (in VS Code: "Dart: Restart Analysis Server"). The plugin is its own
-package with its own checks; run `dart pub get` in its folder first
-(`tool/regenerate.sh` does it):
+(VS Code shows them too):
+
+- `no_assertions`: no `!`, unchecked `as`, `late` without an initializer,
+  `assert` or thrown `Error` outside tests.
+- `no_catch_all_cases`: no `default`, `_` or other catch-all when switching on
+  an enum, `bool` or sealed type.
+- `use_switch_on_closed_types`: no `if (x case ...)` or `is` test that picks
+  out some cases of an enum, `bool` or sealed type and skips the rest; use a
+  switch. Null checks are fine.
+
+After changing the plugin, restart the Dart analysis server (in VS Code:
+"Dart: Restart Analysis Server"). The plugin is its own package with its own
+checks; run `dart pub get` in its folder first (`tool/regenerate.sh` does it):
 
 ```bash
 cd tool/pulselink_lints && dart format lib test && dart analyze && dart test
 ```
 
-<<<<<<< HEAD
-=======
 If the plugin fails to load, `flutter analyze` still reports no issues, so a
 clean analyze doesn't prove the rules ran. `tool/check_lint_plugin.sh` does:
 it analyzes a file that breaks each enabled rule and fails unless every one
@@ -103,7 +110,6 @@ script spots this and rebuilds it by touching the plugin's files. If an
 editor shows a rule missing, touch `tool/pulselink_lints/lib/main.dart` and
 restart the analysis server.
 
->>>>>>> f84f9c6 (chore(heart_rate_monitor): Milestone 2 - tooling)
 ## Debug tools
 
 Debug and profile builds (never release builds) include a reading override
@@ -115,10 +121,11 @@ for exercising the app's warning states, with demo data or a real strap:
 2. **Skin-contact detection: supported / not supported** switches between a
    strap that can detect skin contact and one that can't.
 3. **Override: …** cycles through the conditions that kind of strap can be in:
-   - Supported: **Normal → No data (stale) → No skin contact → Zero bpm**
-   - Not supported: **Normal → No data (stale) → Zero bpm** (such a strap
-     can't report no skin contact; switching to it from No skin contact
-     resets to Normal)
+   - Supported: **Normal → No data (stale) → No skin contact → Zero bpm →
+     Implausible bpm**
+   - Not supported: **Normal → No data (stale) → Zero bpm → Implausible bpm**
+     (such a strap can't report no skin contact; switching to it from No skin
+     contact resets to Normal)
 
    No data (stale) drops samples, so "No data from strap" appears after the
    real 10-second threshold.

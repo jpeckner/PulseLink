@@ -30,3 +30,4 @@ plugins:
     path: tool/pulselink_lints
     diagnostics:
       no_catch_all_cases: true
+      use_switch_on_closed_types: true
