@@ -86,6 +86,10 @@ A few more built-in lints bring it closer to Swift's compile-time checks:
 `tool/pulselink_lints`, an analyzer plugin enabled in `analysis_options.yaml`
 (VS Code shows them too):
 
+- `keep_pigeon_imports_local`: a Pigeon-generated `*.pigeon.dart` file is
+  imported only from its own folder (and subfolders), and never exported.
+  Pigeon can't make a field private, so its raw types stay in the data layer,
+  which converts them into domain types. Tests are exempt.
 - `no_assertions`: no `!`, unchecked `as`, `late` without an initializer,
   `assert`, thrown `Error`, or SDK calls that throw where Swift returns an
   optional (`.first`, `int.parse`; use `firstOrNull`, `tryParse`), outside

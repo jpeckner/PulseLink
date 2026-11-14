@@ -50,6 +50,9 @@ plugins:
   pulselink_lints:
     path: tool/pulselink_lints
     diagnostics:
+      # Pigeon's generated types have public, mutable fields, so only the
+      # folder holding them uses them, converting them into domain types.
+      keep_pigeon_imports_local: true
       no_assertions: true
       no_catch_all_cases: true
       # Every written `dynamic`, not just on parameters as the built-in
