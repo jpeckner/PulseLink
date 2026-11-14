@@ -22,10 +22,14 @@ extension AppDelegate: FlutterImplicitEngineDelegate {
     _ engineBridge: FlutterImplicitEngineBridge
   ) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
-    // The channel keeps the scanner for as long as the engine runs.
+    let messenger = engineBridge.applicationRegistrar.messenger()
+    // The channels keep these for as long as the engine runs.
     ScanForHeartRateStrapsStreamHandler.register(
-      with: engineBridge.applicationRegistrar.messenger(),
+      with: messenger,
       streamHandler: BleStrapScanner()
     )
+    let strapLink = BleStrapLink()
+    StrapEventsStreamHandler.register(with: messenger, streamHandler: strapLink)
+    BleConnectionApiSetup.setUp(binaryMessenger: messenger, api: strapLink)
   }
 }

@@ -1,0 +1,222 @@
+import 'dart:async';
+import 'dart:developer' as developer;
+
+import 'package:clock/clock.dart';
+import 'package:flutter/services.dart';
+import 'package:pulselink/data/ble/ble_api.pigeon.dart';
+import 'package:pulselink/data/heart_rate_source.dart';
+import 'package:pulselink/domain/heart_rate_measurement_parser.dart';
+import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/strap_ble_identifier.dart';
+import 'package:pulselink/domain/strap_connection_failure.dart';
+
+/// Heart rate from a real strap, connected through the phone's own Bluetooth
+/// stack via the Pigeon contract in pigeons/ble_api.dart (CoreBluetooth on
+/// iOS). Each Heart Rate Measurement notification is stamped with the time
+/// it arrives and parsed by [parseHeartRateMeasurement].
+///
+/// When the strap drops, samples stop and the live screen marks the last
+/// one stale. Reconnecting comes in Milestone 4.
+class BleHeartRateSource implements HeartRateSource {
+  /// Connects to the strap with `strapId`, from a scan. [api] and [events]
+  /// stand in for the platform channels in tests.
+  ///
+  /// Only one source should be in use at a time: the native side connects to
+  /// one strap, and each source opens its own event channel.
+  new({
+    required this._strapId,
+    BleConnectionApi? api,
+    Stream<BleStrapEvent>? events,
+  }) : _api = api ?? BleConnectionApi(),
+       _events = events ?? strapEvents();
+
+  final StrapBleIdentifier _strapId;
+  final BleConnectionApi _api;
+  final Stream<BleStrapEvent> _events;
+  final _samples = StreamController<HeartRateSample>.broadcast();
+
+  StreamSubscription<BleStrapEvent>? _subscription;
+  Completer<HeartRateSourceStartResult>? _pendingStart;
+  bool _isStarted = false;
+  bool _isDisposed = false;
+
+  @override
+  bool get isSimulated => false;
+
+  @override
+  Stream<HeartRateSample> get samples => _samples.stream;
+
+  @override
+  Future<HeartRateSourceStartResult> start() {
+    if (_isDisposed) {
+      return Future.value(const .cancelled());
+    }
+    if (_isStarted) {
+      return Future.value(const .started());
+    }
+    // A start in progress is joined, as the contract requires.
+    if (_pendingStart case final pending?) {
+      return pending.future;
+    }
+    final pending = Completer<HeartRateSourceStartResult>();
+    _pendingStart = pending;
+    // Listening before connecting means no measurement sent just after
+    // connecting is missed. Measurements only count once started.
+    _subscription ??= _events.listen(_onEvent, onError: _onEventError);
+    // Not awaited: stop() and dispose() complete `pending` themselves, so a
+    // connect that never answers can't leave start() waiting. Expected
+    // failures come back as results; anything else is a bug, left for the
+    // zone's error handler.
+    unawaited(_connect(pending));
+    return pending.future;
+  }
+
+  @override
+  Future<void> stop() async {
+    final pending = _pendingStart;
+    final wasActive = _isStarted || pending != null;
+    _pendingStart = null;
+    _isStarted = false;
+    pending?.complete(const .cancelled());
+    if (!wasActive) {
+      return;
+    }
+    // Cleared before awaiting, so a start() meanwhile listens afresh.
+    final cancelling = _subscription?.cancel();
+    _subscription = null;
+    try {
+      await cancelling;
+    } finally {
+      // Also cancels a connection still in progress on the native side.
+      await _disconnect();
+    }
+  }
+
+  @override
+  Future<void> dispose() async {
+    if (_isDisposed) {
+      return;
+    }
+    _isDisposed = true;
+    try {
+      await stop();
+    } finally {
+      // Close even if stopping failed; the error still reaches the caller.
+      await _samples.close();
+    }
+  }
+
+  Future<void> _connect(Completer<HeartRateSourceStartResult> pending) async {
+    final result = await _connectResult();
+    // stop() or dispose() may have ended this start already, and completed
+    // it as cancelled.
+    if (!identical(_pendingStart, pending)) {
+      return;
+    }
+    _pendingStart = null;
+    switch (result) {
+      case HeartRateSourceStarted():
+        _isStarted = true;
+        pending.complete(result);
+      case HeartRateSourceStartCancelled() || HeartRateSourceStartFailed():
+        // Not connected, so nothing to listen for until the next start.
+        final cancelling = _subscription?.cancel();
+        _subscription = null;
+        try {
+          await cancelling;
+        } finally {
+          // Complete even if cancelling failed, so start() never hangs; the
+          // error still reaches the zone's error handler.
+          pending.complete(result);
+        }
+    }
+  }
+
+  Future<HeartRateSourceStartResult> _connectResult() async {
+    try {
+      return switch (await _api.connect(_strapId.value)) {
+        BleConnected() => const .started(),
+        BleConnectCancelled() => const .cancelled(),
+        BleConnectFailed(:final reason) => .failed(_failureFor(reason)),
+      };
+    } on PlatformException catch (error, stackTrace) {
+      // The native side reports expected failures as BleConnectFailed, so
+      // this means the channel itself failed, such as a missing native
+      // handler. Either way the phone can't connect.
+      developer.log(
+        'Connecting failed on the platform channel',
+        name: 'ble',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return const .failed(.bluetooth(.unavailable));
+    }
+  }
+
+  Future<void> _disconnect() async {
+    try {
+      await _api.disconnect();
+    } on PlatformException catch (error, stackTrace) {
+      // Nothing more to do: the native side can't be told to let go, and
+      // this source is stopped either way.
+      developer.log(
+        'Disconnecting failed on the platform channel',
+        name: 'ble',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  void _onEvent(BleStrapEvent event) {
+    switch (event) {
+      case BleHeartRateMeasurement(:final value):
+        if (!_isStarted) {
+          return;
+        }
+        switch (parseHeartRateMeasurement(value, timestamp: clock.now())) {
+          case HeartRateParseSuccess(:final sample):
+            _samples.add(sample);
+          case HeartRateParseFailure(:final error):
+            // A malformed packet has no reading in it. It's logged rather
+            // than sent, since samples never carry errors; if bad packets
+            // keep coming, the live screen marks the last reading stale.
+            developer.log(
+              'Dropped a malformed Heart Rate Measurement: ${error.name}',
+              name: 'ble',
+            );
+        }
+      case BleStrapDisconnected():
+        // A later start() connects again.
+        _isStarted = false;
+        developer.log('The strap disconnected', name: 'ble');
+    }
+  }
+
+  void _onEventError(Object error, StackTrace stackTrace) {
+    if (error is PlatformException) {
+      // A native error on the event stream. Measurements stop, and the live
+      // screen marks the last reading stale.
+      developer.log(
+        'The strap event stream failed',
+        name: 'ble',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return;
+    }
+    // Anything else is a bug, such as an event that doesn't match the
+    // contract: reported to the zone's error handler rather than hidden.
+    Zone.current.handleUncaughtError(error, stackTrace);
+  }
+
+  static StrapConnectionFailure _failureFor(
+    BleConnectFailureReason reason,
+  ) => switch (reason) {
+    BleConnectFailureReason.poweredOff => const .bluetooth(.off),
+    BleConnectFailureReason.unauthorized => const .bluetooth(.permissionDenied),
+    BleConnectFailureReason.unsupported => const .bluetooth(.unavailable),
+    BleConnectFailureReason.unreachable => const .strapUnreachable(),
+    BleConnectFailureReason.notAHeartRateStrap => const .notAHeartRateStrap(),
+  };
+}

@@ -49,6 +49,12 @@ flutter {
     source = "../.."
 }
 
+dependencies {
+    // Pigeon's generated Kotlin runs async calls (`@async` in
+    // pigeons/ble_api.dart) with coroutines.
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
+}
+
 // Lints the hand-written Kotlin; see android/config/detekt.yml and
 // tool/lint_native.sh.
 detekt {

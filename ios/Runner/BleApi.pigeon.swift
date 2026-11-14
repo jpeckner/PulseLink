@@ -29,6 +29,32 @@ final class PigeonError: Error {
   }
 }
 
+private func wrapResult(_ result: Any?) -> [Any?] {
+  return [result]
+}
+
+private func wrapError(_ error: Any) -> [Any?] {
+  if let pigeonError = error as? PigeonError {
+    return [
+      pigeonError.code,
+      pigeonError.message,
+      pigeonError.details,
+    ]
+  }
+  if let flutterError = error as? FlutterError {
+    return [
+      flutterError.code,
+      flutterError.message,
+      flutterError.details,
+    ]
+  }
+  return [
+    "\(error)",
+    "\(Swift.type(of: error))",
+    "Stacktrace: \(Thread.callStackSymbols)",
+  ]
+}
+
 enum BleApiPigeonInternal {
   static func isNullish(_ value: Any?) -> Bool {
     guard let innerValue = value else {
@@ -168,6 +194,22 @@ enum BleScanFailureReason: Int, CaseIterable {
   case unsupported = 2
 }
 
+/// Why the phone couldn't connect to a strap.
+enum BleConnectFailureReason: Int, CaseIterable {
+  /// Bluetooth is turned off.
+  case poweredOff = 0
+  /// The user hasn't allowed the app to use Bluetooth.
+  case unauthorized = 1
+  /// This device or platform can't connect to BLE devices.
+  case unsupported = 2
+  /// The strap couldn't be reached: it's off, out of range, connected to
+  /// another app, or didn't answer in time.
+  case unreachable = 3
+  /// The device doesn't offer a Heart Rate Measurement characteristic that
+  /// sends notifications.
+  case notAHeartRateStrap = 4
+}
+
 /// Something that happened during a scan.
 ///
 /// Generated class from Pigeon that represents data sent in messages.
@@ -292,6 +334,195 @@ struct BleScanFailed: BleScanEvent, Hashable, CustomStringConvertible {
   }
 }
 
+/// How a call to [BleConnectionApi.connect] ended.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+/// This protocol should not be extended by any user class outside of the generated file.
+protocol BleConnectResult {
+
+}
+
+/// Connected, and subscribed to Heart Rate Measurement notifications.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct BleConnected: BleConnectResult, Hashable, CustomStringConvertible {
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> BleConnected? {
+
+    return BleConnected(
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+    ]
+  }
+  static func == (lhs: BleConnected, rhs: BleConnected) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return true
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("BleConnected")
+  }
+
+  public var description: String {
+    return "BleConnected()"
+  }
+}
+
+/// [BleConnectionApi.disconnect] was called before connecting finished.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct BleConnectCancelled: BleConnectResult, Hashable, CustomStringConvertible {
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> BleConnectCancelled? {
+
+    return BleConnectCancelled(
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+    ]
+  }
+  static func == (lhs: BleConnectCancelled, rhs: BleConnectCancelled) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return true
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("BleConnectCancelled")
+  }
+
+  public var description: String {
+    return "BleConnectCancelled()"
+  }
+}
+
+/// Couldn't connect, for [reason].
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct BleConnectFailed: BleConnectResult, Hashable, CustomStringConvertible {
+  var reason: BleConnectFailureReason
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> BleConnectFailed? {
+    let reason = pigeonVar_list[0] as! BleConnectFailureReason
+
+    return BleConnectFailed(
+      reason: reason
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      reason
+    ]
+  }
+  static func == (lhs: BleConnectFailed, rhs: BleConnectFailed) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return BleApiPigeonInternal.deepEquals(lhs.reason, rhs.reason)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("BleConnectFailed")
+    BleApiPigeonInternal.deepHash(value: reason, hasher: &hasher)
+  }
+
+  public var description: String {
+    return "BleConnectFailed(reason: \(String(describing: reason)))"
+  }
+}
+
+/// Something that happened on the connected strap.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+/// This protocol should not be extended by any user class outside of the generated file.
+protocol BleStrapEvent {
+
+}
+
+/// One Heart Rate Measurement notification (characteristic 0x2A37), exactly
+/// as the strap sent it. lib/domain/heart_rate_measurement_parser.dart
+/// parses it.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct BleHeartRateMeasurement: BleStrapEvent, Hashable, CustomStringConvertible {
+  var value: FlutterStandardTypedData
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> BleHeartRateMeasurement? {
+    let value = pigeonVar_list[0] as! FlutterStandardTypedData
+
+    return BleHeartRateMeasurement(
+      value: value
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      value
+    ]
+  }
+  static func == (lhs: BleHeartRateMeasurement, rhs: BleHeartRateMeasurement) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return BleApiPigeonInternal.deepEquals(lhs.value, rhs.value)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("BleHeartRateMeasurement")
+    BleApiPigeonInternal.deepHash(value: value, hasher: &hasher)
+  }
+
+  public var description: String {
+    return "BleHeartRateMeasurement(value: \(String(describing: value)))"
+  }
+}
+
+/// The strap disconnected without being asked to, such as by going out of
+/// range.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct BleStrapDisconnected: BleStrapEvent, Hashable, CustomStringConvertible {
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> BleStrapDisconnected? {
+
+    return BleStrapDisconnected(
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+    ]
+  }
+  static func == (lhs: BleStrapDisconnected, rhs: BleStrapDisconnected) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return true
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("BleStrapDisconnected")
+  }
+
+  public var description: String {
+    return "BleStrapDisconnected()"
+  }
+}
+
 private class BleApiPigeonCodecReader: FlutterStandardReader {
   override func readValue(ofType type: UInt8) -> Any? {
     switch type {
@@ -302,11 +533,27 @@ private class BleApiPigeonCodecReader: FlutterStandardReader {
       }
       return nil
     case 130:
-      return BleScanStarted.fromList(self.readValue() as! [Any?])
+      let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
+      if let enumResultAsInt = enumResultAsInt {
+        return BleConnectFailureReason(rawValue: enumResultAsInt)
+      }
+      return nil
     case 131:
-      return BleStrapFound.fromList(self.readValue() as! [Any?])
+      return BleScanStarted.fromList(self.readValue() as! [Any?])
     case 132:
+      return BleStrapFound.fromList(self.readValue() as! [Any?])
+    case 133:
       return BleScanFailed.fromList(self.readValue() as! [Any?])
+    case 134:
+      return BleConnected.fromList(self.readValue() as! [Any?])
+    case 135:
+      return BleConnectCancelled.fromList(self.readValue() as! [Any?])
+    case 136:
+      return BleConnectFailed.fromList(self.readValue() as! [Any?])
+    case 137:
+      return BleHeartRateMeasurement.fromList(self.readValue() as! [Any?])
+    case 138:
+      return BleStrapDisconnected.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
     }
@@ -318,14 +565,32 @@ private class BleApiPigeonCodecWriter: FlutterStandardWriter {
     if let value = value as? BleScanFailureReason {
       super.writeByte(129)
       super.writeValue(value.rawValue)
-    } else if let value = value as? BleScanStarted {
+    } else if let value = value as? BleConnectFailureReason {
       super.writeByte(130)
-      super.writeValue(value.toList())
-    } else if let value = value as? BleStrapFound {
+      super.writeValue(value.rawValue)
+    } else if let value = value as? BleScanStarted {
       super.writeByte(131)
       super.writeValue(value.toList())
-    } else if let value = value as? BleScanFailed {
+    } else if let value = value as? BleStrapFound {
       super.writeByte(132)
+      super.writeValue(value.toList())
+    } else if let value = value as? BleScanFailed {
+      super.writeByte(133)
+      super.writeValue(value.toList())
+    } else if let value = value as? BleConnected {
+      super.writeByte(134)
+      super.writeValue(value.toList())
+    } else if let value = value as? BleConnectCancelled {
+      super.writeByte(135)
+      super.writeValue(value.toList())
+    } else if let value = value as? BleConnectFailed {
+      super.writeByte(136)
+      super.writeValue(value.toList())
+    } else if let value = value as? BleHeartRateMeasurement {
+      super.writeByte(137)
+      super.writeValue(value.toList())
+    } else if let value = value as? BleStrapDisconnected {
+      super.writeByte(138)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)
@@ -348,6 +613,7 @@ class BleApiPigeonCodec: FlutterStandardMessageCodec, @unchecked Sendable {
 }
 
 var bleApiPigeonMethodCodec = FlutterStandardMethodCodec(readerWriter: BleApiPigeonCodecReaderWriter());
+
 
 
 private class PigeonStreamHandler<ReturnType>: NSObject, FlutterStreamHandler {
@@ -399,12 +665,14 @@ class PigeonEventSink<ReturnType> {
 
 }
 
+/// Every event stream from the native BLE code. Pigeon allows one event
+/// channel class per contract.
 /// A typed channel for communicating with the Flutter application using asynchronous event streams.
 class ScanForHeartRateStrapsEventChannel {
   private let channel: FlutterEventChannel
 
   init(messenger: FlutterBinaryMessenger, instanceName: String = "") {
-    var channelName = "dev.flutter.pigeon.pulselink.BleScanApi.scanForHeartRateStraps"
+    var channelName = "dev.flutter.pigeon.pulselink.BleEventApi.scanForHeartRateStraps"
     if !instanceName.isEmpty {
       channelName += ".\(instanceName)"
     }
@@ -437,3 +705,95 @@ class ScanForHeartRateStrapsStreamHandler: PigeonEventChannelWrapper<BleScanEven
   }
 }
       
+/// A typed channel for communicating with the Flutter application using asynchronous event streams.
+class StrapEventsEventChannel {
+  private let channel: FlutterEventChannel
+
+  init(messenger: FlutterBinaryMessenger, instanceName: String = "") {
+    var channelName = "dev.flutter.pigeon.pulselink.BleEventApi.strapEvents"
+    if !instanceName.isEmpty {
+      channelName += ".\(instanceName)"
+    }
+    channel = FlutterEventChannel(name: channelName, binaryMessenger: messenger, codec: bleApiPigeonMethodCodec)
+  }
+
+  /// Sets the stream handler for this channel, replacing any previous handler.
+  /// 
+  /// Pass `nil` to remove the event channel registration.
+  func setStreamHandler(_ streamHandler: StrapEventsStreamHandler?) {
+    let internalHandler = streamHandler.map({ PigeonStreamHandler<BleStrapEvent>(wrapper: $0) })
+    channel.setStreamHandler(internalHandler)
+  }
+}
+
+class StrapEventsStreamHandler: PigeonEventChannelWrapper<BleStrapEvent> {
+  /// Creates and returns a new event channel that calls the provided stream handler.
+  /// 
+  /// The returned channel can be stored to allow changing or removing the stream handler.
+  /// If the handler will not be changed for the lifetime of the engine associated with the messenger,
+  /// the return value can be ignored.
+  @discardableResult static func register(
+    with messenger: FlutterBinaryMessenger,
+    instanceName: String = "",
+    streamHandler: StrapEventsStreamHandler
+  ) -> StrapEventsEventChannel {
+    let channel = StrapEventsEventChannel(messenger: messenger, instanceName: instanceName)
+    channel.setStreamHandler(streamHandler)
+    return channel
+  }
+}
+      
+/// Generated protocol from Pigeon that represents a handler of messages from Flutter.
+protocol BleConnectionApi {
+  /// Connects to the strap with [strapId] (an id from [BleStrapFound]) and
+  /// subscribes to its heart-rate notifications. Completes once that's done,
+  /// or with why it couldn't be. Replaces any earlier connection.
+  func connect(strapId: String) async throws -> BleConnectResult
+  /// Disconnects, cancelling a connection still in progress. Does nothing
+  /// when not connected.
+  func disconnect() throws
+}
+
+/// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
+class BleConnectionApiSetup {
+  static var codec: FlutterStandardMessageCodec { BleApiPigeonCodec.shared }
+  /// Sets up an instance of `BleConnectionApi` to handle messages through the `binaryMessenger`.
+  static func setUp(binaryMessenger: FlutterBinaryMessenger, api: BleConnectionApi?, messageChannelSuffix: String = "") {
+    let channelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""
+    /// Connects to the strap with [strapId] (an id from [BleStrapFound]) and
+    /// subscribes to its heart-rate notifications. Completes once that's done,
+    /// or with why it couldn't be. Replaces any earlier connection.
+    let connectChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.pulselink.BleConnectionApi.connect\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      connectChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let strapIdArg = args[0] as! String
+        Task { @MainActor in
+          do {
+            let result = try await api.connect(strapId: strapIdArg)
+            reply(wrapResult(result))
+          } catch {
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      connectChannel.setMessageHandler(nil)
+    }
+    /// Disconnects, cancelling a connection still in progress. Does nothing
+    /// when not connected.
+    let disconnectChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.pulselink.BleConnectionApi.disconnect\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      disconnectChannel.setMessageHandler { _, reply in
+        do {
+          try api.disconnect()
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      disconnectChannel.setMessageHandler(nil)
+    }
+  }
+}

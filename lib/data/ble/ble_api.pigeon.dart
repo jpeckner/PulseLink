@@ -9,6 +9,31 @@ import 'dart:typed_data' show Float64List, Int32List, Int64List;
 import 'package:flutter/services.dart';
 import 'package:meta/meta.dart' show immutable, protected, visibleForTesting;
 
+Object? _extractReplyValueOrThrow(
+  List<Object?>? replyList,
+  String channelName, {
+  required bool isNullValid,
+}) {
+  if (replyList == null) {
+    throw PlatformException(
+      code: 'channel-error',
+      message: 'Unable to establish connection on channel: "$channelName".',
+    );
+  } else if (replyList.length > 1) {
+    throw PlatformException(
+      code: replyList[0]! as String,
+      message: replyList[1] as String?,
+      details: replyList[2],
+    );
+  } else if (!isNullValid && (replyList.isNotEmpty && replyList[0] == null)) {
+    throw PlatformException(
+      code: 'null-error',
+      message: 'Host platform returned null value for non-null return value.',
+    );
+  }
+  return replyList.firstOrNull;
+}
+
 bool _deepEquals(Object? a, Object? b) {
   if (identical(a, b)) {
     return true;
@@ -82,6 +107,26 @@ enum BleScanFailureReason {
 
   /// This device or platform can't scan for BLE devices.
   unsupported,
+}
+
+/// Why the phone couldn't connect to a strap.
+enum BleConnectFailureReason {
+  /// Bluetooth is turned off.
+  poweredOff,
+
+  /// The user hasn't allowed the app to use Bluetooth.
+  unauthorized,
+
+  /// This device or platform can't connect to BLE devices.
+  unsupported,
+
+  /// The strap couldn't be reached: it's off, out of range, connected to
+  /// another app, or didn't answer in time.
+  unreachable,
+
+  /// The device doesn't offer a Heart Rate Measurement characteristic that
+  /// sends notifications.
+  notAHeartRateStrap,
 }
 
 /// Something that happened during a scan.
@@ -212,6 +257,205 @@ class BleScanFailed extends BleScanEvent {
   }
 }
 
+/// How a call to [BleConnectionApi.connect] ended.
+sealed class BleConnectResult {}
+
+/// Connected, and subscribed to Heart Rate Measurement notifications.
+class BleConnected extends BleConnectResult {
+  BleConnected();
+
+  List<Object?> _toList() {
+    return <Object?>[];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static BleConnected decode(Object result) {
+    result as List<Object?>;
+    return BleConnected();
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! BleConnected || other.runtimeType != runtimeType) {
+      return false;
+    }
+    return true;
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'BleConnected()';
+  }
+}
+
+/// [BleConnectionApi.disconnect] was called before connecting finished.
+class BleConnectCancelled extends BleConnectResult {
+  BleConnectCancelled();
+
+  List<Object?> _toList() {
+    return <Object?>[];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static BleConnectCancelled decode(Object result) {
+    result as List<Object?>;
+    return BleConnectCancelled();
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! BleConnectCancelled || other.runtimeType != runtimeType) {
+      return false;
+    }
+    return true;
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'BleConnectCancelled()';
+  }
+}
+
+/// Couldn't connect, for [reason].
+class BleConnectFailed extends BleConnectResult {
+  BleConnectFailed({required this.reason});
+
+  BleConnectFailureReason reason;
+
+  List<Object?> _toList() {
+    return <Object?>[reason];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static BleConnectFailed decode(Object result) {
+    result as List<Object?>;
+    return BleConnectFailed(reason: result[0]! as BleConnectFailureReason);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! BleConnectFailed || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(reason, other.reason);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'BleConnectFailed(reason: $reason)';
+  }
+}
+
+/// Something that happened on the connected strap.
+sealed class BleStrapEvent {}
+
+/// One Heart Rate Measurement notification (characteristic 0x2A37), exactly
+/// as the strap sent it. lib/domain/heart_rate_measurement_parser.dart
+/// parses it.
+class BleHeartRateMeasurement extends BleStrapEvent {
+  BleHeartRateMeasurement({required this.value});
+
+  Uint8List value;
+
+  List<Object?> _toList() {
+    return <Object?>[value];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static BleHeartRateMeasurement decode(Object result) {
+    result as List<Object?>;
+    return BleHeartRateMeasurement(value: result[0]! as Uint8List);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! BleHeartRateMeasurement || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(value, other.value);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'BleHeartRateMeasurement(value: $value)';
+  }
+}
+
+/// The strap disconnected without being asked to, such as by going out of
+/// range.
+class BleStrapDisconnected extends BleStrapEvent {
+  BleStrapDisconnected();
+
+  List<Object?> _toList() {
+    return <Object?>[];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static BleStrapDisconnected decode(Object result) {
+    result as List<Object?>;
+    return BleStrapDisconnected();
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! BleStrapDisconnected || other.runtimeType != runtimeType) {
+      return false;
+    }
+    return true;
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+
+  @override
+  String toString() {
+    return 'BleStrapDisconnected()';
+  }
+}
+
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
   @override
@@ -222,14 +466,32 @@ class _PigeonCodec extends StandardMessageCodec {
     } else if (value is BleScanFailureReason) {
       buffer.putUint8(129);
       writeValue(buffer, value.index);
-    } else if (value is BleScanStarted) {
+    } else if (value is BleConnectFailureReason) {
       buffer.putUint8(130);
-      writeValue(buffer, value.encode());
-    } else if (value is BleStrapFound) {
+      writeValue(buffer, value.index);
+    } else if (value is BleScanStarted) {
       buffer.putUint8(131);
       writeValue(buffer, value.encode());
-    } else if (value is BleScanFailed) {
+    } else if (value is BleStrapFound) {
       buffer.putUint8(132);
+      writeValue(buffer, value.encode());
+    } else if (value is BleScanFailed) {
+      buffer.putUint8(133);
+      writeValue(buffer, value.encode());
+    } else if (value is BleConnected) {
+      buffer.putUint8(134);
+      writeValue(buffer, value.encode());
+    } else if (value is BleConnectCancelled) {
+      buffer.putUint8(135);
+      writeValue(buffer, value.encode());
+    } else if (value is BleConnectFailed) {
+      buffer.putUint8(136);
+      writeValue(buffer, value.encode());
+    } else if (value is BleHeartRateMeasurement) {
+      buffer.putUint8(137);
+      writeValue(buffer, value.encode());
+    } else if (value is BleStrapDisconnected) {
+      buffer.putUint8(138);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -243,11 +505,24 @@ class _PigeonCodec extends StandardMessageCodec {
         final value = readValue(buffer) as int?;
         return value == null ? null : BleScanFailureReason.values[value];
       case 130:
-        return BleScanStarted.decode(readValue(buffer)!);
+        final value = readValue(buffer) as int?;
+        return value == null ? null : BleConnectFailureReason.values[value];
       case 131:
-        return BleStrapFound.decode(readValue(buffer)!);
+        return BleScanStarted.decode(readValue(buffer)!);
       case 132:
+        return BleStrapFound.decode(readValue(buffer)!);
+      case 133:
         return BleScanFailed.decode(readValue(buffer)!);
+      case 134:
+        return BleConnected.decode(readValue(buffer)!);
+      case 135:
+        return BleConnectCancelled.decode(readValue(buffer)!);
+      case 136:
+        return BleConnectFailed.decode(readValue(buffer)!);
+      case 137:
+        return BleHeartRateMeasurement.decode(readValue(buffer)!);
+      case 138:
+        return BleStrapDisconnected.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
     }
@@ -258,6 +533,8 @@ const StandardMethodCodec pigeonMethodCodec = StandardMethodCodec(
   _PigeonCodec(),
 );
 
+/// Every event stream from the native BLE code. Pigeon allows one event
+/// channel class per contract.
 /// Scans for heart-rate straps (devices advertising service 0x180D) while
 /// listened to. Cancelling the subscription stops the scan.
 ///
@@ -272,7 +549,7 @@ Stream<BleScanEvent> scanForHeartRateStraps({String instanceName = ''}) {
     instanceName = '.$instanceName';
   }
   final EventChannel scanForHeartRateStrapsChannel = EventChannel(
-    'dev.flutter.pigeon.pulselink.BleScanApi.scanForHeartRateStraps$instanceName',
+    'dev.flutter.pigeon.pulselink.BleEventApi.scanForHeartRateStraps$instanceName',
     pigeonMethodCodec,
   );
   return scanForHeartRateStrapsChannel.receiveBroadcastStream().map((
@@ -280,4 +557,86 @@ Stream<BleScanEvent> scanForHeartRateStraps({String instanceName = ''}) {
   ) {
     return event as BleScanEvent;
   });
+}
+
+/// Events from the connected strap while listened to. Listen before
+/// calling [BleConnectionApi.connect], so no measurement is missed.
+///
+/// Returns a broadcast [Stream] of events from the `strapEvents` event channel.
+///
+/// Each call to this method creates a new [EventChannel], so it should
+/// not be called multiple times for the same `instanceName`. To deliver
+/// events to multiple listeners, call this method once and listen to the
+/// returned broadcast stream multiple times instead.
+Stream<BleStrapEvent> strapEvents({String instanceName = ''}) {
+  if (instanceName.isNotEmpty) {
+    instanceName = '.$instanceName';
+  }
+  final EventChannel strapEventsChannel = EventChannel(
+    'dev.flutter.pigeon.pulselink.BleEventApi.strapEvents$instanceName',
+    pigeonMethodCodec,
+  );
+  return strapEventsChannel.receiveBroadcastStream().map((dynamic event) {
+    return event as BleStrapEvent;
+  });
+}
+
+class BleConnectionApi {
+  /// Constructor for [BleConnectionApi]. The [binaryMessenger] named argument is
+  /// available for dependency injection. If it is left null, the default
+  /// BinaryMessenger will be used which routes to the host platform.
+  BleConnectionApi({
+    BinaryMessenger? binaryMessenger,
+    String messageChannelSuffix = '',
+  }) : pigeonVar_binaryMessenger = binaryMessenger,
+       pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty
+           ? '.$messageChannelSuffix'
+           : '';
+
+  final BinaryMessenger? pigeonVar_binaryMessenger;
+  static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
+
+  final String pigeonVar_messageChannelSuffix;
+
+  /// Connects to the strap with [strapId] (an id from [BleStrapFound]) and
+  /// subscribes to its heart-rate notifications. Completes once that's done,
+  /// or with why it couldn't be. Replaces any earlier connection.
+  Future<BleConnectResult> connect(String strapId) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.pulselink.BleConnectionApi.connect$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(
+      <Object?>[strapId],
+    );
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as BleConnectResult;
+  }
+
+  /// Disconnects, cancelling a connection still in progress. Does nothing
+  /// when not connected.
+  Future<void> disconnect() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.pulselink.BleConnectionApi.disconnect$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
 }

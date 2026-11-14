@@ -56,9 +56,80 @@ class BleScanFailed extends BleScanEvent {
   final BleScanFailureReason reason;
 }
 
+/// Every event stream from the native BLE code. Pigeon allows one event
+/// channel class per contract.
 @EventChannelApi()
-abstract class BleScanApi {
+abstract class BleEventApi {
   /// Scans for heart-rate straps (devices advertising service 0x180D) while
   /// listened to. Cancelling the subscription stops the scan.
   BleScanEvent scanForHeartRateStraps();
+
+  /// Events from the connected strap while listened to. Listen before
+  /// calling [BleConnectionApi.connect], so no measurement is missed.
+  BleStrapEvent strapEvents();
 }
+
+/// Why the phone couldn't connect to a strap.
+enum BleConnectFailureReason {
+  /// Bluetooth is turned off.
+  poweredOff,
+
+  /// The user hasn't allowed the app to use Bluetooth.
+  unauthorized,
+
+  /// This device or platform can't connect to BLE devices.
+  unsupported,
+
+  /// The strap couldn't be reached: it's off, out of range, connected to
+  /// another app, or didn't answer in time.
+  unreachable,
+
+  /// The device doesn't offer a Heart Rate Measurement characteristic that
+  /// sends notifications.
+  notAHeartRateStrap,
+}
+
+/// How a call to [BleConnectionApi.connect] ended.
+sealed class BleConnectResult;
+
+/// Connected, and subscribed to Heart Rate Measurement notifications.
+class BleConnected extends BleConnectResult;
+
+/// [BleConnectionApi.disconnect] was called before connecting finished.
+class BleConnectCancelled extends BleConnectResult;
+
+/// Couldn't connect, for [reason].
+class BleConnectFailed extends BleConnectResult {
+  new(this.reason);
+
+  final BleConnectFailureReason reason;
+}
+
+@HostApi()
+abstract class BleConnectionApi {
+  /// Connects to the strap with [strapId] (an id from [BleStrapFound]) and
+  /// subscribes to its heart-rate notifications. Completes once that's done,
+  /// or with why it couldn't be. Replaces any earlier connection.
+  @async
+  BleConnectResult connect(String strapId);
+
+  /// Disconnects, cancelling a connection still in progress. Does nothing
+  /// when not connected.
+  void disconnect();
+}
+
+/// Something that happened on the connected strap.
+sealed class BleStrapEvent;
+
+/// One Heart Rate Measurement notification (characteristic 0x2A37), exactly
+/// as the strap sent it. lib/domain/heart_rate_measurement_parser.dart
+/// parses it.
+class BleHeartRateMeasurement extends BleStrapEvent {
+  new(this.value);
+
+  final Uint8List value;
+}
+
+/// The strap disconnected without being asked to, such as by going out of
+/// range.
+class BleStrapDisconnected extends BleStrapEvent;
