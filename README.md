@@ -84,6 +84,21 @@ package with its own checks; run `dart pub get` in its folder first
 cd tool/pulselink_lints && dart format lib test && dart analyze && dart test
 ```
 
+<<<<<<< HEAD
+=======
+If the plugin fails to load, `flutter analyze` still reports no issues, so a
+clean analyze doesn't prove the rules ran. `tool/check_lint_plugin.sh` does:
+it analyzes a file that breaks each enabled rule and fails unless every one
+reports. CI runs it after analyzing.
+
+Locally, the analysis server runs a cached, compiled copy of the plugin
+(under `~/.dartServer/.plugin_manager`). After switching branches, that copy
+can be built from another branch's plugin and silently lack newer rules. The
+script spots this and rebuilds it by touching the plugin's files. If an
+editor shows a rule missing, touch `tool/pulselink_lints/lib/main.dart` and
+restart the analysis server.
+
+>>>>>>> f84f9c6 (chore(heart_rate_monitor): Milestone 2 - tooling)
 ## Debug tools
 
 Debug and profile builds (never release builds) include a reading override
