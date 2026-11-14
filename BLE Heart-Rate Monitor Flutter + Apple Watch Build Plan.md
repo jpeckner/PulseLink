@@ -71,7 +71,7 @@ Layers in the Flutter app, top to bottom:
 1. **UI**: widgets only. They rebuild from Bloc states (BlocBuilder) and send events.
 2. **Blocs and Cubits**: connection state machine, live session, history.
 3. **Domain**: plain Dart models (`HeartRateSample`, `Session`, `ConnectionState`) and the HR packet parser.
-4. **Data**: `HeartRateSource` interface with `BleHeartRateSource` and `FakeHeartRateSource`; `StrapScanner` interface with `BleStrapScanner`; `SessionRepository` on drift; `WatchBridge` interface with a platform-channel implementation.
+4. **Data**: `StrapDataSource` interface with `BleStrapDataSource` and `FakeStrapDataSource`; `StrapScanner` interface with `BleStrapScanner`; `SessionRepository` on drift; `WatchBridge` interface with a platform-channel implementation.
 
 &#91;embedded content: PulseLink architecture · strap to phone to watch\]
 
@@ -95,7 +95,7 @@ MVP (phone):
 - Automatic reconnect to the last device after a drop or app restart
 - Start and stop a session; store samples (bpm, RR intervals, timestamp)
 - History list and session detail: duration, average, min and max, and a chart
-- Demo mode using `FakeHeartRateSource`, so the app works with no hardware (also useful for screenshots and tests)
+- Demo mode using `FakeStrapDataSource`, so the app works with no hardware (also useful for screenshots and tests)
 
 MVP (watch):
 
@@ -118,7 +118,7 @@ Each milestone ends with something I can run on a device and a commit. Each one 
 
 1. **Setup and skeleton.** Install Flutter, Xcode and Android Studio. Create the project, folder structure, lint rules (`flutter_lints` or `very_good_analysis`), flutter\_bloc and an empty CI workflow.
    - Done when: the app runs on my iPhone and an Android phone, and CI is green.
-2. **Domain and fake data.** Models, the HR packet parser with unit tests, the `HeartRateSource` interface, `FakeHeartRateSource` and the live screen in demo mode.
+2. **Domain and fake data.** Models, the HR packet parser with unit tests, the `StrapDataSource` interface, `FakeStrapDataSource` and the live screen in demo mode.
    - Done when: demo mode shows a moving bpm with timestamps, and the parser tests pass.
 3. **Real BLE.** Permissions on both platforms, scan filtered by service UUID, device picker, connect, subscribe to notifications, battery level.
    - Done when: a real strap shows live bpm on both platforms.
@@ -178,7 +178,7 @@ Testing:
 
 - Unit tests: packet parser (fixtures above), connection state machine Bloc (every transition, using bloc\_test), session stats.
 - Widget tests: live screen in each connection state, including stale data.
-- Fakes: `FakeHeartRateSource` with scripted drops and reconnects; `FakeWatchBridge`.
+- Fakes: `FakeStrapDataSource` with scripted drops and reconnects; `FakeWatchBridge`.
 - Native: XCTest for message encoding and decoding on the watch side.
 - Manual test checklist in `docs/test-plan.md`: out of range, Bluetooth toggled, app killed, phone locked, watch unreachable, strap battery low.
 

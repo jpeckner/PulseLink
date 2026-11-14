@@ -84,7 +84,7 @@ Pigeon platform channels or `drift`)
 **Tests**
 
 - Every new or changed cleanup path has a test where a dependency fails.
-  `test/helpers/failing_heart_rate_source.dart` covers `HeartRateSource`; add
+  `test/helpers/failing_strap_data_source.dart` covers `StrapDataSource`; add
   similar helpers for other dependencies.
 - Each case of a new typed result has a test.
 

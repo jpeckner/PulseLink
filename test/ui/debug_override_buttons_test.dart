@@ -1,21 +1,21 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/blocs/debug_override/debug_override_cubit.dart';
-import 'package:pulselink/data/debug_override_heart_rate_source.dart';
+import 'package:pulselink/data/debug_override_strap_data_source.dart';
 import 'package:pulselink/ui/debug/debug_override_buttons.dart';
 
-import '../helpers/stub_heart_rate_source.dart';
+import '../helpers/stub_strap_data_source.dart';
 
 const _supported = 'Skin-contact detection: supported';
 const _notSupported = 'Skin-contact detection: not supported';
 
 void main() {
   group('DebugOverrideButtons', () {
-    late DebugOverrideHeartRateSource source;
+    late DebugOverrideStrapDataSource source;
     late DebugOverrideCubit cubit;
 
     setUp(() {
-      source = DebugOverrideHeartRateSource(StubHeartRateSource());
+      source = DebugOverrideStrapDataSource(StubStrapDataSource());
       cubit = DebugOverrideCubit(source: source);
     });
 

@@ -4,25 +4,25 @@ import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
 import 'package:pulselink/blocs/live_heart_rate/strap_selection.dart';
 import 'package:pulselink/data/ble/ble_api.pigeon.dart';
-import 'package:pulselink/data/switchable_heart_rate_source.dart';
+import 'package:pulselink/data/switchable_strap_data_source.dart';
 import 'package:pulselink/domain/strap_ble_identifier.dart';
 
 import '../helpers/discovered_strap.dart';
-import '../helpers/stub_heart_rate_source.dart';
+import '../helpers/stub_strap_data_source.dart';
 
 void main() {
   group('StrapSelection', () {
-    late StubHeartRateSource demo;
-    late StubHeartRateSource strap;
-    late SwitchableHeartRateSource source;
+    late StubStrapDataSource demo;
+    late StubStrapDataSource strap;
+    late SwitchableStrapDataSource source;
     late LiveHeartRateCubit cubit;
     late List<StrapBleIdentifier> created;
     late StrapSelection selection;
 
     setUp(() async {
-      demo = StubHeartRateSource(isSimulated: true);
-      strap = StubHeartRateSource();
-      source = SwitchableHeartRateSource(demo);
+      demo = StubStrapDataSource(isSimulated: true);
+      strap = StubStrapDataSource();
+      source = SwitchableStrapDataSource(demo);
       cubit = LiveHeartRateCubit(source: source);
       await cubit.start();
       created = [];
@@ -105,8 +105,8 @@ void main() {
             eventsChannel,
             MockStreamHandler.inline(onListen: (_, _) {}),
           );
-        final source = SwitchableHeartRateSource(
-          StubHeartRateSource(isSimulated: true),
+        final source = SwitchableStrapDataSource(
+          StubStrapDataSource(isSimulated: true),
         );
         final cubit = LiveHeartRateCubit(source: source);
         await cubit.start();

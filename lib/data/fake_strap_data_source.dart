@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:clock/clock.dart';
-import 'package:pulselink/data/heart_rate_source.dart';
+import 'package:pulselink/data/strap_data_source.dart';
 import 'package:pulselink/domain/beats_per_minute.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
@@ -13,7 +13,7 @@ import 'package:pulselink/domain/strap_connection_failure.dart';
 /// that changes every so often, like effort changing during a workout, with a
 /// little beat-to-beat noise, always between [minBeatsPerMinute] and
 /// [maxBeatsPerMinute]. Pass a seeded [Random] for repeatable output.
-class FakeHeartRateSource implements HeartRateSource {
+class FakeStrapDataSource implements StrapDataSource {
   new({Random? random, this.interval = const Duration(seconds: 1)})
     : _random = random ?? Random();
 
@@ -44,14 +44,14 @@ class FakeHeartRateSource implements HeartRateSource {
 
   /// Starts at once, so it's never still starting when [stop] is called.
   /// After [dispose], it does nothing and completes with
-  /// [HeartRateSourceStartCancelled].
+  /// [StrapDataSourceStartCancelled].
   @override
-  Future<HeartRateSourceStartResult> start() async {
+  Future<StrapDataSourceStartResult> start() async {
     if (_controller.isClosed) {
-      return const HeartRateSourceStartResult.cancelled();
+      return const StrapDataSourceStartResult.cancelled();
     }
     _timer ??= Timer.periodic(interval, (_) => _emitSample());
-    return const HeartRateSourceStartResult.started();
+    return const StrapDataSourceStartResult.started();
   }
 
   @override

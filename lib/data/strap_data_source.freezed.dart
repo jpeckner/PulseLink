@@ -3,7 +3,7 @@
 // ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
-part of 'heart_rate_source.dart';
+part of 'strap_data_source.dart';
 
 // **************************************************************************
 // FreezedGenerator
@@ -13,7 +13,7 @@ part of 'heart_rate_source.dart';
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
-mixin _$HeartRateSourceStartResult {
+mixin _$StrapDataSourceStartResult {
 
 
 
@@ -21,7 +21,7 @@ mixin _$HeartRateSourceStartResult {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HeartRateSourceStartResult);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StrapDataSourceStartResult);
 }
 
 
@@ -30,20 +30,20 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-    return 'HeartRateSourceStartResult()';
+    return 'StrapDataSourceStartResult()';
 }
 
 
 }
 
 /// @nodoc
-class $HeartRateSourceStartResultCopyWith<$Res>  {
-$HeartRateSourceStartResultCopyWith(HeartRateSourceStartResult _, $Res Function(HeartRateSourceStartResult) __);
+class $StrapDataSourceStartResultCopyWith<$Res>  {
+$StrapDataSourceStartResultCopyWith(StrapDataSourceStartResult _, $Res Function(StrapDataSourceStartResult) __);
 }
 
 
-/// Adds pattern-matching-related methods to [HeartRateSourceStartResult].
-extension HeartRateSourceStartResultPatterns on HeartRateSourceStartResult {
+/// Adds pattern-matching-related methods to [StrapDataSourceStartResult].
+extension StrapDataSourceStartResultPatterns on StrapDataSourceStartResult {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -56,12 +56,12 @@ extension HeartRateSourceStartResultPatterns on HeartRateSourceStartResult {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( HeartRateSourceStarted value)?  started,TResult Function( HeartRateSourceStartCancelled value)?  cancelled,TResult Function( HeartRateSourceStartFailed value)?  failed,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( StrapDataSourceStarted value)?  started,TResult Function( StrapDataSourceStartCancelled value)?  cancelled,TResult Function( StrapDataSourceStartFailed value)?  failed,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case HeartRateSourceStarted() when started != null:
-return started(_that);case HeartRateSourceStartCancelled() when cancelled != null:
-return cancelled(_that);case HeartRateSourceStartFailed() when failed != null:
+case StrapDataSourceStarted() when started != null:
+return started(_that);case StrapDataSourceStartCancelled() when cancelled != null:
+return cancelled(_that);case StrapDataSourceStartFailed() when failed != null:
 return failed(_that);case _:
   return orElse();
 
@@ -80,12 +80,12 @@ return failed(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( HeartRateSourceStarted value)  started,required TResult Function( HeartRateSourceStartCancelled value)  cancelled,required TResult Function( HeartRateSourceStartFailed value)  failed,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( StrapDataSourceStarted value)  started,required TResult Function( StrapDataSourceStartCancelled value)  cancelled,required TResult Function( StrapDataSourceStartFailed value)  failed,}){
 final _that = this;
 switch (_that) {
-case HeartRateSourceStarted():
-return started(_that);case HeartRateSourceStartCancelled():
-return cancelled(_that);case HeartRateSourceStartFailed():
+case StrapDataSourceStarted():
+return started(_that);case StrapDataSourceStartCancelled():
+return cancelled(_that);case StrapDataSourceStartFailed():
 return failed(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
@@ -100,12 +100,12 @@ return failed(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( HeartRateSourceStarted value)?  started,TResult? Function( HeartRateSourceStartCancelled value)?  cancelled,TResult? Function( HeartRateSourceStartFailed value)?  failed,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( StrapDataSourceStarted value)?  started,TResult? Function( StrapDataSourceStartCancelled value)?  cancelled,TResult? Function( StrapDataSourceStartFailed value)?  failed,}){
 final _that = this;
 switch (_that) {
-case HeartRateSourceStarted() when started != null:
-return started(_that);case HeartRateSourceStartCancelled() when cancelled != null:
-return cancelled(_that);case HeartRateSourceStartFailed() when failed != null:
+case StrapDataSourceStarted() when started != null:
+return started(_that);case StrapDataSourceStartCancelled() when cancelled != null:
+return cancelled(_that);case StrapDataSourceStartFailed() when failed != null:
 return failed(_that);case _:
   return null;
 
@@ -125,9 +125,9 @@ return failed(_that);case _:
 
 @optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  started,TResult Function()?  cancelled,TResult Function( StrapConnectionFailure failure)?  failed,required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case HeartRateSourceStarted() when started != null:
-return started();case HeartRateSourceStartCancelled() when cancelled != null:
-return cancelled();case HeartRateSourceStartFailed() when failed != null:
+case StrapDataSourceStarted() when started != null:
+return started();case StrapDataSourceStartCancelled() when cancelled != null:
+return cancelled();case StrapDataSourceStartFailed() when failed != null:
 return failed(_that.failure);case _:
   return orElse();
 
@@ -148,9 +148,9 @@ return failed(_that.failure);case _:
 
 @optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  started,required TResult Function()  cancelled,required TResult Function( StrapConnectionFailure failure)  failed,}) {final _that = this;
 switch (_that) {
-case HeartRateSourceStarted():
-return started();case HeartRateSourceStartCancelled():
-return cancelled();case HeartRateSourceStartFailed():
+case StrapDataSourceStarted():
+return started();case StrapDataSourceStartCancelled():
+return cancelled();case StrapDataSourceStartFailed():
 return failed(_that.failure);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -167,9 +167,9 @@ return failed(_that.failure);}
 
 @optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  started,TResult? Function()?  cancelled,TResult? Function( StrapConnectionFailure failure)?  failed,}) {final _that = this;
 switch (_that) {
-case HeartRateSourceStarted() when started != null:
-return started();case HeartRateSourceStartCancelled() when cancelled != null:
-return cancelled();case HeartRateSourceStartFailed() when failed != null:
+case StrapDataSourceStarted() when started != null:
+return started();case StrapDataSourceStartCancelled() when cancelled != null:
+return cancelled();case StrapDataSourceStartFailed() when failed != null:
 return failed(_that.failure);case _:
   return null;
 
@@ -181,8 +181,8 @@ return failed(_that.failure);case _:
 /// @nodoc
 
 
-class HeartRateSourceStarted implements HeartRateSourceStartResult {
-  const HeartRateSourceStarted();
+class StrapDataSourceStarted implements StrapDataSourceStartResult {
+  const StrapDataSourceStarted();
   
 
 
@@ -192,7 +192,7 @@ class HeartRateSourceStarted implements HeartRateSourceStartResult {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HeartRateSourceStarted);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StrapDataSourceStarted);
 }
 
 
@@ -201,7 +201,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-    return 'HeartRateSourceStartResult.started()';
+    return 'StrapDataSourceStartResult.started()';
 }
 
 
@@ -213,8 +213,8 @@ String toString() {
 /// @nodoc
 
 
-class HeartRateSourceStartCancelled implements HeartRateSourceStartResult {
-  const HeartRateSourceStartCancelled();
+class StrapDataSourceStartCancelled implements StrapDataSourceStartResult {
+  const StrapDataSourceStartCancelled();
   
 
 
@@ -224,7 +224,7 @@ class HeartRateSourceStartCancelled implements HeartRateSourceStartResult {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HeartRateSourceStartCancelled);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StrapDataSourceStartCancelled);
 }
 
 
@@ -233,7 +233,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-    return 'HeartRateSourceStartResult.cancelled()';
+    return 'StrapDataSourceStartResult.cancelled()';
 }
 
 
@@ -245,23 +245,23 @@ String toString() {
 /// @nodoc
 
 
-class HeartRateSourceStartFailed implements HeartRateSourceStartResult {
-  const HeartRateSourceStartFailed(this.failure);
+class StrapDataSourceStartFailed implements StrapDataSourceStartResult {
+  const StrapDataSourceStartFailed(this.failure);
   
 
  final  StrapConnectionFailure failure;
 
-/// Create a copy of HeartRateSourceStartResult
+/// Create a copy of StrapDataSourceStartResult
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$HeartRateSourceStartFailedCopyWith<HeartRateSourceStartFailed> get copyWith => _$HeartRateSourceStartFailedCopyWithImpl<HeartRateSourceStartFailed>(this, _$identity);
+$StrapDataSourceStartFailedCopyWith<StrapDataSourceStartFailed> get copyWith => _$StrapDataSourceStartFailedCopyWithImpl<StrapDataSourceStartFailed>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is HeartRateSourceStartFailed&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StrapDataSourceStartFailed&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
@@ -272,15 +272,15 @@ int get hashCode {
 
 @override
 String toString() {
-    return 'HeartRateSourceStartResult.failed(failure: $failure)';
+    return 'StrapDataSourceStartResult.failed(failure: $failure)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $HeartRateSourceStartFailedCopyWith<$Res> implements $HeartRateSourceStartResultCopyWith<$Res> {
-  factory $HeartRateSourceStartFailedCopyWith(HeartRateSourceStartFailed value, $Res Function(HeartRateSourceStartFailed) _then) = _$HeartRateSourceStartFailedCopyWithImpl;
+abstract mixin class $StrapDataSourceStartFailedCopyWith<$Res> implements $StrapDataSourceStartResultCopyWith<$Res> {
+  factory $StrapDataSourceStartFailedCopyWith(StrapDataSourceStartFailed value, $Res Function(StrapDataSourceStartFailed) _then) = _$StrapDataSourceStartFailedCopyWithImpl;
 @useResult
 $Res call({
  StrapConnectionFailure failure
@@ -291,23 +291,23 @@ $StrapConnectionFailureCopyWith<$Res> get failure;
 
 }
 /// @nodoc
-class _$HeartRateSourceStartFailedCopyWithImpl<$Res>
-    implements $HeartRateSourceStartFailedCopyWith<$Res> {
-  _$HeartRateSourceStartFailedCopyWithImpl(this._self, this._then);
+class _$StrapDataSourceStartFailedCopyWithImpl<$Res>
+    implements $StrapDataSourceStartFailedCopyWith<$Res> {
+  _$StrapDataSourceStartFailedCopyWithImpl(this._self, this._then);
 
-  final HeartRateSourceStartFailed _self;
-  final $Res Function(HeartRateSourceStartFailed) _then;
+  final StrapDataSourceStartFailed _self;
+  final $Res Function(StrapDataSourceStartFailed) _then;
 
-/// Create a copy of HeartRateSourceStartResult
+/// Create a copy of StrapDataSourceStartResult
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') $Res call({Object? failure = null,}) {
-  return _then(HeartRateSourceStartFailed(
+  return _then(StrapDataSourceStartFailed(
 null == failure ? _self.failure : failure // ignore: cast_nullable_to_non_nullable
 as StrapConnectionFailure,
   ));
 }
 
-/// Create a copy of HeartRateSourceStartResult
+/// Create a copy of StrapDataSourceStartResult
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')

@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:pulselink/data/heart_rate_source.dart';
+import 'package:pulselink/data/strap_data_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
 
-/// A [HeartRateSource] that tests drive by hand with [emit], and that records
+/// A [StrapDataSource] that tests drive by hand with [emit], and that records
 /// how it was used.
-class StubHeartRateSource implements HeartRateSource {
+class StubStrapDataSource implements StrapDataSource {
   new({this.isSimulated = false});
 
   @override
@@ -26,16 +26,16 @@ class StubHeartRateSource implements HeartRateSource {
   Exception? disposeError;
 
   /// What [start] completes with.
-  HeartRateSourceStartResult startResult =
-      const HeartRateSourceStartResult.started();
+  StrapDataSourceStartResult startResult =
+      const StrapDataSourceStartResult.started();
 
   /// When true, [start] doesn't complete until [finishStart] is called, or
-  /// until [stop] or [dispose] cancels it, as the [HeartRateSource] contract
+  /// until [stop] or [dispose] cancels it, as the [StrapDataSource] contract
   /// requires. Lets tests act while a start is in progress, as with a real
   /// strap that takes seconds to connect.
   bool holdStart = false;
 
-  Completer<HeartRateSourceStartResult>? _pendingStart;
+  Completer<StrapDataSourceStartResult>? _pendingStart;
 
   /// Whether a held [start] is still in progress.
   bool get isStarting => _pendingStart != null;
@@ -61,7 +61,7 @@ class StubHeartRateSource implements HeartRateSource {
 
   /// Counts each call, including ones that join a held start in progress.
   @override
-  Future<HeartRateSourceStartResult> start() {
+  Future<StrapDataSourceStartResult> start() {
     startCount++;
     // A start in progress is joined, as the contract requires.
     if (_pendingStart case final pending?) {
@@ -70,7 +70,7 @@ class StubHeartRateSource implements HeartRateSource {
     if (!holdStart) {
       return Future.value(startResult);
     }
-    final pending = Completer<HeartRateSourceStartResult>();
+    final pending = Completer<StrapDataSourceStartResult>();
     _pendingStart = pending;
     return pending.future;
   }
@@ -78,13 +78,13 @@ class StubHeartRateSource implements HeartRateSource {
   @override
   Future<void> stop() async {
     stopCount++;
-    _completePendingStart(const HeartRateSourceStartResult.cancelled());
+    _completePendingStart(const StrapDataSourceStartResult.cancelled());
   }
 
   @override
   Future<void> dispose() async {
     isDisposed = true;
-    _completePendingStart(const HeartRateSourceStartResult.cancelled());
+    _completePendingStart(const StrapDataSourceStartResult.cancelled());
     await _controller.close();
     await _connectionLost.close();
     if (disposeError case final error?) {
@@ -92,7 +92,7 @@ class StubHeartRateSource implements HeartRateSource {
     }
   }
 
-  void _completePendingStart(HeartRateSourceStartResult result) {
+  void _completePendingStart(StrapDataSourceStartResult result) {
     final pending = _pendingStart;
     _pendingStart = null;
     pending?.complete(result);

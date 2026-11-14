@@ -1,15 +1,15 @@
 import 'dart:async';
 
-import 'package:pulselink/data/heart_rate_source.dart';
+import 'package:pulselink/data/strap_data_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
 
-/// What [FailingHeartRateSource] throws, so tests can check it's passed on.
-final heartRateSourceFailure = Exception('source failure');
+/// What [FailingStrapDataSource] throws, so tests can check it's passed on.
+final strapDataSourceFailure = Exception('source failure');
 
-/// The ways [FailingHeartRateSource] can fail. Each [description] reads as a
+/// The ways [FailingStrapDataSource] can fail. Each [description] reads as a
 /// test name.
-enum HeartRateSourceFailure {
+enum StrapDataSourceFailure {
   stop('stop() fails'),
   stopBeforeFuture('stop() throws before returning a future'),
   unsubscribe('unsubscribing fails'),
@@ -21,23 +21,23 @@ enum HeartRateSourceFailure {
 }
 
 /// A source whose stop or unsubscribe fails, as a real BLE source's might.
-class FailingHeartRateSource implements HeartRateSource {
+class FailingStrapDataSource implements StrapDataSource {
   new(this._failure)
     : _controller = StreamController(
         // Synchronous, so a sample reaches the listener as soon as [emit]
         // returns.
         sync: true,
         onCancel: switch (_failure) {
-          HeartRateSourceFailure.unsubscribe => () => Future<void>.error(
-            heartRateSourceFailure,
+          StrapDataSourceFailure.unsubscribe => () => Future<void>.error(
+            strapDataSourceFailure,
           ),
-          HeartRateSourceFailure.stop ||
-          HeartRateSourceFailure.stopBeforeFuture ||
-          HeartRateSourceFailure.unsubscribeBeforeFuture => null,
+          StrapDataSourceFailure.stop ||
+          StrapDataSourceFailure.stopBeforeFuture ||
+          StrapDataSourceFailure.unsubscribeBeforeFuture => null,
         },
       );
 
-  final HeartRateSourceFailure _failure;
+  final StrapDataSourceFailure _failure;
 
   // Single-subscription: unlike a broadcast stream, its cancel() returns the
   // onCancel future, so the unsubscribe failure reaches the listener.
@@ -52,27 +52,27 @@ class FailingHeartRateSource implements HeartRateSource {
 
   @override
   Stream<HeartRateSample> get samples => switch (_failure) {
-    HeartRateSourceFailure.unsubscribeBeforeFuture => _ThrowingCancelStream(
+    StrapDataSourceFailure.unsubscribeBeforeFuture => _ThrowingCancelStream(
       _controller.stream,
     ),
-    HeartRateSourceFailure.stop ||
-    HeartRateSourceFailure.stopBeforeFuture ||
-    HeartRateSourceFailure.unsubscribe => _controller.stream,
+    StrapDataSourceFailure.stop ||
+    StrapDataSourceFailure.stopBeforeFuture ||
+    StrapDataSourceFailure.unsubscribe => _controller.stream,
   };
 
   @override
   Stream<StrapConnectionFailure> get connectionLost => const Stream.empty();
 
   @override
-  Future<HeartRateSourceStartResult> start() async =>
-      const HeartRateSourceStartResult.started();
+  Future<StrapDataSourceStartResult> start() async =>
+      const StrapDataSourceStartResult.started();
 
   @override
   Future<void> stop() => switch (_failure) {
-    HeartRateSourceFailure.stop => Future.error(heartRateSourceFailure),
-    HeartRateSourceFailure.stopBeforeFuture => throw heartRateSourceFailure,
-    HeartRateSourceFailure.unsubscribe ||
-    HeartRateSourceFailure.unsubscribeBeforeFuture => Future.value(),
+    StrapDataSourceFailure.stop => Future.error(strapDataSourceFailure),
+    StrapDataSourceFailure.stopBeforeFuture => throw strapDataSourceFailure,
+    StrapDataSourceFailure.unsubscribe ||
+    StrapDataSourceFailure.unsubscribeBeforeFuture => Future.value(),
   };
 
   @override
@@ -111,7 +111,7 @@ class _ThrowingCancelSubscription
   @override
   Future<void> cancel() {
     unawaited(_inner.cancel());
-    throw heartRateSourceFailure;
+    throw strapDataSourceFailure;
   }
 
   @override

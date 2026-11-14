@@ -1,13 +1,13 @@
 import 'package:bloc/bloc.dart';
 import 'package:pulselink/blocs/debug_override/debug_override_state.dart';
-import 'package:pulselink/data/debug_override_heart_rate_source.dart';
+import 'package:pulselink/data/debug_override_strap_data_source.dart';
 
 /// Debug and profile builds only. Shows and hides the override buttons, and
 /// keeps the source's override in step with them.
 class DebugOverrideCubit extends Cubit<DebugOverrideState> {
   new({required this._source}) : super(const DebugOverrideState.hidden());
 
-  final DebugOverrideHeartRateSource _source;
+  final DebugOverrideStrapDataSource _source;
 
   /// Shows the buttons, or hides them and turns the override off.
   void toggleVisibility() => _apply(switch (state) {

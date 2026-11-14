@@ -5,13 +5,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/app/app.dart';
 import 'package:pulselink/blocs/debug_override/debug_override_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
-import 'package:pulselink/data/debug_override_heart_rate_source.dart';
+import 'package:pulselink/data/debug_override_strap_data_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/ui/debug/debug_override_buttons.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
 import '../helpers/beats_per_minute.dart';
-import '../helpers/stub_heart_rate_source.dart';
+import '../helpers/stub_strap_data_source.dart';
 import '../helpers/stub_strap_scanner.dart';
 
 void main() {
@@ -19,7 +19,7 @@ void main() {
     testWidgets('shows live samples from the cubit it is given', (
       tester,
     ) async {
-      final source = StubHeartRateSource(isSimulated: true);
+      final source = StubStrapDataSource(isSimulated: true);
       final cubit = LiveHeartRateCubit(source: source);
       unawaited(cubit.start());
       await tester.pumpWidget(
@@ -53,7 +53,7 @@ void main() {
 
     testWidgets('Find strap opens the picker, which scans with the scanner '
         'it is given', (tester) async {
-      final cubit = LiveHeartRateCubit(source: StubHeartRateSource());
+      final cubit = LiveHeartRateCubit(source: StubStrapDataSource());
       final scanner = StubStrapScanner();
       await tester.pumpWidget(
         PulseLinkApp(
@@ -76,8 +76,8 @@ void main() {
     testWidgets('debug wiring: long-press reveals the override buttons, '
         'which rewrite samples, and hiding them restores them', (tester) async {
       // Wired the way main() does in debug and profile builds.
-      final source = StubHeartRateSource(isSimulated: true);
-      final overrideSource = DebugOverrideHeartRateSource(source);
+      final source = StubStrapDataSource(isSimulated: true);
+      final overrideSource = DebugOverrideStrapDataSource(source);
       final overrideCubit = DebugOverrideCubit(source: overrideSource);
       final cubit = LiveHeartRateCubit(source: overrideSource);
       unawaited(cubit.start());

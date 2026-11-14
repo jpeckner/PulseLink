@@ -9,11 +9,11 @@ import 'package:pulselink/blocs/debug_override/debug_override_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/strap_selection.dart';
 import 'package:pulselink/data/ble/ble_strap_scanner.dart';
-import 'package:pulselink/data/debug_override_heart_rate_source.dart';
-import 'package:pulselink/data/fake_heart_rate_source.dart';
-import 'package:pulselink/data/heart_rate_source.dart';
+import 'package:pulselink/data/debug_override_strap_data_source.dart';
+import 'package:pulselink/data/fake_strap_data_source.dart';
+import 'package:pulselink/data/strap_data_source.dart';
 import 'package:pulselink/data/strap_scanner.dart';
-import 'package:pulselink/data/switchable_heart_rate_source.dart';
+import 'package:pulselink/data/switchable_strap_data_source.dart';
 import 'package:pulselink/domain/discovered_strap.dart';
 import 'package:pulselink/ui/debug/debug_override_buttons.dart';
 
@@ -24,7 +24,7 @@ void main() {
   Bloc.observer = const AppBlocObserver();
 
   // Demo mode at launch, until a strap is picked in the strap picker.
-  final source = SwitchableHeartRateSource(FakeHeartRateSource());
+  final source = SwitchableStrapDataSource(FakeStrapDataSource());
   final StrapScanner strapScanner = BleStrapScanner();
 
   if (kReleaseMode) {
@@ -40,7 +40,7 @@ void main() {
     // Debug and profile builds only. kReleaseMode is a compile-time constant,
     // so release builds contain neither this branch nor anything only it uses.
     // The override wraps the switchable source, so it also works on a strap.
-    final overrideSource = DebugOverrideHeartRateSource(source);
+    final overrideSource = DebugOverrideStrapDataSource(source);
     final overrideCubit = DebugOverrideCubit(source: overrideSource);
     final cubit = _startedCubit(overrideSource);
     runApp(
@@ -57,7 +57,7 @@ void main() {
 
 /// Switches the live heart rate to a strap picked in the strap picker.
 ValueChanged<DiscoveredStrap> _selectStrap(
-  SwitchableHeartRateSource source,
+  SwitchableStrapDataSource source,
   LiveHeartRateCubit cubit,
 ) {
   final selection = StrapSelection(source: source, cubit: cubit);
@@ -67,7 +67,7 @@ ValueChanged<DiscoveredStrap> _selectStrap(
   return (strap) => unawaited(selection.select(strap));
 }
 
-LiveHeartRateCubit _startedCubit(HeartRateSource source) {
+LiveHeartRateCubit _startedCubit(StrapDataSource source) {
   final cubit = LiveHeartRateCubit(source: source);
   // Not awaited: runApp shouldn't wait for the source. start() doesn't need
   // watching here: a source that can't start (Bluetooth off, permission

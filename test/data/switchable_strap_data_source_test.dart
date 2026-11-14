@@ -1,12 +1,12 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pulselink/data/heart_rate_source.dart';
-import 'package:pulselink/data/switchable_heart_rate_source.dart';
+import 'package:pulselink/data/strap_data_source.dart';
+import 'package:pulselink/data/switchable_strap_data_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
 
 import '../helpers/beats_per_minute.dart';
-import '../helpers/stub_heart_rate_source.dart';
+import '../helpers/stub_strap_data_source.dart';
 
 HeartRateSample _sample(int beatsPerMinute) => HeartRateSample.measured(
   beatsPerMinute: beatsPerMinuteOf(beatsPerMinute),
@@ -18,16 +18,16 @@ HeartRateSample _sample(int beatsPerMinute) => HeartRateSample.measured(
 Future<void> _delivered() => Future<void>.delayed(Duration.zero);
 
 void main() {
-  group('SwitchableHeartRateSource connectionLost', () {
-    late StubHeartRateSource demo;
-    late StubHeartRateSource strap;
-    late SwitchableHeartRateSource source;
+  group('SwitchableStrapDataSource connectionLost', () {
+    late StubStrapDataSource demo;
+    late StubStrapDataSource strap;
+    late SwitchableStrapDataSource source;
     late List<StrapConnectionFailure> lost;
 
     setUp(() {
-      demo = StubHeartRateSource(isSimulated: true);
-      strap = StubHeartRateSource();
-      source = SwitchableHeartRateSource(demo);
+      demo = StubStrapDataSource(isSimulated: true);
+      strap = StubStrapDataSource();
+      source = SwitchableStrapDataSource(demo);
       lost = [];
       source.connectionLost.listen(lost.add);
     });
@@ -49,16 +49,16 @@ void main() {
       expect(closed, isTrue);
     });
   });
-  group('SwitchableHeartRateSource', () {
-    late StubHeartRateSource demo;
-    late StubHeartRateSource strap;
-    late SwitchableHeartRateSource source;
+  group('SwitchableStrapDataSource', () {
+    late StubStrapDataSource demo;
+    late StubStrapDataSource strap;
+    late SwitchableStrapDataSource source;
     late List<HeartRateSample> samples;
 
     setUp(() {
-      demo = StubHeartRateSource(isSimulated: true);
-      strap = StubHeartRateSource();
-      source = SwitchableHeartRateSource(demo);
+      demo = StubStrapDataSource(isSimulated: true);
+      strap = StubStrapDataSource();
+      source = SwitchableStrapDataSource(demo);
       samples = [];
       source.samples.listen(samples.add);
     });
@@ -68,7 +68,7 @@ void main() {
     test('passes on the initial source: its samples, whether it is '
         'simulated, and starting and stopping', () async {
       expect(source.isSimulated, isTrue);
-      expect(await source.start(), const HeartRateSourceStartResult.started());
+      expect(await source.start(), const StrapDataSourceStartResult.started());
       expect(demo.startCount, 1);
 
       demo.emit(_sample(72));
@@ -93,7 +93,7 @@ void main() {
 
         expect(
           await source.start(),
-          const HeartRateSourceStartResult.started(),
+          const StrapDataSourceStartResult.started(),
         );
         expect(strap.startCount, 1);
         expect(demo.startCount, 0);
@@ -108,7 +108,7 @@ void main() {
         demo.holdStart = true;
         final starting = source.start();
         await source.switchTo(strap);
-        expect(await starting, const HeartRateSourceStartResult.cancelled());
+        expect(await starting, const StrapDataSourceStartResult.cancelled());
       });
 
       test('keeps the new source even if disposing the old one fails, and '
@@ -128,7 +128,7 @@ void main() {
         expect(strap.isDisposed, isTrue);
         expect(
           await source.start(),
-          const HeartRateSourceStartResult.cancelled(),
+          const StrapDataSourceStartResult.cancelled(),
         );
       });
     });
@@ -158,7 +158,7 @@ void main() {
           await source.dispose();
           expect(
             await source.start(),
-            const HeartRateSourceStartResult.cancelled(),
+            const StrapDataSourceStartResult.cancelled(),
           );
           expect(demo.startCount, 0);
         },

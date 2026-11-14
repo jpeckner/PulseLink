@@ -1,23 +1,23 @@
 import 'dart:async';
 
-import 'package:pulselink/data/heart_rate_source.dart';
+import 'package:pulselink/data/strap_data_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
 
-/// A [HeartRateSource] that passes on whichever source is current: demo data
+/// A [StrapDataSource] that passes on whichever source is current: demo data
 /// at launch, then a strap once one is picked. Everything above it keeps the
 /// same source for the app's life, including the debug override in debug
 /// builds, which therefore works on real strap data too.
 ///
 /// It owns the current source, and disposes it when switching away or when
 /// it's disposed itself.
-class SwitchableHeartRateSource implements HeartRateSource {
-  new(HeartRateSource initial) : _current = initial {
+class SwitchableStrapDataSource implements StrapDataSource {
+  new(StrapDataSource initial) : _current = initial {
     _forwarding = initial.samples.listen(_samples.add);
     _forwardingLost = initial.connectionLost.listen(_connectionLost.add);
   }
 
-  HeartRateSource _current;
+  StrapDataSource _current;
   final _samples = StreamController<HeartRateSample>.broadcast();
   final _connectionLost = StreamController<StrapConnectionFailure>.broadcast();
   // No onError where these are set: neither of a source's streams carries
@@ -42,9 +42,9 @@ class SwitchableHeartRateSource implements HeartRateSource {
   Stream<StrapConnectionFailure> get connectionLost => _connectionLost.stream;
 
   /// Starts the current source. After [dispose], completes with
-  /// [HeartRateSourceStartCancelled] at once.
+  /// [StrapDataSourceStartCancelled] at once.
   @override
-  Future<HeartRateSourceStartResult> start() =>
+  Future<StrapDataSourceStartResult> start() =>
       _isDisposed ? Future.value(const .cancelled()) : _current.start();
 
   @override
@@ -55,7 +55,7 @@ class SwitchableHeartRateSource implements HeartRateSource {
   /// start it, such as with `LiveHeartRateCubit.restart()`.
   ///
   /// After [dispose], it disposes [next] instead, since this owns it.
-  Future<void> switchTo(HeartRateSource next) async {
+  Future<void> switchTo(StrapDataSource next) async {
     if (_isDisposed) {
       await next.dispose();
       return;
