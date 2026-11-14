@@ -22,7 +22,7 @@ import subprocess
 import sys
 
 HUNK = re.compile(r"^@@ -\S+ \+(\d+)(?:,(\d+))? @@")
-GENERATED = (".freezed.dart", ".g.dart")
+GENERATED = (".freezed.dart", ".g.dart", ".pigeon.dart")
 
 
 def changed_lines(base):

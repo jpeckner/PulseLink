@@ -23,6 +23,7 @@ GENERATED_BY = {
     "build_runner": (".freezed.dart", ".g.dart"),
     "freezed": (".freezed.dart",),
     "json_serializable": (".g.dart",),
+    "pigeon": (".pigeon.dart",),
 }
 
 

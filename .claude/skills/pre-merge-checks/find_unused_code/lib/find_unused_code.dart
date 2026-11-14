@@ -46,7 +46,8 @@ final class Finding {
 /// by `dart analyze` (`unused_element`, `unused_field`); unused public members
 /// aren't checked.
 ///
-/// Generated files (`*.freezed.dart`, `*.g.dart`) are neither checked nor
+/// Generated files (`*.freezed.dart`, `*.g.dart`, `*.pigeon.dart`) are
+/// neither checked nor
 /// counted as uses, so a class used only by its own generated code is still
 /// reported. `main` in lib/main.dart is the entry point and never reported.
 Future<List<Finding>> findUnusedCode(String root) async {
@@ -105,7 +106,9 @@ Future<List<Finding>> findUnusedCode(String root) async {
 }
 
 bool _isGenerated(String path) =>
-    path.endsWith('.freezed.dart') || path.endsWith('.g.dart');
+    path.endsWith('.freezed.dart') ||
+    path.endsWith('.g.dart') ||
+    path.endsWith('.pigeon.dart');
 
 Iterable<_Declaration> _declarationsIn(
   ResolvedUnitResult unit,
