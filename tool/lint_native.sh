@@ -4,9 +4,10 @@
 #
 # Run from anywhere: tool/lint_native.sh [swift|kotlin|all]   (default: all)
 # CI and the pre-merge-checks skill run it, and tool/check_native_lints.sh
-# proves each rule reports. The Runner target's SwiftLint build phase runs
-# `swift` on every Xcode build (including `flutter run` and `flutter build
-# ios`), so findings show inline in Xcode and fail the build.
+# proves each rule reports. The Runner and PulseLinkWatch targets each have
+# a SwiftLint build phase that runs `swift` on every Xcode build (including
+# `flutter run` and `flutter build ios`), so findings show inline in Xcode
+# and fail the build.
 #
 # Neither linter is stored in Git; each is downloaded the first time it's
 # needed and cached outside the repo:

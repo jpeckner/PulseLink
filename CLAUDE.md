@@ -46,12 +46,12 @@ ignore the lint there.
 Native code (Swift in `ios/`, Kotlin in `android/`) follows the same rule.
 `tool/lint_native.sh` enforces it with SwiftLint (`.swiftlint.yml`) and
 detekt (`android/config/detekt.yml`) on app code, and
-`tool/check_native_lints.sh` proves each rule reports. The Runner target's
-SwiftLint build phase also runs the Swift half on every Xcode build, so
-findings show inline as errors, and every Android build (Android Studio's
-Run, `flutter run`, `flutter build apk`) runs the Kotlin half, so findings
-fail the build. Where a catch-all is truly needed, disable the rule on that
-line with a comment saying why.
+`tool/check_native_lints.sh` proves each rule reports. The Runner and
+PulseLinkWatch targets' SwiftLint build phases also run the Swift half on
+every Xcode build, so findings show inline as errors, and every Android
+build (Android Studio's Run, `flutter run`, `flutter build apk`) runs the
+Kotlin half, so findings fail the build. Where a catch-all is truly needed,
+disable the rule on that line with a comment saying why.
 
 - Swift: no `!` force unwraps, `as!` casts, implicitly unwrapped optionals
   (`Type!`) or `try!`, and no `fatalError`, `precondition` or `assert`. Use
