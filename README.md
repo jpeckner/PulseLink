@@ -77,18 +77,28 @@ Lints come from `very_good_analysis`, plus
 `always_put_control_body_on_new_line`. Together with
 `curly_braces_in_flow_control_structures`, that means every `if`, `else`,
 `for`, `while` and `do` body has braces, even a one-line `if (x) return;`.
+A few more built-in lints bring it closer to Swift's compile-time checks:
+`unsafe_variance`, `close_sinks`, `unreachable_from_main`,
+`avoid_implementing_value_types` and `prefer_void_to_null`.
+`analysis_options.yaml` says why each is on.
 
 `flutter analyze` also runs the project's own lint rules from
 `tool/pulselink_lints`, an analyzer plugin enabled in `analysis_options.yaml`
 (VS Code shows them too):
 
 - `no_assertions`: no `!`, unchecked `as`, `late` without an initializer,
-  `assert` or thrown `Error` outside tests.
+  `assert`, thrown `Error`, or SDK calls that throw where Swift returns an
+  optional (`.first`, `int.parse`; use `firstOrNull`, `tryParse`), outside
+  tests.
 - `no_catch_all_cases`: no `default`, `_` or other catch-all when switching on
   an enum, `bool` or sealed type.
-- `use_switch_on_closed_types`: no `if (x case ...)` or `is` test that picks
-  out some cases of an enum, `bool` or sealed type and skips the rest; use a
-  switch. Null checks are fine.
+- `no_dynamic`: no written `dynamic`, including in type arguments such as
+  `Map<String, dynamic>`; use `Object?` or a precise type.
+- `no_ignored_results`: no thrown-away value of an enum or sealed type, such
+  as a typed result. Discard one on purpose with `final _ = ...;`.
+- `use_switch_on_closed_types`: no `if (x case ...)`, `is` or `==` test that
+  picks out some cases of an enum, `bool` or sealed type and skips the rest;
+  use a switch. Null checks are fine.
 
 After changing the plugin, restart the Dart analysis server (in VS Code:
 "Dart: Restart Analysis Server"). The plugin is its own package with its own

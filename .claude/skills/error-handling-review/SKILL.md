@@ -53,10 +53,11 @@ subscription, timer, controller or platform resource)
   not thrown through the interface.
 - Every case of that result is handled by callers with an exhaustive `switch`
   that lists each case. A catch-all (`default`, `_`) is flagged by the
-  `no_catch_all_cases` lint, and an `if (x case ...)` or `is` check that
+  `no_catch_all_cases` lint; an `if (x case ...)`, `is` or `==` check that
   handles one case and silently skips the rest by the
-  `use_switch_on_closed_types` lint. Check that any `// ignore:` of either
-  has a reason that holds.
+  `use_switch_on_closed_types` lint; and a result thrown away entirely by the
+  `no_ignored_results` lint. Check that any `// ignore:` of them, and any
+  `final _ = ...;` discard, has a reason that holds.
 
 **Catch blocks**
 

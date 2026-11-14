@@ -9,7 +9,7 @@ class AppBlocObserver extends BlocObserver {
   const new();
 
   @override
-  void onChange(BlocBase<dynamic> bloc, Change<dynamic> change) {
+  void onChange(BlocBase<Object?> bloc, Change<Object?> change) {
     super.onChange(bloc, change);
     developer.log(
       '${DateTime.now().toIso8601String()} ${bloc.runtimeType} $change',
@@ -18,7 +18,7 @@ class AppBlocObserver extends BlocObserver {
   }
 
   @override
-  void onError(BlocBase<dynamic> bloc, Object error, StackTrace stackTrace) {
+  void onError(BlocBase<Object?> bloc, Object error, StackTrace stackTrace) {
     developer.log(
       '${DateTime.now().toIso8601String()} ${bloc.runtimeType} error',
       name: 'bloc',

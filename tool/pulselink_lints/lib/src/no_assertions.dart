@@ -4,7 +4,9 @@ import 'package:analyzer/analysis_rule/rule_visitor_registry.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/ast/token.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/type.dart';
+import 'package:analyzer/dart/element/type_provider.dart';
 import 'package:analyzer/dart/element/type_system.dart';
 import 'package:analyzer/error/error.dart';
 
@@ -21,7 +23,13 @@ import 'package:analyzer/error/error.dart';
 /// - throwing an [Error] (`ArgumentError`, `StateError`,
 ///   `UnimplementedError` and the like). Dart uses errors for bugs; bad input
 ///   should get a typed result or null instead. Throwing an `Exception` isn't
-///   flagged: the error-handling rule covers those.
+///   flagged: the error-handling rule covers those;
+/// - SDK calls that throw where Swift's equivalents return an optional:
+///   `.first`, `.last`, `.single`, `.reduce` and `.elementAt` on an
+///   `Iterable`, which throw on an empty one; `.firstWhere`, `.lastWhere` and
+///   `.singleWhere` without `orElse`, which throw when nothing matches; and
+///   `int.parse` and the other core `parse` methods, which throw on bad input.
+///   Each has a version that returns null instead.
 ///
 /// Files in a test directory are skipped, since the rule exempts tests.
 class NoAssertions extends AnalysisRule {
@@ -50,7 +58,7 @@ class NoAssertions extends AnalysisRule {
     if (context.isInTestDirectory) {
       return;
     }
-    final visitor = _Visitor(this, context.typeSystem);
+    final visitor = _Visitor(this, context.typeSystem, context.typeProvider);
     registry
       ..addPostfixExpression(this, visitor)
       ..addNullAssertPattern(this, visitor)
@@ -60,7 +68,10 @@ class NoAssertions extends AnalysisRule {
       ..addAssertStatement(this, visitor)
       ..addAssertInitializer(this, visitor)
       ..addAnnotation(this, visitor)
-      ..addThrowExpression(this, visitor);
+      ..addThrowExpression(this, visitor)
+      ..addPrefixedIdentifier(this, visitor)
+      ..addPropertyAccess(this, visitor)
+      ..addMethodInvocation(this, visitor);
   }
 }
 
@@ -98,14 +109,45 @@ enum _Kind {
   final String instead;
 }
 
+/// `Iterable` getters that throw on an empty collection, and what to use
+/// instead.
+const _throwingGetters = {
+  'first': 'Use `.firstOrNull` and handle null.',
+  'last': 'Use `.lastOrNull` and handle null.',
+  'single': 'Use `.singleOrNull` and handle null.',
+};
+
+/// `Iterable` methods that throw on an empty collection, and what to use
+/// instead.
+const _throwingMethods = {
+  'reduce': 'Use `.fold` with a starting value.',
+  'elementAt': 'Use `.elementAtOrNull` and handle null.',
+};
+
+/// `Iterable` methods that throw when nothing matches, unless they're given
+/// `orElse`, and what to use instead.
+const _throwingSearches = {
+  'firstWhere': 'Use `.where(...).firstOrNull` and handle null.',
+  'lastWhere': 'Use `.where(...).lastOrNull` and handle null.',
+  'singleWhere': 'Use `.where(...).singleOrNull` and handle null.',
+};
+
+/// dart:core types whose static `parse` throws on bad input. Each has a
+/// `tryParse` that returns null instead.
+const _parsingTypes = {'int', 'double', 'num', 'BigInt', 'DateTime', 'Uri'};
+
 class _Visitor extends SimpleAstVisitor<void> {
-  new(this.rule, this.typeSystem);
+  new(this.rule, this.typeSystem, this.typeProvider);
 
   final AnalysisRule rule;
   final TypeSystem typeSystem;
+  final TypeProvider typeProvider;
 
   void _report(AstNode node, _Kind kind) =>
-      rule.reportAtNode(node, arguments: [kind.what, kind.instead]);
+      _reportText(node, kind.what, kind.instead);
+
+  void _reportText(AstNode node, String what, String instead) =>
+      rule.reportAtNode(node, arguments: [what, instead]);
 
   void _reportToken(Token token, _Kind kind) =>
       rule.reportAtToken(token, arguments: [kind.what, kind.instead]);
@@ -171,6 +213,85 @@ class _Visitor extends SimpleAstVisitor<void> {
       _report(node, _Kind.thrownError);
     }
   }
+
+  @override
+  void visitPrefixedIdentifier(PrefixedIdentifier node) =>
+      _checkGetter(node, node.prefix.staticType, node.identifier.name);
+
+  @override
+  void visitPropertyAccess(PropertyAccess node) =>
+      _checkGetter(node, node.realTarget.staticType, node.propertyName.name);
+
+  @override
+  void visitMethodInvocation(MethodInvocation node) {
+    final name = node.methodName.name;
+    if (_isCoreParse(node.methodName.element)) {
+      final type = node.realTarget?.toSource() ?? '';
+      _reportText(
+        node,
+        '`$type.parse`, which throws on bad input,',
+        'Use `$type.tryParse` and handle null.',
+      );
+      return;
+    }
+    if (!_isIterable(node.realTarget?.staticType)) {
+      return;
+    }
+    if (_throwingMethods[name] case final instead?) {
+      _reportText(
+        node,
+        '`.$name`, which throws on an empty collection,',
+        instead,
+      );
+    } else if (_throwingSearches[name] case final instead?) {
+      final hasOrElse = node.argumentList.arguments.any(
+        (argument) => switch (argument) {
+          NamedArgument(:final name) => name.lexeme == 'orElse',
+          // Argument's subtypes include the analyzer's own ArgumentImpl,
+          // which can't be named outside the analyzer, so no switch here can
+          // list every case.
+          _ => false,
+        },
+      );
+      if (!hasOrElse) {
+        _reportText(
+          node,
+          '`.$name` without `orElse`, which throws when nothing matches,',
+          instead,
+        );
+      }
+    }
+  }
+
+  void _checkGetter(AstNode node, DartType? targetType, String name) {
+    final instead = _throwingGetters[name];
+    if (instead != null && _isIterable(targetType)) {
+      _reportText(
+        node,
+        '`.$name`, which throws on an empty collection,',
+        instead,
+      );
+    }
+  }
+
+  /// Whether [type], ignoring `?`, is an `Iterable`.
+  bool _isIterable(DartType? type) =>
+      type != null &&
+      typeSystem.isSubtypeOf(
+        typeSystem.promoteToNonNull(type),
+        typeProvider.iterableDynamicType,
+      );
+
+  /// Whether [element] is the static `parse` of a dart:core type that has a
+  /// `tryParse`.
+  static bool _isCoreParse(Element? element) => switch (element) {
+    final MethodElement method =>
+      method.isStatic &&
+          method.name == 'parse' &&
+          _parsingTypes.contains(method.enclosingElement?.name) &&
+          method.library.isDartCore,
+    _ => false,
+  };
 
   /// Whether casting a value of static type [from] to [to] can't fail.
   /// Unknown types count as able to fail.

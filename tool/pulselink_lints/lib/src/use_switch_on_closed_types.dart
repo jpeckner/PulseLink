@@ -2,7 +2,9 @@ import 'package:analyzer/analysis_rule/analysis_rule.dart';
 import 'package:analyzer/analysis_rule/rule_context.dart';
 import 'package:analyzer/analysis_rule/rule_visitor_registry.dart';
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/ast/token.dart';
 import 'package:analyzer/dart/ast/visitor.dart';
+import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/error/error.dart';
 import 'package:pulselink_lints/src/closed_types.dart';
 
@@ -11,24 +13,29 @@ import 'package:pulselink_lints/src/closed_types.dart';
 ///
 /// - `if (x case P)`, as a statement or a collection element, when `P`
 ///   doesn't match every non-null value of `x`;
-/// - `x is T` and `x is! T`, when `T` doesn't cover every non-null value.
+/// - `x is T` and `x is! T`, when `T` doesn't cover every non-null value;
+/// - `x == c` and `x != c`, when `c` is one case: an enum constant, or a
+///   `const` instance such as `const State.hidden()`.
 ///
 /// Those name some cases and silently skip the rest, so a new enum value or
 /// sealed subclass falls through without a compile error. A switch that lists
-/// every case doesn't. A plain null check (`if (x case final y?)`, or
-/// `x is Sealed` on a `Sealed?`) isn't flagged: it covers every case.
+/// every case doesn't. A plain null check (`if (x case final y?)`,
+/// `x is Sealed` on a `Sealed?`, or `x == null`) isn't flagged, and nor is
+/// comparing two variables (`old == current`): neither picks out a case.
+/// `b == true` is left to the built-in `no_literal_bool_comparisons` lint.
 class UseSwitchOnClosedTypes extends AnalysisRule {
   new()
     : super(
         name: 'use_switch_on_closed_types',
         description:
-            "Don't test an enum, bool or sealed type with `if (x case ...)` "
-            'or `is`.',
+            "Don't test an enum, bool or sealed type for some cases with "
+            '`if (x case ...)`, `is` or `==`.',
       );
 
   static const LintCode code = LintCode(
     'use_switch_on_closed_types',
-    "Don't test an enum, bool or sealed type with `if (x case ...)` or `is`.",
+    "Don't test an enum, bool or sealed type for some cases with "
+        '`if (x case ...)`, `is` or `==`.',
     correctionMessage:
         'Use a switch that lists every case, with an explicit do-nothing case '
         'where one applies, so a new value or subclass is a compile error here '
@@ -48,7 +55,8 @@ class UseSwitchOnClosedTypes extends AnalysisRule {
     registry
       ..addIfStatement(this, visitor)
       ..addIfElement(this, visitor)
-      ..addIsExpression(this, visitor);
+      ..addIsExpression(this, visitor)
+      ..addBinaryExpression(this, visitor);
   }
 }
 
@@ -73,6 +81,39 @@ class _Visitor extends SimpleAstVisitor<void> {
       rule.reportAtNode(node);
     }
   }
+
+  @override
+  void visitBinaryExpression(BinaryExpression node) {
+    final operator = node.operator.type;
+    if (operator != TokenType.EQ_EQ && operator != TokenType.BANG_EQ) {
+      return;
+    }
+    if (_picksOneCase(node.leftOperand, node.rightOperand) ||
+        _picksOneCase(node.rightOperand, node.leftOperand)) {
+      rule.reportAtNode(node);
+    }
+  }
+
+  /// Whether comparing [value] with [other] tests [value] for one case.
+  bool _picksOneCase(Expression value, Expression other) =>
+      closedTypes.closedNonNull(value.staticType) != null && _isOneCase(other);
+
+  /// Whether [expression] names one case of a closed type: an enum constant
+  /// or a `const` instance.
+  static bool _isOneCase(Expression expression) => switch (expression) {
+    Identifier(:final element) ||
+    PropertyAccess(
+      propertyName: SimpleIdentifier(:final element),
+    ) => _isEnumConstant(element),
+    InstanceCreationExpression(:final isConst) => isConst,
+    _ => false,
+  };
+
+  static bool _isEnumConstant(Element? element) => switch (element) {
+    PropertyAccessorElement(variable: FieldElement(isEnumConstant: true)) ||
+    FieldElement(isEnumConstant: true) => true,
+    _ => false,
+  };
 
   void _checkIfCase(Expression scrutinee, CaseClause? caseClause) {
     if (caseClause == null) {
