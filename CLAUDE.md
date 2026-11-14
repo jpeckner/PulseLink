@@ -57,6 +57,15 @@ though no lint enforces it there yet:
 
 Pigeon's generated `*.pigeon.swift` and `*.pigeon.kt` files are exempt.
 
+## Swift protocol conformances
+
+Declare a protocol conformance in its own extension whenever it adds
+anything (methods, properties, initializers or subscripts), such as
+`extension CentralScan: CBCentralManagerDelegate { ... }`. Then each
+protocol's members sit together, apart from the type's own. A conformance
+that adds nothing, such as `Equatable` synthesized for an enum, can stay
+on the type's declaration.
+
 ## Error handling
 
 Handle errors on purpose. Dart has no checked exceptions and no lint can tell

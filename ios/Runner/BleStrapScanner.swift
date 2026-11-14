@@ -127,7 +127,7 @@ enum ScanAction: Equatable {
 /// call: the scan might miss an event, but there's no crash and no data
 /// race, and the log says what happened.
 @MainActor
-final class CentralScan: NSObject, CBCentralManagerDelegate {
+final class CentralScan: NSObject {
   private let heartRateService = CBUUID(string: "180D")
 
   /// Created on the first scan rather than at launch, because creating it
@@ -163,6 +163,32 @@ final class CentralScan: NSObject, CBCentralManagerDelegate {
     }
   }
 
+  /// The name to show for a strap: the one in its advertisement, which is
+  /// current, or else the one iOS cached from an earlier connection.
+  nonisolated static func strapName(advertised: String?, cached: String?) -> String? {
+    advertised ?? cached
+  }
+
+  private func apply(_ action: ScanAction) {
+    guard let sink, let central else {
+      // Dart isn't listening, or there's no central manager yet.
+      return
+    }
+    switch action {
+    case .scan:
+      central.scanForPeripherals(withServices: [heartRateService])
+      sink.success(BleScanStarted())
+    case .fail(let reason):
+      sink.success(BleScanFailed(reason: reason))
+    case .wait:
+      break
+    }
+  }
+}
+
+/// CoreBluetooth reports Bluetooth state changes and discovered straps here.
+/// See `CentralScan` for why each method checks the thread first.
+extension CentralScan: CBCentralManagerDelegate {
   nonisolated func centralManagerDidUpdateState(_ central: CBCentralManager) {
     // Also called when Bluetooth is turned off or on mid-scan. Turning it
     // off stops the scan, so turning it back on starts it again here.
@@ -199,28 +225,6 @@ final class CentralScan: NSObject, CBCentralManagerDelegate {
     )
     MainActor.assumeIsolated {
       sink?.success(found)
-    }
-  }
-
-  /// The name to show for a strap: the one in its advertisement, which is
-  /// current, or else the one iOS cached from an earlier connection.
-  nonisolated static func strapName(advertised: String?, cached: String?) -> String? {
-    advertised ?? cached
-  }
-
-  private func apply(_ action: ScanAction) {
-    guard let sink, let central else {
-      // Dart isn't listening, or there's no central manager yet.
-      return
-    }
-    switch action {
-    case .scan:
-      central.scanForPeripherals(withServices: [heartRateService])
-      sink.success(BleScanStarted())
-    case .fail(let reason):
-      sink.success(BleScanFailed(reason: reason))
-    case .wait:
-      break
     }
   }
 }
