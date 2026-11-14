@@ -25,6 +25,10 @@ trap 'rm -f "$probe"' EXIT
 # One violation per rule. Add one here when adding a rule.
 cat > "$probe" <<'EOF'
 // Written by tool/check_lint_plugin.sh, which deletes it when it finishes.
+import 'package:pulselink/data/ble/ble_api.pigeon.dart';
+
+BleBatteryLevel? keepPigeonImportsLocal;
+
 enum _Probe { a, b }
 
 int noCatchAllCases(_Probe p) => switch (p) {

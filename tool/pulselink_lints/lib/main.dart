@@ -1,5 +1,6 @@
 import 'package:analysis_server_plugin/plugin.dart';
 import 'package:analysis_server_plugin/registry.dart';
+import 'package:pulselink_lints/src/keep_pigeon_imports_local.dart';
 import 'package:pulselink_lints/src/no_assertions.dart';
 import 'package:pulselink_lints/src/no_catch_all_cases.dart';
 import 'package:pulselink_lints/src/no_dynamic.dart';
@@ -20,6 +21,7 @@ class PulseLinkLintsPlugin extends Plugin {
   @override
   void register(PluginRegistry registry) {
     registry
+      ..registerLintRule(KeepPigeonImportsLocal())
       ..registerLintRule(NoAssertions())
       ..registerLintRule(NoCatchAllCases())
       ..registerLintRule(NoDynamic())
