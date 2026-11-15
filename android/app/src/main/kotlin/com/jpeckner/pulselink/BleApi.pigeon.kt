@@ -287,7 +287,8 @@ class BleScanStarted  : BleScanEvent() {
 }
 
 /**
- * A nearby device advertising the Heart Rate Service.
+ * A nearby device advertising the Heart Rate Service, or one offering it
+ * that's already connected to the phone.
  *
  * Generated class from Pigeon that represents data sent in messages.
  */
@@ -298,20 +299,27 @@ data class BleStrapFound (
    */
   val id: String,
   /** The advertised name, if it has one. */
-  val name: String? = null
+  val name: String? = null,
+  /**
+   * Whether it was already connected to the phone when found, by this app
+   * or another one.
+   */
+  val isConnected: Boolean
 ) : BleScanEvent()
  {
   companion object {
     fun fromList(pigeonVar_list: List<Any?>): BleStrapFound {
       val id = pigeonVar_list[0] as String
       val name = pigeonVar_list[1] as String?
-      return BleStrapFound(id, name)
+      val isConnected = pigeonVar_list[2] as Boolean
+      return BleStrapFound(id, name, isConnected)
     }
   }
   fun toList(): List<Any?> {
     return listOf(
       id,
       name,
+      isConnected,
     )
   }
   override fun equals(other: Any?): Boolean {
@@ -322,17 +330,18 @@ data class BleStrapFound (
       return true
     }
     val other = other as BleStrapFound
-    return BleApiPigeonUtils.deepEquals(this.id, other.id) && BleApiPigeonUtils.deepEquals(this.name, other.name)
+    return BleApiPigeonUtils.deepEquals(this.id, other.id) && BleApiPigeonUtils.deepEquals(this.name, other.name) && BleApiPigeonUtils.deepEquals(this.isConnected, other.isConnected)
   }
 
   override fun hashCode(): Int {
     var result = javaClass.hashCode()
     result = 31 * result + BleApiPigeonUtils.deepHash(this.id)
     result = 31 * result + BleApiPigeonUtils.deepHash(this.name)
+    result = 31 * result + BleApiPigeonUtils.deepHash(this.isConnected)
     return result
   }
   override fun toString(): String {
-    return "BleStrapFound(id=$id, name=$name)"
+    return "BleStrapFound(id=$id, name=$name, isConnected=$isConnected)"
   }
 }
 

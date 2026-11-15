@@ -38,9 +38,37 @@ void main() {
       expect(find.text('Polar H10'), findsOneWidget);
       expect(find.text('Unnamed heart-rate strap'), findsOneWidget);
       expect(find.text('Looking for heart-rate straps…'), findsNothing);
-      // Still scanning, and connecting comes later.
+      // Still scanning, and connecting comes later. Neither is connected.
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle), findsNothing);
       expect(find.text('Tap your strap to connect to it.'), findsOneWidget);
+    });
+
+    testWidgets('marks a strap that is already connected with a green check, '
+        'in place of the progress bar', (tester) async {
+      await pumpScreen(tester);
+      scanner
+        ..emit(.found(discoveredStrapOf('polar', 'Polar H10')))
+        ..emit(.found(connectedStrapOf('tickr', 'TICKR')));
+      await tester.pump();
+
+      final check = find.byIcon(Icons.check_circle);
+      expect(check, findsOneWidget);
+      expect(tester.widget<Icon>(check).color, Colors.green);
+      expect(
+        find.descendant(
+          of: find.widgetWithText(ListTile, 'TICKR'),
+          matching: check,
+        ),
+        findsOneWidget,
+      );
+      // ListTile merges the row into one label, so screen readers say the
+      // strap's name, then that it's connected.
+      expect(
+        find.bySemanticsLabel(RegExp(r'^TICKR\s+Connected$')),
+        findsOneWidget,
+      );
+      expect(find.byType(LinearProgressIndicator), findsNothing);
     });
 
     testWidgets('tapping a strap closes the picker with that strap', (
@@ -144,6 +172,12 @@ void main() {
       await pumpScreen(tester);
       for (final event in [
         const StrapScanEvent.scanning(),
+        StrapScanEvent.found(
+          connectedStrapOf(
+            'connected',
+            'A connected heart-rate strap with a very long name',
+          ),
+        ),
         for (var i = 0; i < 20; i++)
           StrapScanEvent.found(
             discoveredStrapOf(

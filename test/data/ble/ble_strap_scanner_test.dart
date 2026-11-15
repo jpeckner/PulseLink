@@ -38,7 +38,9 @@ void main() {
         mockNativeScanner(
           (events) => events
             ..success(BleScanStarted())
-            ..success(BleStrapFound(id: 'strap-1', name: 'TICKR'))
+            ..success(
+              BleStrapFound(id: 'strap-1', name: 'TICKR', isConnected: false),
+            )
             ..success(BleScanFailed(reason: BleScanFailureReason.poweredOff)),
         );
         await expectLater(
@@ -98,11 +100,28 @@ void main() {
 
     test('reports a strap found, with its name', () async {
       listen();
-      platform.add(BleStrapFound(id: 'strap-1', name: 'Polar H10 12345678'));
+      platform.add(
+        BleStrapFound(
+          id: 'strap-1',
+          name: 'Polar H10 12345678',
+          isConnected: false,
+        ),
+      );
       expect(events, [
         StrapScanEvent.found(
           discoveredStrapOf('strap-1', 'Polar H10 12345678'),
         ),
+      ]);
+    });
+
+    test('reports whether a strap was already connected', () {
+      listen();
+      platform
+        ..add(BleStrapFound(id: 'strap-1', name: 'TICKR', isConnected: true))
+        ..add(BleStrapFound(id: 'strap-2', name: 'Polar', isConnected: false));
+      expect(events, [
+        StrapScanEvent.found(connectedStrapOf('strap-1', 'TICKR')),
+        StrapScanEvent.found(discoveredStrapOf('strap-2', 'Polar')),
       ]);
     });
 
@@ -116,7 +135,9 @@ void main() {
         test('advertised as ${advertised == null ? 'nothing' : '"$advertised"'}'
             ' is ${shown == null ? 'none' : '"$shown"'}', () async {
           listen();
-          platform.add(BleStrapFound(id: 'strap-1', name: advertised));
+          platform.add(
+            BleStrapFound(id: 'strap-1', name: advertised, isConnected: false),
+          );
           expect(events, [
             StrapScanEvent.found(discoveredStrapOf('strap-1', shown)),
           ]);
@@ -127,9 +148,9 @@ void main() {
     test('leaves out a strap with a blank identifier', () {
       listen();
       platform
-        ..add(BleStrapFound(id: '', name: 'No id'))
-        ..add(BleStrapFound(id: '   ', name: 'Blank id'))
-        ..add(BleStrapFound(id: 'strap-1', name: 'TICKR'));
+        ..add(BleStrapFound(id: '', name: 'No id', isConnected: false))
+        ..add(BleStrapFound(id: '   ', name: 'Blank id', isConnected: false))
+        ..add(BleStrapFound(id: 'strap-1', name: 'TICKR', isConnected: false));
       expect(events, [
         StrapScanEvent.found(discoveredStrapOf('strap-1', 'TICKR')),
       ]);

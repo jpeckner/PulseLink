@@ -71,6 +71,40 @@ void main() {
       ],
     );
 
+    blocTest<StrapPickerCubit, StrapPickerState>(
+      'a connected strap found again by the scan stays marked connected',
+      build: () => StrapPickerCubit(scanner: scanner),
+      act: (cubit) {
+        cubit.start();
+        scanner
+          ..emit(.found(connectedStrapOf('tickr', 'TICKR')))
+          // Some straps keep advertising while connected.
+          ..emit(.found(discoveredStrapOf('tickr', 'TICKR 2')));
+      },
+      expect: () => [
+        StrapPickerState.scanning(straps: [connectedStrapOf('tickr', 'TICKR')]),
+        StrapPickerState.scanning(
+          straps: [connectedStrapOf('tickr', 'TICKR 2')],
+        ),
+      ],
+    );
+
+    blocTest<StrapPickerCubit, StrapPickerState>(
+      'a strap found first by the scan is marked connected once it is '
+      'found connected',
+      build: () => StrapPickerCubit(scanner: scanner),
+      act: (cubit) {
+        cubit.start();
+        scanner
+          ..emit(.found(_tickr))
+          ..emit(.found(connectedStrapOf('tickr', 'TICKR')));
+      },
+      expect: () => [
+        StrapPickerState.scanning(straps: [_tickr]),
+        StrapPickerState.scanning(straps: [connectedStrapOf('tickr', 'TICKR')]),
+      ],
+    );
+
     for (final problem in BluetoothProblem.values) {
       blocTest<StrapPickerCubit, StrapPickerState>(
         'a scan that fails (${problem.name}) shows why, and forgets the '

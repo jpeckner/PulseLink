@@ -17,7 +17,9 @@ mixin _$DiscoveredStrap {
 
 /// Identifies the strap, so it can be connected to later.
  StrapBleIdentifier get id;/// The name the strap advertises, or null if it doesn't advertise one.
- StrapBleName? get name;
+ StrapBleName? get name;/// Whether it was already connected to the phone when found, by this app
+/// or another one.
+ bool get isConnected;
 /// Create a copy of DiscoveredStrap
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -29,20 +31,20 @@ $DiscoveredStrapCopyWith<DiscoveredStrap> get copyWith => _$DiscoveredStrapCopyW
 @override
 bool operator ==(Object other) {
   final _this = this as DiscoveredStrap;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DiscoveredStrap&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DiscoveredStrap&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.isConnected, _this.isConnected) || other.isConnected == _this.isConnected));
 }
 
 
 @override
 int get hashCode {
   final _this = this as DiscoveredStrap;
-  return Object.hash(runtimeType,_this.id,_this.name);
+  return Object.hash(runtimeType,_this.id,_this.name,_this.isConnected);
 }
 
 @override
 String toString() {
   final _this = this as DiscoveredStrap;
-  return 'DiscoveredStrap(id: ${_this.id}, name: ${_this.name})';
+  return 'DiscoveredStrap(id: ${_this.id}, name: ${_this.name}, isConnected: ${_this.isConnected})';
 }
 
 
@@ -53,7 +55,7 @@ abstract mixin class $DiscoveredStrapCopyWith<$Res>  {
   factory $DiscoveredStrapCopyWith(DiscoveredStrap value, $Res Function(DiscoveredStrap) _then) = _$DiscoveredStrapCopyWithImpl;
 @useResult
 $Res call({
- StrapBleIdentifier id, StrapBleName? name
+ StrapBleIdentifier id, StrapBleName? name, bool isConnected
 });
 
 
@@ -70,11 +72,12 @@ class _$DiscoveredStrapCopyWithImpl<$Res>
 
 /// Create a copy of DiscoveredStrap
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = freezed,Object? isConnected = null,}) {
   return _then(DiscoveredStrap(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as StrapBleIdentifier,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as StrapBleName?,
+as StrapBleName?,isConnected: null == isConnected ? _self.isConnected : isConnected // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -159,10 +162,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( StrapBleIdentifier id,  StrapBleName? name)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( StrapBleIdentifier id,  StrapBleName? name,  bool isConnected)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DiscoveredStrap() when $default != null:
-return $default(_that.id,_that.name);case _:
+return $default(_that.id,_that.name,_that.isConnected);case _:
   return orElse();
 
 }
@@ -180,10 +183,10 @@ return $default(_that.id,_that.name);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( StrapBleIdentifier id,  StrapBleName? name)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( StrapBleIdentifier id,  StrapBleName? name,  bool isConnected)  $default,) {final _that = this;
 switch (_that) {
 case _DiscoveredStrap():
-return $default(_that.id,_that.name);case _:
+return $default(_that.id,_that.name,_that.isConnected);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -200,10 +203,10 @@ return $default(_that.id,_that.name);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( StrapBleIdentifier id,  StrapBleName? name)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( StrapBleIdentifier id,  StrapBleName? name,  bool isConnected)?  $default,) {final _that = this;
 switch (_that) {
 case _DiscoveredStrap() when $default != null:
-return $default(_that.id,_that.name);case _:
+return $default(_that.id,_that.name,_that.isConnected);case _:
   return null;
 
 }
@@ -215,13 +218,16 @@ return $default(_that.id,_that.name);case _:
 
 
 class _DiscoveredStrap implements DiscoveredStrap {
-  const _DiscoveredStrap({required this.id, required this.name});
+  const _DiscoveredStrap({required this.id, required this.name, required this.isConnected});
   
 
 /// Identifies the strap, so it can be connected to later.
 @override final  StrapBleIdentifier id;
 /// The name the strap advertises, or null if it doesn't advertise one.
 @override final  StrapBleName? name;
+/// Whether it was already connected to the phone when found, by this app
+/// or another one.
+@override final  bool isConnected;
 
 /// Create a copy of DiscoveredStrap
 /// with the given fields replaced by the non-null parameter values.
@@ -233,18 +239,18 @@ _$DiscoveredStrapCopyWith<_DiscoveredStrap> get copyWith => __$DiscoveredStrapCo
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DiscoveredStrap&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DiscoveredStrap&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.isConnected, isConnected) || other.isConnected == isConnected));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,name);
+    return Object.hash(runtimeType,id,name,isConnected);
 }
 
 @override
 String toString() {
-    return 'DiscoveredStrap(id: $id, name: $name)';
+    return 'DiscoveredStrap(id: $id, name: $name, isConnected: $isConnected)';
 }
 
 
@@ -255,7 +261,7 @@ abstract mixin class _$DiscoveredStrapCopyWith<$Res> implements $DiscoveredStrap
   factory _$DiscoveredStrapCopyWith(_DiscoveredStrap value, $Res Function(_DiscoveredStrap) _then) = __$DiscoveredStrapCopyWithImpl;
 @override @useResult
 $Res call({
- StrapBleIdentifier id, StrapBleName? name
+ StrapBleIdentifier id, StrapBleName? name, bool isConnected
 });
 
 
@@ -272,11 +278,12 @@ class __$DiscoveredStrapCopyWithImpl<$Res>
 
 /// Create a copy of DiscoveredStrap
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = freezed,Object? isConnected = null,}) {
   return _then(_DiscoveredStrap(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as StrapBleIdentifier,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as StrapBleName?,
+as StrapBleName?,isConnected: null == isConnected ? _self.isConnected : isConnected // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

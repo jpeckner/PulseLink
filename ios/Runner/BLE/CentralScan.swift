@@ -106,7 +106,8 @@ extension CentralScan: CBCentralManagerDelegate {
       name: Self.strapName(
         advertised: advertisementData[CBAdvertisementDataLocalNameKey] as? String,
         cached: peripheral.name
-      )
+      ),
+      isConnected: false
     )
     MainActor.assumeIsolated {
       sink?.success(found)
@@ -125,6 +126,19 @@ private extension CentralScan {
     case .scan:
       central.scanForPeripherals(withServices: [heartRateService])
       sink.success(BleScanStarted())
+      // A strap that's already connected to this phone (to PulseLink, or
+      // to another app such as a fitness app) usually stops advertising,
+      // so the scan never finds it. iOS lists those separately. They have
+      // no advertisement, so the name is the one iOS cached.
+      for strap in central.retrieveConnectedPeripherals(withServices: [heartRateService]) {
+        sink.success(
+          BleStrapFound(
+            id: strap.identifier.uuidString,
+            name: Self.strapName(advertised: nil, cached: strap.name),
+            isConnected: true
+          )
+        )
+      }
     case .fail(let reason):
       sink.success(BleScanFailed(reason: reason))
     case .wait:

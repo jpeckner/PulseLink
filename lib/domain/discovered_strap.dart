@@ -4,7 +4,8 @@ import 'package:pulselink/domain/strap_ble_name.dart';
 
 part 'discovered_strap.freezed.dart';
 
-/// A nearby heart-rate strap found by a scan.
+/// A heart-rate strap found by a scan: nearby, or already connected to the
+/// phone.
 @freezed
 abstract class DiscoveredStrap with _$DiscoveredStrap {
   const factory({
@@ -13,5 +14,9 @@ abstract class DiscoveredStrap with _$DiscoveredStrap {
 
     /// The name the strap advertises, or null if it doesn't advertise one.
     required StrapBleName? name,
+
+    /// Whether it was already connected to the phone when found, by this app
+    /// or another one.
+    required bool isConnected,
   }) = _DiscoveredStrap;
 }
