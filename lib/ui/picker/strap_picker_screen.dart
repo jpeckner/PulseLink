@@ -99,8 +99,11 @@ class _StrapList extends StatelessWidget {
     final theme = Theme.of(context);
     return Column(
       children: [
-        // Still scanning, so more straps may appear.
-        const LinearProgressIndicator(),
+        // Still scanning, so more straps may appear. Once a strap that's
+        // already connected is listed, its check mark says it's ready, and a
+        // moving bar would suggest it's still being looked for.
+        if (!straps.any((strap) => strap.isConnected))
+          const LinearProgressIndicator(),
         Expanded(
           child: ListView(
             children: [
@@ -108,6 +111,13 @@ class _StrapList extends StatelessWidget {
                 ListTile(
                   leading: const Icon(Icons.monitor_heart_outlined),
                   title: Text(strap.name?.value ?? 'Unnamed heart-rate strap'),
+                  trailing: strap.isConnected
+                      ? const Icon(
+                          Icons.check_circle,
+                          color: Colors.green,
+                          semanticLabel: 'Connected',
+                        )
+                      : null,
                   // Closes the picker with this strap; the screen that
                   // opened it connects to it.
                   onTap: () => Navigator.of(context).pop(strap),

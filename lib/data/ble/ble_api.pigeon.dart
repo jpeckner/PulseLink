@@ -169,9 +169,10 @@ class BleScanStarted extends BleScanEvent {
   }
 }
 
-/// A nearby device advertising the Heart Rate Service.
+/// A nearby device advertising the Heart Rate Service, or one offering it
+/// that's already connected to the phone.
 class BleStrapFound extends BleScanEvent {
-  BleStrapFound({required this.id, this.name});
+  BleStrapFound({required this.id, this.name, required this.isConnected});
 
   /// Identifies the device to the native BLE stack: a UUID on iOS, a MAC
   /// address on Android.
@@ -180,8 +181,12 @@ class BleStrapFound extends BleScanEvent {
   /// The advertised name, if it has one.
   String? name;
 
+  /// Whether it was already connected to the phone when found, by this app
+  /// or another one.
+  bool isConnected;
+
   List<Object?> _toList() {
-    return <Object?>[id, name];
+    return <Object?>[id, name, isConnected];
   }
 
   Object encode() {
@@ -190,7 +195,11 @@ class BleStrapFound extends BleScanEvent {
 
   static BleStrapFound decode(Object result) {
     result as List<Object?>;
-    return BleStrapFound(id: result[0]! as String, name: result[1] as String?);
+    return BleStrapFound(
+      id: result[0]! as String,
+      name: result[1] as String?,
+      isConnected: result[2]! as bool,
+    );
   }
 
   @override
@@ -202,7 +211,9 @@ class BleStrapFound extends BleScanEvent {
     if (identical(this, other)) {
       return true;
     }
-    return _deepEquals(id, other.id) && _deepEquals(name, other.name);
+    return _deepEquals(id, other.id) &&
+        _deepEquals(name, other.name) &&
+        _deepEquals(isConnected, other.isConnected);
   }
 
   @override
@@ -211,7 +222,7 @@ class BleStrapFound extends BleScanEvent {
 
   @override
   String toString() {
-    return 'BleStrapFound(id: $id, name: $name)';
+    return 'BleStrapFound(id: $id, name: $name, isConnected: $isConnected)';
   }
 }
 

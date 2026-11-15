@@ -251,7 +251,8 @@ struct BleScanStarted: BleScanEvent, Hashable, CustomStringConvertible {
   }
 }
 
-/// A nearby device advertising the Heart Rate Service.
+/// A nearby device advertising the Heart Rate Service, or one offering it
+/// that's already connected to the phone.
 ///
 /// Generated class from Pigeon that represents data sent in messages.
 struct BleStrapFound: BleScanEvent, Hashable, CustomStringConvertible {
@@ -260,39 +261,46 @@ struct BleStrapFound: BleScanEvent, Hashable, CustomStringConvertible {
   var id: String
   /// The advertised name, if it has one.
   var name: String? = nil
+  /// Whether it was already connected to the phone when found, by this app
+  /// or another one.
+  var isConnected: Bool
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
   static func fromList(_ pigeonVar_list: [Any?]) -> BleStrapFound? {
     let id = pigeonVar_list[0] as! String
     let name: String? = nilOrValue(pigeonVar_list[1])
+    let isConnected = pigeonVar_list[2] as! Bool
 
     return BleStrapFound(
       id: id,
-      name: name
+      name: name,
+      isConnected: isConnected
     )
   }
   func toList() -> [Any?] {
     return [
       id,
       name,
+      isConnected,
     ]
   }
   static func == (lhs: BleStrapFound, rhs: BleStrapFound) -> Bool {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return BleApiPigeonInternal.deepEquals(lhs.id, rhs.id) && BleApiPigeonInternal.deepEquals(lhs.name, rhs.name)
+    return BleApiPigeonInternal.deepEquals(lhs.id, rhs.id) && BleApiPigeonInternal.deepEquals(lhs.name, rhs.name) && BleApiPigeonInternal.deepEquals(lhs.isConnected, rhs.isConnected)
   }
 
   func hash(into hasher: inout Hasher) {
     hasher.combine("BleStrapFound")
     BleApiPigeonInternal.deepHash(value: id, hasher: &hasher)
     BleApiPigeonInternal.deepHash(value: name, hasher: &hasher)
+    BleApiPigeonInternal.deepHash(value: isConnected, hasher: &hasher)
   }
 
   public var description: String {
-    return "BleStrapFound(id: \(String(describing: id)), name: \(String(describing: name)))"
+    return "BleStrapFound(id: \(String(describing: id)), name: \(String(describing: name)), isConnected: \(String(describing: isConnected)))"
   }
 }
 

@@ -17,4 +17,9 @@ StrapBleName strapNameOf(String value) =>
 DiscoveredStrap discoveredStrapOf(String id, [String? name]) => DiscoveredStrap(
   id: strapIdOf(id),
   name: name == null ? null : strapNameOf(name),
+  isConnected: false,
 );
+
+/// Like [discoveredStrapOf], for a strap already connected to the phone.
+DiscoveredStrap connectedStrapOf(String id, [String? name]) =>
+    discoveredStrapOf(id, name).copyWith(isConnected: true);

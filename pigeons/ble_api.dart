@@ -36,9 +36,10 @@ sealed class BleScanEvent;
 /// resumes after a failure (such as Bluetooth being turned back on).
 class BleScanStarted extends BleScanEvent;
 
-/// A nearby device advertising the Heart Rate Service.
+/// A nearby device advertising the Heart Rate Service, or one offering it
+/// that's already connected to the phone.
 class BleStrapFound extends BleScanEvent {
-  new(this.id, this.name);
+  new(this.id, this.name, this.isConnected);
 
   /// Identifies the device to the native BLE stack: a UUID on iOS, a MAC
   /// address on Android.
@@ -46,6 +47,10 @@ class BleStrapFound extends BleScanEvent {
 
   /// The advertised name, if it has one.
   final String? name;
+
+  /// Whether it was already connected to the phone when found, by this app
+  /// or another one.
+  final bool isConnected;
 }
 
 /// The phone can't scan, for [reason]. Scanning resumes, with a

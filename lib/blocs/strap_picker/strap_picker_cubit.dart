@@ -41,7 +41,9 @@ class StrapPickerCubit extends Cubit<StrapPickerState> {
   }
 
   /// The straps shown so far, plus [strap]. A strap found again replaces the
-  /// earlier copy in place, in case its name has changed.
+  /// earlier copy in place, in case its name has changed. It stays marked
+  /// connected if it was: some straps keep advertising while connected, so
+  /// the scan finding it doesn't mean it isn't.
   List<DiscoveredStrap> _withStrap(DiscoveredStrap strap) {
     final straps = switch (state) {
       StrapPickerScanning(:final straps) => straps,
@@ -50,13 +52,15 @@ class StrapPickerCubit extends Cubit<StrapPickerState> {
       StrapPickerFailed() => const <DiscoveredStrap>[],
     };
     final index = straps.indexWhere((shown) => shown.id == strap.id);
-    return index < 0
-        ? List.unmodifiable([...straps, strap])
-        : List.unmodifiable([
-            ...straps.take(index),
-            strap,
-            ...straps.skip(index + 1),
-          ]);
+    if (index < 0) {
+      return List.unmodifiable([...straps, strap]);
+    }
+    final wasConnected = straps[index].isConnected;
+    return List.unmodifiable([
+      ...straps.take(index),
+      strap.copyWith(isConnected: strap.isConnected || wasConnected),
+      ...straps.skip(index + 1),
+    ]);
   }
 
   @override

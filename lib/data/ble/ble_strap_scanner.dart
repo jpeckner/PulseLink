@@ -59,7 +59,11 @@ class BleStrapScanner implements StrapScanner {
   /// The domain event for [event], or null if it should be left out.
   static StrapScanEvent? _toScanEvent(BleScanEvent event) => switch (event) {
     BleScanStarted() => const .scanning(),
-    BleStrapFound(:final id, :final name) => _strapFound(id, name),
+    BleStrapFound(:final id, :final name, :final isConnected) => _strapFound(
+      id,
+      name,
+      isConnected: isConnected,
+    ),
     BleScanFailed(:final reason) => .failed(switch (reason) {
       BleScanFailureReason.poweredOff => BluetoothProblem.off,
       BleScanFailureReason.unauthorized => BluetoothProblem.permissionDenied,
@@ -70,7 +74,11 @@ class BleStrapScanner implements StrapScanner {
   /// A strap found, or null if the native side gave it a blank identifier:
   /// a strap the app can't identify can't be connected to, so it isn't
   /// listed. A blank name means the strap has none to show.
-  static StrapScanEvent? _strapFound(String id, String? name) {
+  static StrapScanEvent? _strapFound(
+    String id,
+    String? name, {
+    required bool isConnected,
+  }) {
     final strapId = StrapBleIdentifier.tryFrom(id);
     if (strapId == null) {
       return null;
@@ -79,6 +87,7 @@ class BleStrapScanner implements StrapScanner {
       DiscoveredStrap(
         id: strapId,
         name: name == null ? null : StrapBleName.tryFrom(name),
+        isConnected: isConnected,
       ),
     );
   }
