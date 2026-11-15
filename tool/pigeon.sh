@@ -4,6 +4,9 @@
 # `dart format --set-exit-if-changed` like the rest of lib/.
 #
 # Run from anywhere: tool/pigeon.sh. tool/regenerate.sh and CI run it too.
+#
+# The generated Swift causes the concurrency warnings every iOS build shows;
+# README.md's "iOS build warnings" section says why they're left alone.
 
 set -euo pipefail
 

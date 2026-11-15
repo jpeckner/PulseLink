@@ -18,7 +18,7 @@ import 'package:pulselink/domain/strap_connection_failure.dart';
 ///
 /// When a connected strap drops, it reports [StrapConnectionLost] on
 /// [connectionLost]; starting it again reconnects. Reconnecting by itself
-/// comes later in Milestone 3.
+/// comes in Milestone 6.
 class BleStrapDataSource implements StrapDataSource {
   /// Connects to the strap with `strapId`, from a scan. [api] and [events]
   /// stand in for the platform channels in tests.
