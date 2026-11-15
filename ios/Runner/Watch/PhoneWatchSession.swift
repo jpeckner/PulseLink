@@ -13,9 +13,13 @@ private let watchLog = Logger(subsystem: "com.jpeckner.pulselink", category: "Wa
 /// then hops to the main actor.
 @MainActor
 final class PhoneWatchSession: NSObject {
-  /// An application context that arrived before the session could take it,
-  /// set once activation finishes. Only the newest is kept.
-  private var heldContext: HeartRateSnapshot?
+  /// The newest snapshot Dart asked to make the application context,
+  /// whatever happened to it. It's sent again when the watch's state
+  /// changes: once activation finishes, when the watch app is installed, and
+  /// (live) when it opens. Dart only sends a snapshot when the heart rate
+  /// changes, so without this a watch app installed or opened while the
+  /// phone's state stays the same, such as Bluetooth off, would get nothing.
+  private var latestSnapshot: HeartRateSnapshot?
 
   private var hasRequestedActivation = false
 
@@ -65,18 +69,16 @@ final class PhoneWatchSession: NSObject {
   }
 
   /// Makes `snapshot` the application context, or holds it until the
-  /// session is activated.
+  /// session is activated. Either way it's kept as `latestSnapshot`.
   func updateApplicationContext(_ snapshot: HeartRateSnapshot) -> WatchDeliveryOutcome {
     activate()
+    latestSnapshot = snapshot
     switch ApplicationContextAction(state) {
     case .update:
-      heldContext = nil
       return setApplicationContext(snapshot)
     case .hold:
-      heldContext = snapshot
       return .pending
     case .drop(let outcome):
-      heldContext = nil
       return outcome
     }
   }
@@ -106,31 +108,52 @@ final class PhoneWatchSession: NSObject {
     }
   }
 
-  /// Sets a held context once the session can take it.
+  /// Sets the latest snapshot as the application context once the session
+  /// can take it.
   private func activationDidComplete(errorDescription: String?) {
     if let errorDescription {
       watchLog.error("WatchConnectivity didn't activate: \(errorDescription, privacy: .public)")
     }
-    guard let held = heldContext else {
+    resendLatestContext()
+  }
+
+  /// Sets the latest snapshot as the application context again, if the
+  /// session can take it now.
+  private func resendLatestContext() {
+    guard let latestSnapshot else {
       return
     }
     switch ApplicationContextAction(state) {
     case .update:
-      heldContext = nil
       // Nobody is waiting for this outcome; a failure is logged.
-      _ = setApplicationContext(held)
+      _ = setApplicationContext(latestSnapshot)
     case .hold:
-      // Still not activated, such as after an error; kept for the next
+      // Still not activated, such as after an error; set on the next
       // activation.
       break
     case .drop(let outcome):
-      heldContext = nil
-      watchLog.info("Dropped a held application context: \(String(describing: outcome), privacy: .public)")
+      watchLog.info("Didn't resend the application context: \(String(describing: outcome), privacy: .public)")
+    }
+  }
+
+  /// The watch app may have just opened: sends it the latest snapshot live,
+  /// so it doesn't wait for the heart rate to change.
+  private func reachabilityDidChange() {
+    guard let latestSnapshot else {
+      return
+    }
+    switch LiveSnapshotAction(state) {
+    case .send:
+      // Nobody is waiting for this outcome; a failure is logged.
+      _ = sendLive(latestSnapshot)
+    case .drop:
+      // The watch app closed or went out of range: nothing to send to.
+      break
     }
   }
 
   /// The user switched to another Apple Watch. iOS requires activating
-  /// again, which then sets any held context on the new watch.
+  /// again, which then sets the latest snapshot on the new watch.
   private func didDeactivate() {
     session?.activate()
   }
@@ -160,6 +183,20 @@ extension PhoneWatchSession: WCSessionDelegate {
   nonisolated func sessionDidDeactivate(_ session: WCSession) {
     Task { @MainActor in
       self.didDeactivate()
+    }
+  }
+
+  /// A watch was paired or unpaired, or the watch app was installed or
+  /// removed.
+  nonisolated func sessionWatchStateDidChange(_ session: WCSession) {
+    Task { @MainActor in
+      self.resendLatestContext()
+    }
+  }
+
+  nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
+    Task { @MainActor in
+      self.reachabilityDidChange()
     }
   }
 }
