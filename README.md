@@ -82,8 +82,9 @@ flutter analyze
 flutter test
 ```
 
-The Swift tests in `ios/RunnerTests` run on an iPhone simulator (macOS only;
-CI doesn't run them until Milestone 7):
+The Swift tests run on simulators: `ios/RunnerTests` on an iPhone and
+`ios/PulseLinkWatchTests` on an Apple Watch (macOS only; CI doesn't run them
+until Milestone 7):
 
 ```bash
 tool/test_swift.sh
