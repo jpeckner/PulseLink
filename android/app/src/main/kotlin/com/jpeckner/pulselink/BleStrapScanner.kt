@@ -35,4 +35,12 @@ class BleStrapScanner(activity: Activity) : ScanForHeartRateStrapsStreamHandler(
     fun onResume() {
         scan.onResume()
     }
+
+    /**
+     * Stops scanning when the Flutter engine goes, which doesn't cancel the
+     * stream by itself. MainActivity calls it.
+     */
+    fun close() {
+        scan.stop()
+    }
 }

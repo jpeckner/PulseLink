@@ -1,16 +1,42 @@
 package com.jpeckner.pulselink
 
+import android.content.Context
+
 /**
- * Answers Dart's strap connection calls (`BleConnectionApi` and
- * `strapEvents`, see pigeons/ble_api.dart) until Android BLE arrives: every
- * connection fails as unsupported, so the app explains that Bluetooth isn't
- * available, and the event stream sends nothing.
+ * Connects to a strap for Dart (`BleConnectionApi`) and streams its events
+ * (`strapEvents`), both declared in pigeons/ble_api.dart. Hands each call to
+ * [LeConnection]. Flutter calls stream handlers and host APIs on the main
+ * thread, and Pigeon runs [connect] on the main dispatcher, which is where
+ * LeConnection expects to be called.
  */
-class BleStrapLink :
+class BleStrapLink(context: Context) :
     StrapEventsStreamHandler(),
     BleConnectionApi {
-    override suspend fun connect(strapId: String): BleConnectResult =
-        BleConnectFailed(BleConnectFailureReason.UNSUPPORTED)
+    private val connection = LeConnection(context)
 
-    override fun disconnect() = Unit
+    override fun onListen(
+        p0: Any?,
+        sink: PigeonEventSink<BleStrapEvent>,
+    ) {
+        connection.startSending(sink)
+    }
+
+    override fun onCancel(p0: Any?) {
+        connection.stopSending()
+    }
+
+    override suspend fun connect(strapId: String): BleConnectResult = connection.connect(strapId)
+
+    override fun disconnect() {
+        connection.disconnect()
+    }
+
+    /**
+     * Lets go of the strap when the Flutter engine goes, since Dart can't
+     * any more. MainActivity calls it.
+     */
+    fun close() {
+        connection.stopSending()
+        connection.disconnect()
+    }
 }

@@ -21,7 +21,6 @@ import android.os.Looper
 import android.os.ParcelUuid
 import android.os.SystemClock
 import android.util.Log
-import java.util.UUID
 
 /**
  * Scans for heart-rate straps and turns what happens into scan events for
@@ -256,7 +255,7 @@ class LeScan(private val activity: Activity) {
         for (device in devices) {
             val offersHeartRate =
                 try {
-                    device.uuids?.any { it.uuid == HEART_RATE_SERVICE } == true
+                    device.uuids?.any { it.uuid == StrapUuids.HEART_RATE_SERVICE } == true
                 } catch (error: SecurityException) {
                     Log.w(TAG, "Reading a device's services wasn't permitted", error)
                     false
@@ -349,10 +348,8 @@ class LeScan(private val activity: Activity) {
                 Manifest.permission.BLUETOOTH_CONNECT,
             )
 
-        val HEART_RATE_SERVICE: UUID = UUID.fromString("0000180d-0000-1000-8000-00805f9b34fb")
-
         val heartRateFilter: ScanFilter =
-            ScanFilter.Builder().setServiceUuid(ParcelUuid(HEART_RATE_SERVICE)).build()
+            ScanFilter.Builder().setServiceUuid(ParcelUuid(StrapUuids.HEART_RATE_SERVICE)).build()
 
         /** Low latency: the picker is on screen, waiting for straps. */
         val scanSettings: ScanSettings =
