@@ -9,6 +9,8 @@
 # tool/lint_native.sh pass without checking anything. This script writes a
 # Swift file and a Kotlin file that break every rule, runs the real lint,
 # checks that it failed and that each rule reported, and deletes the files.
+# The Swift probe goes in both the iOS app and the watch app, so a config
+# that stops linting either one fails this check.
 #
 # The rules are read from .swiftlint.yml and android/config/detekt.yml, so a
 # rule added there without a violation below fails this check.
@@ -18,8 +20,10 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 swift_probe=ios/Runner/NativeLintProbe.swift
+# A different name, so each probe's findings can be told apart.
+watch_swift_probe=ios/PulseLinkWatch/WatchNativeLintProbe.swift
 kotlin_probe=android/app/src/main/kotlin/com/jpeckner/pulselink/NativeLintProbe.kt
-for probe in "$swift_probe" "$kotlin_probe"; do
+for probe in "$swift_probe" "$watch_swift_probe" "$kotlin_probe"; do
   if [[ -e "$probe" ]]; then
     echo "$probe already exists. Remove it and rerun." >&2
     exit 2
@@ -27,7 +31,7 @@ for probe in "$swift_probe" "$kotlin_probe"; do
 done
 # The probes aren't in the Xcode project, and are deleted before anything
 # else could build the Kotlin one.
-trap 'rm -f "$swift_probe" "$kotlin_probe"' EXIT
+trap 'rm -f "$swift_probe" "$watch_swift_probe" "$kotlin_probe"' EXIT
 
 # One violation per rule. Add one here when adding a rule.
 cat > "$swift_probe" <<'EOF'
@@ -56,6 +60,7 @@ func probeNoCatchAllCases(_ probe: NativeLintProbe) -> Int {
   }
 }
 EOF
+cp "$swift_probe" "$watch_swift_probe"
 
 cat > "$kotlin_probe" <<'EOF'
 // Written by tool/check_native_lints.sh, which deletes it when it finishes.
@@ -104,19 +109,25 @@ fi
 failed=0
 
 # Runs one language's lint and checks it failed, with each rule reporting
-# against the probe file.
+# against each of its probe files.
 check() {
-  local language=$1 probe=$2 rules=$3
-  local output status probe_name
-  probe_name=$(basename "$probe")
+  local language=$1 rules=$2
+  shift 2
+  local output status probe probe_name
   set +e
   output=$(tool/lint_native.sh "$language" 2>&1)
   status=$?
   set -e
 
   local missing=()
-  for rule in $rules; do
-    grep -qE "$probe_name:.*$rule" <<<"$output" || missing+=("$rule")
+  for probe in "$@"; do
+    probe_name=$(basename "$probe")
+    for rule in $rules; do
+      # The name starts the line or follows a slash, so one probe's name
+      # doesn't match inside another's.
+      grep -qE "(^|/)$probe_name:.*$rule" <<<"$output" ||
+        missing+=("$rule in $probe_name")
+    done
   done
 
   if (( status == 0 )) || (( ${#missing[@]} > 0 )); then
@@ -125,7 +136,9 @@ check() {
       echo "The $language lint passed with a probe that breaks every rule." >&2
     fi
     if (( ${#missing[@]} > 0 )); then
-      echo "Not reported for $language: ${missing[*]}. Either the linter" \
+      local joined
+      joined=$(printf '%s; ' "${missing[@]}")
+      echo "Not reported for $language: ${joined%; }. Either the linter" \
         "isn't running, or the probe in $0 has no violation for that rule." >&2
     fi
     failed=1
@@ -136,7 +149,7 @@ check() {
   done
 }
 
-check swift "$swift_probe" "$swift_rules"
-check kotlin "$kotlin_probe" "$kotlin_rules"
+check swift "$swift_rules" "$swift_probe" "$watch_swift_probe"
+check kotlin "$kotlin_rules" "$kotlin_probe"
 
 exit "$failed"
