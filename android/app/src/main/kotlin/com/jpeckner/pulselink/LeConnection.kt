@@ -34,12 +34,19 @@ sealed interface GattOperation {
         val service: UUID,
         val characteristic: UUID,
     ) : GattOperation
+
+    /** Reads [characteristic] in [service] once. */
+    data class ReadCharacteristic(
+        val service: UUID,
+        val characteristic: UUID,
+    ) : GattOperation
 }
 
 /**
  * Connects to one strap at a time, subscribes to its Heart Rate Measurement
- * characteristic (0x2A37), and sends each notification to Dart: Android's
- * counterpart of iOS's StrapConnection, and laid out the same way.
+ * characteristic (0x2A37), and sends each notification to Dart, along with
+ * the strap's battery level if it has one: Android's counterpart of iOS's
+ * StrapConnection, and laid out the same way.
  *
  * Everything here runs on the main thread, the only thread Flutter accepts
  * messages to Dart from. Pigeon runs [connect] in a coroutine on the main
@@ -285,7 +292,7 @@ class LeConnection(private val context: Context) {
         when (queue.current) {
             GattOperation.DiscoverServices -> Unit
             // Not waiting for discovery: a late callback.
-            is GattOperation.EnableNotifications, null -> return
+            is GattOperation.EnableNotifications, is GattOperation.ReadCharacteristic, null -> return
         }
         queue.finishCurrent()
         val gatt = gatt ?: return
@@ -328,24 +335,101 @@ class LeConnection(private val context: Context) {
                     return
                 }
                 queue.finishCurrent()
-                notificationsEnabled(status)
+                notificationsEnabled(op, status)
             }
             // Not waiting for a descriptor write: a late callback.
-            GattOperation.DiscoverServices, null -> Unit
+            GattOperation.DiscoverServices, is GattOperation.ReadCharacteristic, null -> Unit
         }
     }
 
-    /** Finishes connecting once heart-rate notifications are on. */
-    private fun notificationsEnabled(status: Int) {
+    /**
+     * Finishes connecting once heart-rate notifications are on, then reads
+     * the battery level. The battery's own notifications don't affect
+     * connecting.
+     */
+    private fun notificationsEnabled(
+        op: GattOperation.EnableNotifications,
+        status: Int,
+    ) {
+        val isSuccess = status == BluetoothGatt.GATT_SUCCESS
+        if (op.characteristic != StrapUuids.HEART_RATE_MEASUREMENT) {
+            if (!isSuccess) {
+                // The level read after connecting still shows; it just
+                // won't update.
+                Log.i(TAG, "Turning on battery notifications failed with status $status")
+            }
+            return
+        }
         if (pending == null) {
             return
         }
-        if (status != BluetoothGatt.GATT_SUCCESS) {
+        if (!isSuccess) {
             Log.w(TAG, "Turning on heart rate notifications failed with status $status")
             finish(BleConnectFailed(ConnectAction.discoveryFailure(hadError = true)))
             return
         }
         finish(BleConnected())
+        readBatteryLevel()
+    }
+
+    /**
+     * Queues reading the battery level, and notifications of changes to
+     * it, if the strap has the Battery Service. Only once connected, so the
+     * battery never delays connecting.
+     */
+    private fun readBatteryLevel() {
+        val gatt = gatt ?: return
+        if (pending != null) {
+            return
+        }
+        val level =
+            gatt
+                .getService(StrapUuids.BATTERY_SERVICE)
+                ?.getCharacteristic(StrapUuids.BATTERY_LEVEL)
+                ?: return
+        // The value arrives in characteristicRead now and, if the strap
+        // supports it, in characteristicChanged whenever it changes.
+        queue.enqueue(
+            GattOperation.ReadCharacteristic(
+                service = StrapUuids.BATTERY_SERVICE,
+                characteristic = StrapUuids.BATTERY_LEVEL,
+            ),
+        )
+        if (ConnectAction.canNotify(level.properties)) {
+            queue.enqueue(
+                GattOperation.EnableNotifications(
+                    service = StrapUuids.BATTERY_SERVICE,
+                    characteristic = StrapUuids.BATTERY_LEVEL,
+                ),
+            )
+        }
+    }
+
+    private fun characteristicRead(
+        callback: StrapGattCallback,
+        characteristic: UUID,
+        value: ByteArray,
+        status: Int,
+    ) {
+        if (callback !== gattCallback) {
+            return
+        }
+        when (val op = queue.current) {
+            is GattOperation.ReadCharacteristic -> {
+                if (op.characteristic != characteristic) {
+                    return
+                }
+                queue.finishCurrent()
+                if (status != BluetoothGatt.GATT_SUCCESS) {
+                    // Optional, so the strap stays connected without it.
+                    Log.i(TAG, "Reading $characteristic failed with status $status")
+                    return
+                }
+                valueReceived(characteristic, value)
+            }
+            // Not waiting for a read: a late callback.
+            GattOperation.DiscoverServices, is GattOperation.EnableNotifications, null -> Unit
+        }
     }
 
     private fun characteristicChanged(
@@ -353,12 +437,27 @@ class LeConnection(private val context: Context) {
         characteristic: UUID,
         value: ByteArray,
     ) {
-        // Notifications before connecting finished don't count, as on iOS.
-        if (callback !== gattCallback || pending != null) {
+        if (callback !== gattCallback) {
+            return
+        }
+        valueReceived(characteristic, value)
+    }
+
+    /** Sends a heart rate measurement or battery level on to Dart. */
+    private fun valueReceived(
+        characteristic: UUID,
+        value: ByteArray,
+    ) {
+        // Values before connecting finished don't count, as on iOS.
+        if (pending != null) {
             return
         }
         if (characteristic == StrapUuids.HEART_RATE_MEASUREMENT) {
             sink?.success(BleHeartRateMeasurement(value))
+            return
+        }
+        if (characteristic == StrapUuids.BATTERY_LEVEL) {
+            BatteryValue.percent(value)?.let { sink?.success(BleBatteryLevel(it.toLong())) }
         }
     }
 
@@ -369,6 +468,11 @@ class LeConnection(private val context: Context) {
             when (op) {
                 GattOperation.DiscoverServices -> gatt.discoverServices()
                 is GattOperation.EnableNotifications -> enableNotifications(gatt, op)
+                is GattOperation.ReadCharacteristic -> {
+                    val characteristic =
+                        gatt.getService(op.service)?.getCharacteristic(op.characteristic)
+                    characteristic != null && gatt.readCharacteristic(characteristic)
+                }
             }
         } catch (error: SecurityException) {
             Log.w(TAG, "Starting $op wasn't permitted", error)
@@ -414,14 +518,19 @@ class LeConnection(private val context: Context) {
 
     /**
      * An operation Android refused to start, or whose callback never came.
-     * Every operation so far is part of connecting, so the attempt fails.
+     * One that's part of connecting fails the attempt; a battery one is
+     * optional, so the strap stays connected without it.
      */
     private fun operationFailed(op: GattOperation) {
         Log.w(TAG, "$op was refused or timed out")
-        when (op) {
-            GattOperation.DiscoverServices,
-            is GattOperation.EnableNotifications,
-            -> finish(BleConnectFailed(BleConnectFailureReason.UNREACHABLE))
+        val isForConnecting =
+            when (op) {
+                GattOperation.DiscoverServices -> true
+                is GattOperation.EnableNotifications -> op.characteristic == StrapUuids.HEART_RATE_MEASUREMENT
+                is GattOperation.ReadCharacteristic -> false
+            }
+        if (isForConnecting) {
+            finish(BleConnectFailed(BleConnectFailureReason.UNREACHABLE))
         }
     }
 
@@ -514,6 +623,33 @@ class LeConnection(private val context: Context) {
             val characteristic = descriptor.characteristic?.uuid ?: return
             val uuid = descriptor.uuid
             mainHandler.post { descriptorWritten(this, characteristic, uuid, status) }
+        }
+
+        /** Android 13 and later. */
+        override fun onCharacteristicRead(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            value: ByteArray,
+            status: Int,
+        ) {
+            val uuid = characteristic.uuid
+            mainHandler.post { characteristicRead(this, uuid, value, status) }
+        }
+
+        /**
+         * Android 12; Android 13 calls the one above instead. The value is
+         * copied here, on the binder thread, as in onCharacteristicChanged.
+         */
+        @Deprecated("Replaced in Android 13 by the overload with a value parameter")
+        @Suppress("DEPRECATION")
+        override fun onCharacteristicRead(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            status: Int,
+        ) {
+            val value = characteristic.value?.copyOf() ?: byteArrayOf()
+            val uuid = characteristic.uuid
+            mainHandler.post { characteristicRead(this, uuid, value, status) }
         }
 
         /** Android 13 and later. */
