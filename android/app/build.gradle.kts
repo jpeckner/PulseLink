@@ -20,7 +20,10 @@ android {
         applicationId = "com.jpeckner.pulselink"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // Android 12, the first version with the BLUETOOTH_SCAN and
+        // BLUETOOTH_CONNECT permissions. Older versions also need location
+        // permission, and location services switched on, to scan.
+        minSdk = 31
         targetSdk = flutter.targetSdkVersion
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
         // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)
@@ -53,6 +56,7 @@ dependencies {
     // Pigeon's generated Kotlin runs async calls (`@async` in
     // pigeons/ble_api.dart) with coroutines.
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
+    testImplementation("junit:junit:4.13.2")
 }
 
 // Lints the hand-written Kotlin; see android/config/detekt.yml and

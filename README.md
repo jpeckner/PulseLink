@@ -17,7 +17,7 @@ strap.
 - [x] 1. Setup and skeleton
 - [x] 2. Domain and fake data (demo mode)
 - [x] 3. Real BLE on iOS
-- [ ] 4. Real BLE on Android
+- [x] 4. Real BLE on Android
 - [ ] 5. Apple Watch app
 - [ ] 6. Reliability for iOS
 - [ ] 7. Polish and portfolio (nice-to-have)
@@ -52,7 +52,10 @@ flutter run
 The app starts in **demo mode**: `FakeStrapDataSource` simulates a strap, and
 the screen shows a "Demo" badge. On an iPhone, tap **Find strap** to pick a real
 strap; that needs a physical phone, since BLE doesn't work in the iOS Simulator.
-Android runs in demo mode only until Milestone 4.
+On Android (12 or later, with Bluetooth LE), **Find strap** works the same
+way; the first scan asks for the Nearby devices permission, and the emulator
+can't reach a real strap. On both platforms, streaming stops soon after the
+app goes to the background; keeping it going comes in Milestone 6.
 
 Models and states use `freezed`, which generates `*.freezed.dart` files. They're
 committed, and CI fails if they're out of date. After changing an annotated
