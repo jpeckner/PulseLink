@@ -1,6 +1,17 @@
 import 'package:pulselink/data/watch_bridge.dart';
 import 'package:pulselink/domain/watch_heart_rate_snapshot.dart';
 
+/// How a [FakeWatchBridge] with an [FakeWatchBridge.error] fails. Each
+/// [description] reads as a test name.
+enum FakeWatchBridgeFailure {
+  failedFuture('returns a failed future'),
+  throwsBeforeFuture('throws before returning a future');
+
+  new(this.description);
+
+  final String description;
+}
+
 /// A [WatchBridge] that records what it was given, and answers with
 /// [liveResult] and [contextResult].
 class FakeWatchBridge implements WatchBridge {
@@ -18,25 +29,33 @@ class FakeWatchBridge implements WatchBridge {
   /// result, standing in for a bug in a bridge.
   Exception? error;
 
+  /// How the calls fail when [error] is set.
+  FakeWatchBridgeFailure failure = FakeWatchBridgeFailure.failedFuture;
+
   @override
   Future<WatchDeliveryResult> sendLiveSnapshot(
     WatchHeartRateSnapshot snapshot,
-  ) async {
+  ) {
     liveSnapshots.add(snapshot);
-    if (error case final error?) {
-      throw error;
-    }
-    return liveResult;
+    return _answer(liveResult);
   }
 
   @override
   Future<WatchDeliveryResult> updateApplicationContext(
     WatchHeartRateSnapshot snapshot,
-  ) async {
+  ) {
     contexts.add(snapshot);
-    if (error case final error?) {
-      throw error;
+    return _answer(contextResult);
+  }
+
+  Future<WatchDeliveryResult> _answer(WatchDeliveryResult result) {
+    final error = this.error;
+    if (error == null) {
+      return Future.value(result);
     }
-    return contextResult;
+    return switch (failure) {
+      FakeWatchBridgeFailure.failedFuture => Future.error(error),
+      FakeWatchBridgeFailure.throwsBeforeFuture => throw error,
+    };
   }
 }
