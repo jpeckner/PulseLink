@@ -9,6 +9,8 @@ import 'package:pulselink/blocs/debug_override/debug_override_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/strap_selection.dart';
 import 'package:pulselink/blocs/strap_battery/strap_battery_cubit.dart';
+import 'package:pulselink/data/app_settings.dart';
+import 'package:pulselink/data/app_settings/platform_app_settings.dart';
 import 'package:pulselink/data/ble/ble_strap_scanner.dart';
 import 'package:pulselink/data/debug_override_strap_data_source.dart';
 import 'package:pulselink/data/fake_strap_data_source.dart';
@@ -27,6 +29,7 @@ void main() {
   // Demo mode at launch, until a strap is picked in the strap picker.
   final source = SwitchableStrapDataSource(FakeStrapDataSource());
   final StrapScanner strapScanner = BleStrapScanner();
+  final AppSettings appSettings = PlatformAppSettings();
 
   if (kReleaseMode) {
     // Created before starting the source, which reports its battery level as
@@ -38,6 +41,7 @@ void main() {
         liveHeartRateCubit: cubit,
         strapBatteryCubit: batteryCubit,
         strapScanner: strapScanner,
+        appSettings: appSettings,
         onStrapSelected: _selectStrap(source, cubit),
       ),
     );
@@ -55,6 +59,7 @@ void main() {
         liveHeartRateCubit: cubit,
         strapBatteryCubit: batteryCubit,
         strapScanner: strapScanner,
+        appSettings: appSettings,
         onStrapSelected: _selectStrap(source, cubit),
         debugControls: DebugOverrideButtons(cubit: overrideCubit),
         onTitleLongPress: overrideCubit.toggleVisibility,

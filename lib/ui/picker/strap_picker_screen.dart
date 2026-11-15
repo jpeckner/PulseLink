@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/blocs/strap_picker/strap_picker_cubit.dart';
 import 'package:pulselink/blocs/strap_picker/strap_picker_state.dart';
+import 'package:pulselink/data/app_settings.dart';
 import 'package:pulselink/data/strap_scanner.dart';
 import 'package:pulselink/domain/discovered_strap.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
@@ -11,9 +12,12 @@ import 'package:pulselink/ui/widgets/problem_view.dart';
 
 /// Lists nearby heart-rate straps, scanning only while it's open.
 class StrapPickerScreen extends StatelessWidget {
-  const new({required this.scanner, super.key});
+  const new({required this.scanner, required this.appSettings, super.key});
 
   final StrapScanner scanner;
+
+  /// Opened when Bluetooth permission is denied.
+  final AppSettings appSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -22,13 +26,15 @@ class StrapPickerScreen extends StatelessWidget {
     // so a failure to stop goes to the zone's error handler.
     return BlocProvider(
       create: (_) => StrapPickerCubit(scanner: scanner)..start(),
-      child: const _StrapPickerView(),
+      child: _StrapPickerView(appSettings: appSettings),
     );
   }
 }
 
 class _StrapPickerView extends StatelessWidget {
-  const new();
+  const new({required this.appSettings});
+
+  final AppSettings appSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +60,7 @@ class _StrapPickerView extends StatelessWidget {
                     StrapPickerFailed(:final problem) => Center(
                       child: ProblemView(
                         message: bluetoothProblemMessage(problem),
+                        appSettings: appSettings,
                       ),
                     ),
                   },

@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/strap_battery/strap_battery_cubit.dart';
+import 'package:pulselink/data/app_settings.dart';
 import 'package:pulselink/data/strap_scanner.dart';
 import 'package:pulselink/domain/discovered_strap.dart';
 import 'package:pulselink/ui/live/live_heart_rate_screen.dart';
@@ -13,6 +14,7 @@ class PulseLinkApp extends StatelessWidget {
     required this.liveHeartRateCubit,
     required this.strapBatteryCubit,
     required this.strapScanner,
+    required this.appSettings,
     required this.onStrapSelected,
     this.debugControls,
     this.onTitleLongPress,
@@ -27,6 +29,9 @@ class PulseLinkApp extends StatelessWidget {
 
   /// Used by the strap picker, which scans only while it's open.
   final StrapScanner strapScanner;
+
+  /// Opened from the screens when Bluetooth permission is denied.
+  final AppSettings appSettings;
 
   /// Called with the strap picked in the strap picker.
   final ValueChanged<DiscoveredStrap> onStrapSelected;
@@ -44,7 +49,9 @@ class PulseLinkApp extends StatelessWidget {
       home: LiveHeartRateScreen(
         cubit: liveHeartRateCubit,
         batteryCubit: strapBatteryCubit,
-        buildStrapPicker: (_) => StrapPickerScreen(scanner: strapScanner),
+        appSettings: appSettings,
+        buildStrapPicker: (_) =>
+            StrapPickerScreen(scanner: strapScanner, appSettings: appSettings),
         onStrapSelected: onStrapSelected,
         debugControls: debugControls,
         onTitleLongPress: onTitleLongPress,

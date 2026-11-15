@@ -31,5 +31,6 @@ extension AppDelegate: FlutterImplicitEngineDelegate {
     let strapLink = BleStrapLink()
     StrapEventsStreamHandler.register(with: messenger, streamHandler: strapLink)
     BleConnectionApiSetup.setUp(binaryMessenger: messenger, api: strapLink)
+    AppSettingsApiSetup.setUp(binaryMessenger: messenger, api: AppSettingsOpener())
   }
 }

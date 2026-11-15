@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
 import 'package:pulselink/blocs/strap_battery/strap_battery_cubit.dart';
+import 'package:pulselink/data/app_settings.dart';
 import 'package:pulselink/domain/battery_level.dart';
 import 'package:pulselink/domain/discovered_strap.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
@@ -19,6 +20,7 @@ class LiveHeartRateScreen extends StatelessWidget {
   const new({
     required this.cubit,
     required this.batteryCubit,
+    required this.appSettings,
     required this.buildStrapPicker,
     required this.onStrapSelected,
     this.debugControls,
@@ -30,6 +32,10 @@ class LiveHeartRateScreen extends StatelessWidget {
 
   /// The strap's battery level, shown in the app bar once it's known.
   final StrapBatteryCubit batteryCubit;
+
+  /// Opened when a problem is fixed in this app's settings, such as
+  /// Bluetooth permission being denied.
+  final AppSettings appSettings;
 
   /// Builds the screen that finds a strap, opened from the app bar.
   final WidgetBuilder buildStrapPicker;
@@ -96,6 +102,7 @@ class LiveHeartRateScreen extends StatelessWidget {
                           LiveHeartRateConnectionFailed(:final failure) =>
                             _ConnectionFailedView(
                               failure: failure,
+                              appSettings: appSettings,
                               // Not awaited: start() reports how it went by
                               // changing the cubit's state, which this screen
                               // already shows. It only throws on a bug in a
@@ -154,9 +161,14 @@ class _WaitingView extends StatelessWidget {
 
 /// Why there's no heart rate, what to do about it, and a way to retry.
 class _ConnectionFailedView extends StatelessWidget {
-  const new({required this.failure, required this.onTryAgain});
+  const new({
+    required this.failure,
+    required this.appSettings,
+    required this.onTryAgain,
+  });
 
   final StrapConnectionFailure failure;
+  final AppSettings appSettings;
   final VoidCallback onTryAgain;
 
   @override
@@ -170,18 +182,22 @@ class _ConnectionFailedView extends StatelessWidget {
           detail:
               "Make sure it's on, being worn and nearby, and not connected "
               'to another app.',
+          isFixedInSettings: false,
         ),
         NotAHeartRateStrap() => (
           icon: Icons.heart_broken_outlined,
           title: 'Not a heart-rate strap',
           detail: "This device doesn't send heart-rate data.",
+          isFixedInSettings: false,
         ),
         StrapConnectionLost() => (
           icon: Icons.link_off,
           title: 'Strap disconnected',
           detail: "Make sure it's on, being worn and nearby, then try again.",
+          isFixedInSettings: false,
         ),
       },
+      appSettings: appSettings,
       onTryAgain: onTryAgain,
     );
   }
