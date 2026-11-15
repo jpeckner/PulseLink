@@ -19,10 +19,12 @@
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		BE9EAA0C636C32B38EB61C20 /* BleApi.pigeon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09214D17CA0BB94F188019FA /* BleApi.pigeon.swift */; };
+		C9F5D740239324996FE91AC0 /* AppSettingsApi.pigeon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 486A256F0D40CF28FBBF776A /* AppSettingsApi.pigeon.swift */; };
 		CA373E3E30A7EC7100D100CA /* MainThreadCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA373E3D30A7EC6D00D100CA /* MainThreadCheck.swift */; };
 		CA373E4030A7EC9400D100CA /* ScanAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA373E3F30A7EC9400D100CA /* ScanAction.swift */; };
 		CA373E4230A7ECC800D100CA /* CentralScan.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA373E4130A7ECC700D100CA /* CentralScan.swift */; };
 		CD6CDA9F233E42A28F5C0CDE /* BleStrapLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = B689CBDF1F8F57AB1F03F43E /* BleStrapLink.swift */; };
+		F4F2C9DE94C793870DC93D90 /* AppSettingsOpener.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C666555E37E01CA2533B886 /* AppSettingsOpener.swift */; };
 		F66ED4DC7B794547A9F31F7F /* ConnectAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = F26AAFE316A97D88945B8B5A /* ConnectAction.swift */; };
 /* End PBXBuildFile section */
 
@@ -56,6 +58,8 @@
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		486A256F0D40CF28FBBF776A /* AppSettingsApi.pigeon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppSettingsApi.pigeon.swift; sourceTree = "<group>"; };
+		5C666555E37E01CA2533B886 /* AppSettingsOpener.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppSettingsOpener.swift; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -143,6 +147,8 @@
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 				09214D17CA0BB94F188019FA /* BleApi.pigeon.swift */,
+				486A256F0D40CF28FBBF776A /* AppSettingsApi.pigeon.swift */,
+				5C666555E37E01CA2533B886 /* AppSettingsOpener.swift */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -352,6 +358,8 @@
 				F66ED4DC7B794547A9F31F7F /* ConnectAction.swift in Sources */,
 				351483C12BFC634B42A4F35A /* StrapConnection.swift in Sources */,
 				CD6CDA9F233E42A28F5C0CDE /* BleStrapLink.swift in Sources */,
+				C9F5D740239324996FE91AC0 /* AppSettingsApi.pigeon.swift in Sources */,
+				F4F2C9DE94C793870DC93D90 /* AppSettingsOpener.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

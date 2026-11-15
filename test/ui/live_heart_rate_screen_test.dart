@@ -19,6 +19,7 @@ import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 import '../helpers/beats_per_minute.dart';
 import '../helpers/discovered_strap.dart';
 import '../helpers/strap_connection_failures.dart';
+import '../helpers/stub_app_settings.dart';
 
 class _MockLiveHeartRateCubit extends MockCubit<LiveHeartRateState>
     implements LiveHeartRateCubit;
@@ -63,10 +64,12 @@ void main() {
   group('LiveHeartRateScreen', () {
     late _MockLiveHeartRateCubit cubit;
     late _MockStrapBatteryCubit battery;
+    late StubAppSettings settings;
 
     setUp(() {
       cubit = _MockLiveHeartRateCubit();
       battery = _MockStrapBatteryCubit();
+      settings = StubAppSettings();
       when(() => battery.state).thenReturn(null);
     });
 
@@ -81,6 +84,7 @@ void main() {
             key: UniqueKey(),
             cubit: cubit,
             batteryCubit: battery,
+            appSettings: settings,
             buildStrapPicker: _noPicker,
             onStrapSelected: _noSelection,
           ),
@@ -275,29 +279,35 @@ void main() {
         const StrapConnectionFailure.bluetooth(BluetoothProblem.off): (
           'Bluetooth is off',
           'Turn on Bluetooth to connect to your strap.',
+          false,
         ),
         const StrapConnectionFailure.bluetooth(BluetoothProblem.unavailable): (
           "Bluetooth isn't available",
           "This phone can't connect to a heart-rate strap.",
+          false,
         ),
         const StrapConnectionFailure.bluetooth(
           BluetoothProblem.permissionDenied,
         ): (
           'Bluetooth permission needed',
           'Allow PulseLink to use Bluetooth in Settings, then try again.',
+          true,
         ),
         const StrapConnectionFailure.strapUnreachable(): (
           "Can't reach the strap",
           "Make sure it's on, being worn and nearby, and not connected to "
               'another app.',
+          false,
         ),
         const StrapConnectionFailure.notAHeartRateStrap(): (
           'Not a heart-rate strap',
           "This device doesn't send heart-rate data.",
+          false,
         ),
         const StrapConnectionFailure.connectionLost(): (
           'Strap disconnected',
           "Make sure it's on, being worn and nearby, then try again.",
+          false,
         ),
       };
 
@@ -305,7 +315,7 @@ void main() {
         expect(messages.keys, unorderedEquals(allStrapConnectionFailures));
       });
 
-      for (final MapEntry(key: failure, value: (title, detail))
+      for (final MapEntry(key: failure, value: (title, detail, hasSettings))
           in messages.entries) {
         testWidgets('$failure: says why, what to do, and no number', (
           tester,
@@ -320,10 +330,27 @@ void main() {
           expect(find.text(title), findsOneWidget);
           expect(find.text(detail), findsOneWidget);
           expect(find.text('Try again'), findsOneWidget);
+          expect(
+            find.text('Open Settings'),
+            hasSettings ? findsOneWidget : findsNothing,
+          );
           expect(find.text('--'), findsNothing);
           expect(find.text('bpm'), findsNothing);
         });
       }
+
+      testWidgets('Open Settings opens the settings', (tester) async {
+        await pumpScreen(
+          tester,
+          const LiveHeartRateState.connectionFailed(
+            failure: .bluetooth(.permissionDenied),
+            isSimulated: false,
+          ),
+        );
+        await tester.tap(find.text('Open Settings'));
+        await tester.pump();
+        expect(settings.openCount, 1);
+      });
 
       testWidgets('Try again starts the cubit again', (tester) async {
         when(() => cubit.start()).thenAnswer((_) async {});
@@ -347,6 +374,7 @@ void main() {
           home: LiveHeartRateScreen(
             cubit: cubit,
             batteryCubit: battery,
+            appSettings: settings,
             buildStrapPicker: (_) => const Text('strap picker'),
             onStrapSelected: _noSelection,
           ),
@@ -421,6 +449,7 @@ void main() {
             home: LiveHeartRateScreen(
               cubit: cubit,
               batteryCubit: battery,
+              appSettings: settings,
               // A stand-in picker that closes with pickedStrap.
               buildStrapPicker: (context) => TextButton(
                 onPressed: () => Navigator.of(context).pop(pickedStrap),
@@ -486,6 +515,7 @@ void main() {
           home: LiveHeartRateScreen(
             cubit: cubit,
             batteryCubit: battery,
+            appSettings: settings,
             buildStrapPicker: _noPicker,
             onStrapSelected: _noSelection,
           ),
@@ -544,6 +574,7 @@ void main() {
             home: LiveHeartRateScreen(
               cubit: cubit,
               batteryCubit: battery,
+              appSettings: settings,
               buildStrapPicker: _noPicker,
               onStrapSelected: _noSelection,
               debugControls: const Text('debug controls'),
@@ -563,6 +594,7 @@ void main() {
               home: LiveHeartRateScreen(
                 cubit: cubit,
                 batteryCubit: battery,
+                appSettings: settings,
                 buildStrapPicker: _noPicker,
                 onStrapSelected: _noSelection,
                 debugControls: debugControls,
@@ -593,6 +625,7 @@ void main() {
             home: LiveHeartRateScreen(
               cubit: cubit,
               batteryCubit: battery,
+              appSettings: settings,
               buildStrapPicker: _noPicker,
               onStrapSelected: _noSelection,
               onTitleLongPress: () => longPresses++,

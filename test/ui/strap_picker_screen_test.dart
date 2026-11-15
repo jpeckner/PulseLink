@@ -7,16 +7,23 @@ import 'package:pulselink/ui/picker/strap_picker_screen.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
 import '../helpers/discovered_strap.dart';
+import '../helpers/stub_app_settings.dart';
 import '../helpers/stub_strap_scanner.dart';
 
 void main() {
   group('StrapPickerScreen', () {
     late StubStrapScanner scanner;
+    late StubAppSettings settings;
 
-    setUp(() => scanner = StubStrapScanner());
+    setUp(() {
+      scanner = StubStrapScanner();
+      settings = StubAppSettings();
+    });
 
     Future<void> pumpScreen(WidgetTester tester) => tester.pumpWidget(
-      MaterialApp(home: StrapPickerScreen(scanner: scanner)),
+      MaterialApp(
+        home: StrapPickerScreen(scanner: scanner, appSettings: settings),
+      ),
     );
 
     testWidgets('scans while open, and says it is looking', (tester) async {
@@ -126,7 +133,10 @@ void main() {
               onPressed: () async {
                 picked = await Navigator.of(context).push(
                   MaterialPageRoute<DiscoveredStrap>(
-                    builder: (_) => StrapPickerScreen(scanner: scanner),
+                    builder: (_) => StrapPickerScreen(
+                      scanner: scanner,
+                      appSettings: settings,
+                    ),
                   ),
                 );
               },
@@ -156,14 +166,17 @@ void main() {
         BluetoothProblem.off: (
           'Bluetooth is off',
           'Turn on Bluetooth to connect to your strap.',
+          false,
         ),
         BluetoothProblem.unavailable: (
           "Bluetooth isn't available",
           "This phone can't connect to a heart-rate strap.",
+          false,
         ),
         BluetoothProblem.permissionDenied: (
           'Bluetooth permission needed',
           'Allow PulseLink to use Bluetooth in Settings, then try again.',
+          true,
         ),
       };
 
@@ -171,7 +184,7 @@ void main() {
         expect(messages.keys, unorderedEquals(BluetoothProblem.values));
       });
 
-      for (final MapEntry(key: problem, value: (title, detail))
+      for (final MapEntry(key: problem, value: (title, detail, hasSettings))
           in messages.entries) {
         testWidgets('${problem.name}: says why and what to do', (tester) async {
           await pumpScreen(tester);
@@ -179,10 +192,23 @@ void main() {
           await tester.pump();
           expect(find.text(title), findsOneWidget);
           expect(find.text(detail), findsOneWidget);
+          expect(
+            find.text('Open Settings'),
+            hasSettings ? findsOneWidget : findsNothing,
+          );
           // Scanning resumes by itself once the problem is fixed.
           expect(find.text('Try again'), findsNothing);
         });
       }
+
+      testWidgets('Open Settings opens the settings', (tester) async {
+        await pumpScreen(tester);
+        scanner.emit(const .failed(.permissionDenied));
+        await tester.pump();
+        await tester.tap(find.text('Open Settings'));
+        await tester.pump();
+        expect(settings.openCount, 1);
+      });
 
       testWidgets('scanning resumes when the problem goes away', (
         tester,

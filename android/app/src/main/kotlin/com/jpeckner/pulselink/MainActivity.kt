@@ -12,5 +12,6 @@ class MainActivity : FlutterActivity() {
         val strapLink = BleStrapLink()
         StrapEventsStreamHandler.register(messenger, strapLink)
         BleConnectionApi.setUp(messenger, strapLink)
+        AppSettingsApi.setUp(messenger, AppSettingsOpener(this))
     }
 }

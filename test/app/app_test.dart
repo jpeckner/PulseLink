@@ -12,6 +12,7 @@ import 'package:pulselink/ui/debug/debug_override_buttons.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
 import '../helpers/beats_per_minute.dart';
+import '../helpers/stub_app_settings.dart';
 import '../helpers/stub_strap_data_source.dart';
 import '../helpers/stub_strap_scanner.dart';
 
@@ -29,6 +30,7 @@ void main() {
           liveHeartRateCubit: cubit,
           strapBatteryCubit: batteryCubit,
           strapScanner: StubStrapScanner(),
+          appSettings: StubAppSettings(),
           onStrapSelected: (_) {},
         ),
       );
@@ -66,6 +68,7 @@ void main() {
           liveHeartRateCubit: cubit,
           strapBatteryCubit: batteryCubit,
           strapScanner: scanner,
+          appSettings: StubAppSettings(),
           onStrapSelected: (_) {},
         ),
       );
@@ -95,6 +98,7 @@ void main() {
           liveHeartRateCubit: cubit,
           strapBatteryCubit: batteryCubit,
           strapScanner: StubStrapScanner(),
+          appSettings: StubAppSettings(),
           onStrapSelected: (_) {},
           debugControls: DebugOverrideButtons(cubit: overrideCubit),
           onTitleLongPress: overrideCubit.toggleVisibility,
