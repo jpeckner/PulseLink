@@ -1,4 +1,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Finds heart-rate straps. neverForLocation says scans aren't used to
+         work out where the phone is, so no location permission is needed. -->
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation" />
+    <!-- Reads a strap's name, lists straps already connected, and connects. -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <!-- Not required: phones without Bluetooth LE can still run demo mode. -->
+    <uses-feature
+        android:name="android.hardware.bluetooth_le"
+        android:required="false" />
     <application
         android:label="PulseLink"
         android:name="${applicationName}"
