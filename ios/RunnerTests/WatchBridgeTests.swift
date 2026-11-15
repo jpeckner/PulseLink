@@ -4,98 +4,90 @@ import WatchConnectivity
 
 @testable import Runner
 
-/// A session that's activated, paired, has the watch app, and is reachable,
-/// for tests to change one property at a time.
-private func readyState() -> WatchSessionState {
-  WatchSessionState(
-    isSupported: true,
-    activation: .activated,
-    isPaired: true,
-    isWatchAppInstalled: true,
-    isReachable: true
-  )
-}
-
-private func state(_ change: (inout WatchSessionState) -> Void) -> WatchSessionState {
-  var state = readyState()
-  change(&state)
-  return state
-}
-
-struct LiveSnapshotActionTests {
+struct WatchSessionStateTests {
   @Test
-  func sendsWhenTheWatchAppIsReachable() {
-    #expect(LiveSnapshotAction(readyState()) == .send)
+  func isReachableWhenActivatedWithAReachableWatchApp() {
+    let state = WatchSessionState(
+      activation: .activated,
+      isPaired: true,
+      isWatchAppInstalled: true,
+      isReachable: true
+    )
+
+    #expect(state == .watchAppReachable)
   }
 
   @Test
-  func dropsWhenTheWatchAppIsNotReachable() {
-    #expect(LiveSnapshotAction(state { $0.isReachable = false }) == .drop(.watchUnreachable))
-  }
-
-  @Test(arguments: [WCSessionActivationState.notActivated, .inactive])
-  func dropsUntilActivated(activation: WCSessionActivationState) {
-    // Paired and reachable are meaningless before activation, so they don't
-    // matter here.
-    #expect(LiveSnapshotAction(state { $0.activation = activation }) == .drop(.watchUnreachable))
-  }
-
-  @Test
-  func dropsWithoutAPairedWatch() {
-    #expect(LiveSnapshotAction(state { $0.isPaired = false }) == .drop(.noWatchApp))
-  }
-
-  @Test
-  func dropsWithoutTheWatchApp() {
-    #expect(LiveSnapshotAction(state { $0.isWatchAppInstalled = false }) == .drop(.noWatchApp))
-  }
-
-  @Test
-  func dropsOnADeviceThatCannotTalkToAWatch() {
-    let unsupported = WatchSessionState(
-      isSupported: false,
-      activation: .notActivated,
-      isPaired: false,
-      isWatchAppInstalled: false,
+  func isNotReachableWhenTheWatchAppIsNotOpenOrInRange() {
+    let state = WatchSessionState(
+      activation: .activated,
+      isPaired: true,
+      isWatchAppInstalled: true,
       isReachable: false
     )
 
-    #expect(LiveSnapshotAction(unsupported) == .drop(.unsupported))
+    #expect(state == .watchAppNotReachable)
+  }
+
+  @Test(arguments: [(false, true), (true, false), (false, false)])
+  func hasNoWatchAppWithoutAPairedWatchThatHasTheApp(
+    isPaired: Bool,
+    isWatchAppInstalled: Bool
+  ) {
+    // Reachable is true to show it doesn't count without the app.
+    let state = WatchSessionState(
+      activation: .activated,
+      isPaired: isPaired,
+      isWatchAppInstalled: isWatchAppInstalled,
+      isReachable: true
+    )
+
+    #expect(state == .noWatchApp)
+  }
+
+  @Test(arguments: [WCSessionActivationState.notActivated, .inactive])
+  func isActivatingUntilActivated(activation: WCSessionActivationState) {
+    // The other properties are true to show they don't count before
+    // activation.
+    let state = WatchSessionState(
+      activation: activation,
+      isPaired: true,
+      isWatchAppInstalled: true,
+      isReachable: true
+    )
+
+    #expect(state == .activating)
+  }
+}
+
+struct LiveSnapshotActionTests {
+  @Test(arguments: [
+    (WatchSessionState.unsupported, LiveSnapshotAction.drop(.unsupported)),
+    (.activating, .drop(.watchUnreachable)),
+    (.noWatchApp, .drop(.noWatchApp)),
+    (.watchAppNotReachable, .drop(.watchUnreachable)),
+    (.watchAppReachable, .send),
+  ])
+  func eachSessionStateHasAnAction(state: WatchSessionState, action: LiveSnapshotAction) {
+    #expect(LiveSnapshotAction(state) == action)
   }
 }
 
 struct ApplicationContextActionTests {
-  @Test
-  func updatesWhenThereIsAWatchApp() {
-    #expect(ApplicationContextAction(readyState()) == .update)
-  }
-
-  @Test
-  func updatesEvenWhenTheWatchAppIsNotReachable() {
-    // The application context is for when the watch app isn't open.
-    #expect(ApplicationContextAction(state { $0.isReachable = false }) == .update)
-  }
-
-  @Test(arguments: [WCSessionActivationState.notActivated, .inactive])
-  func holdsUntilActivated(activation: WCSessionActivationState) {
-    #expect(ApplicationContextAction(state { $0.activation = activation }) == .hold)
-  }
-
-  @Test
-  func dropsWithoutAPairedWatch() {
-    #expect(ApplicationContextAction(state { $0.isPaired = false }) == .drop(.noWatchApp))
-  }
-
-  @Test
-  func dropsWithoutTheWatchApp() {
-    #expect(
-      ApplicationContextAction(state { $0.isWatchAppInstalled = false }) == .drop(.noWatchApp)
-    )
-  }
-
-  @Test
-  func dropsOnADeviceThatCannotTalkToAWatch() {
-    #expect(ApplicationContextAction(state { $0.isSupported = false }) == .drop(.unsupported))
+  @Test(arguments: [
+    (WatchSessionState.unsupported, ApplicationContextAction.drop(.unsupported)),
+    (.activating, .hold),
+    (.noWatchApp, .drop(.noWatchApp)),
+    // The application context is for when the watch app isn't open, so
+    // it doesn't need to be reachable.
+    (.watchAppNotReachable, .update),
+    (.watchAppReachable, .update),
+  ])
+  func eachSessionStateHasAnAction(
+    state: WatchSessionState,
+    action: ApplicationContextAction
+  ) {
+    #expect(ApplicationContextAction(state) == action)
   }
 }
 

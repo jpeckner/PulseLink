@@ -82,12 +82,14 @@ final class PhoneWatchSession: NSObject {
   }
 
   private var state: WatchSessionState {
-    WatchSessionState(
-      isSupported: session != nil,
-      activation: session?.activationState ?? .notActivated,
-      isPaired: session?.isPaired ?? false,
-      isWatchAppInstalled: session?.isWatchAppInstalled ?? false,
-      isReachable: session?.isReachable ?? false
+    guard let session else {
+      return .unsupported
+    }
+    return WatchSessionState(
+      activation: session.activationState,
+      isPaired: session.isPaired,
+      isWatchAppInstalled: session.isWatchAppInstalled,
+      isReachable: session.isReachable
     )
   }
 

@@ -1,24 +1,56 @@
 import WatchConnectivity
 
-/// What `PhoneWatchSession` needs to know about its `WCSession` to decide
-/// what to do with a snapshot. A plain value, so the decisions below can be
-/// tested without a real session.
-struct WatchSessionState: Equatable {
-  /// Whether this device can talk to an Apple Watch at all (not on iPad).
-  var isSupported: Bool
+/// What the phone's `WCSession` can do with a snapshot right now. A plain
+/// value, so the decisions below can be tested without a real session, and
+/// only states that mean something: whether a watch is paired, say, isn't
+/// known until the session is activated.
+enum WatchSessionState: Equatable {
+  /// This device can't talk to an Apple Watch, such as an iPad.
+  case unsupported
 
-  var activation: WCSessionActivationState
+  /// Not activated yet, or between watches: inactive, about to deactivate
+  /// and activate again after the user switched watches.
+  case activating
 
-  /// Whether an Apple Watch is paired. Only meaningful once activated.
-  var isPaired: Bool
+  /// Activated, but there's no paired watch, or it doesn't have the app.
+  case noWatchApp
 
-  /// Whether the paired watch has the watch app. Only meaningful once
-  /// activated.
-  var isWatchAppInstalled: Bool
+  /// Activated, and the watch has the app, but it isn't open or the watch
+  /// is out of range.
+  case watchAppNotReachable
 
-  /// Whether the watch app is open and in range, so a live message can reach
-  /// it now. Only meaningful once activated.
-  var isReachable: Bool
+  /// Activated, and the watch app is open and in range: a live message can
+  /// reach it now.
+  case watchAppReachable
+
+  /// The state of a session on a device that supports WatchConnectivity,
+  /// from its properties. `isPaired`, `isWatchAppInstalled` and
+  /// `isReachable` only count once `activation` is `.activated`.
+  init(
+    activation: WCSessionActivationState,
+    isPaired: Bool,
+    isWatchAppInstalled: Bool,
+    isReachable: Bool
+  ) {
+    switch activation {
+    case .activated:
+      if !isPaired || !isWatchAppInstalled {
+        self = .noWatchApp
+      } else if isReachable {
+        self = .watchAppReachable
+      } else {
+        self = .watchAppNotReachable
+      }
+    case .notActivated, .inactive:
+      self = .activating
+    @unknown default:
+      // Swift requires this for an enum Apple may add cases to. A state
+      // added in a later iOS isn't known to be usable yet, so treat it as
+      // still activating: live snapshots are dropped, and the application
+      // context is held for when the session is activated.
+      self = .activating
+    }
+  }
 }
 
 /// What to do with a live snapshot in each session state.
@@ -31,26 +63,16 @@ enum LiveSnapshotAction: Equatable {
   case drop(WatchDeliveryOutcome)
 
   init(_ state: WatchSessionState) {
-    guard state.isSupported else {
+    switch state {
+    case .unsupported:
       self = .drop(.unsupported)
-      return
-    }
-    switch state.activation {
-    case .activated:
-      if !state.isPaired || !state.isWatchAppInstalled {
-        self = .drop(.noWatchApp)
-      } else if !state.isReachable {
-        self = .drop(.watchUnreachable)
-      } else {
-        self = .send
-      }
-    case .notActivated, .inactive:
+    case .activating, .watchAppNotReachable:
       // Can't send until activated; dropped like any unreachable moment.
       self = .drop(.watchUnreachable)
-    @unknown default:
-      // Swift requires this for an enum Apple may add cases to. A state
-      // added in a later iOS isn't known to be usable, so don't send.
-      self = .drop(.watchUnreachable)
+    case .noWatchApp:
+      self = .drop(.noWatchApp)
+    case .watchAppReachable:
+      self = .send
     }
   }
 }
@@ -61,28 +83,24 @@ enum ApplicationContextAction: Equatable {
   case update
 
   /// Keep it, and set it once the session is activated, unless a newer one
-  /// replaces it first. The session is still activating, or is between
-  /// watches (inactive, about to deactivate and activate again).
+  /// replaces it first.
   case hold
 
   /// Drop it, for this reason.
   case drop(WatchDeliveryOutcome)
 
   init(_ state: WatchSessionState) {
-    guard state.isSupported else {
+    switch state {
+    case .unsupported:
       self = .drop(.unsupported)
-      return
-    }
-    switch state.activation {
-    case .activated:
-      self = state.isPaired && state.isWatchAppInstalled ? .update : .drop(.noWatchApp)
-    case .notActivated, .inactive:
+    case .activating:
       self = .hold
-    @unknown default:
-      // Swift requires this for an enum Apple may add cases to. A state
-      // added in a later iOS may yet become activated, so keep the context
-      // for then.
-      self = .hold
+    case .noWatchApp:
+      self = .drop(.noWatchApp)
+    case .watchAppNotReachable, .watchAppReachable:
+      // The application context is for when the watch app isn't open, so
+      // it doesn't need to be reachable.
+      self = .update
     }
   }
 }
