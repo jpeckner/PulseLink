@@ -1,23 +1,22 @@
 import SwiftUI
 
-/// A placeholder until the watch receives heart rate from the iPhone.
+/// The watch app's only screen: the heart rate the iPhone last sent.
+///
+/// Redrawn every second, so a reading turns stale on time even when no
+/// snapshot arrives, such as when the phone goes out of range. The system
+/// slows this down when the wrist is lowered.
 struct ContentView: View {
-  var body: some View {
-    VStack(spacing: 8) {
-      Image(systemName: "heart")
-        .font(.title)
-        .foregroundStyle(.red)
-      Text("PulseLink")
-        .font(.headline)
-      Text("Heart rate from your iPhone will show here.")
-        .font(.footnote)
-        .multilineTextAlignment(.center)
-        .foregroundStyle(.secondary)
-    }
-    .padding()
-  }
-}
+  let connection: PhoneConnection
 
-#Preview {
-  ContentView()
+  var body: some View {
+    TimelineView(.periodic(from: .now, by: 1)) { context in
+      HeartRateScreen(
+        display: WatchHeartRateDisplay(
+          snapshot: connection.snapshot,
+          isPhoneReachable: connection.isPhoneReachable,
+          now: context.date
+        )
+      )
+    }
+  }
 }

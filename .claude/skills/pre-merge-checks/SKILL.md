@@ -202,10 +202,10 @@ CI doesn't run these yet; it runs on Linux until Milestone 7 adds a macOS job. I
 
 ```bash
 tool/test_swift.sh > "$LOGS/test-swift.log" 2>&1
-tail -3 "$LOGS/test-swift.log"
+tail -5 "$LOGS/test-swift.log"
 ```
 
-It runs `ios/RunnerTests` (Swift Testing) on the first available iPhone simulator on the newest iOS runtime, and fails if any test fails or none ran. It needs the iOS project config that step 3's `tool/regenerate.sh` writes. A failing test is a fail: report each `Test case '...' failed` line. If a failure was caused by this run's commits, fix it and commit the fix; otherwise report it. If no iPhone simulator is available, skip this check and say so.
+It runs `ios/RunnerTests` (Swift Testing) on the first available iPhone simulator on the newest iOS runtime, then `ios/PulseLinkWatchTests` on the first available Apple Watch simulator on the newest watchOS runtime. It fails if any test fails, or if either target ran none. It needs the iOS project config that step 3's `tool/regenerate.sh` writes. A failing test is a fail: report each `Test case '...' failed` line. If a failure was caused by this run's commits, fix it and commit the fix; otherwise report it. If no iPhone or Apple Watch simulator is available, skip this check and say so.
 
 ### 5h. Coverage of the branch's changes (informational)
 

@@ -16,6 +16,7 @@
 		44284ACE349B610424AED638 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0FDFA88DAA914DD638423FC /* ContentView.swift */; };
 		45C8CDC949A2CF2184B7FF73 /* PulseLinkWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B57008B8A630FC3F22822B2 /* PulseLinkWatchApp.swift */; };
 		562BBEA2415CA78BD1AC32FE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6182AC4D8D63CEE0C65470BB /* Assets.xcassets */; };
+		5B3CDA6B91D2C020AA40EE8F /* WatchHeartRateDisplay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10F8376DE1B2C3F4025CD54D /* WatchHeartRateDisplay.swift */; };
 		5D84543E04750F6C341E7874 /* BeatsPerMinute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08B45B5F653289FF922714D7 /* BeatsPerMinute.swift */; };
 		63460FAF140977239B920478 /* WatchBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1CCD16FD46408C037FC2FBC /* WatchBridgeTests.swift */; };
 		6D0C649D3CF75581020A6A20 /* WatchApi.pigeon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C52232EED3C064F1F95B3AA /* WatchApi.pigeon.swift */; };
@@ -24,23 +25,27 @@
 		7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
 		792983159FCD87F1C1BF0519 /* HeartRateSnapshot+Pigeon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D553251847A01FB770A29B5 /* HeartRateSnapshot+Pigeon.swift */; };
+		835F83D4297A0CC5EFF2A61A /* WatchHeartRateDisplayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABEACF4F1CF040CCA4A870B /* WatchHeartRateDisplayTests.swift */; };
 		8A3C036C99A37D7078A3BC2B /* BleStrapScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DA734D939828240740F350F /* BleStrapScanner.swift */; };
 		8EE10B7D9A34FAFCA3ED2ED7 /* WatchLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = E72B88BCD5FC77ECD2FB15FA /* WatchLink.swift */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		99A8324873D9D928B11E03E4 /* HeartRateSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5B1FF10782EEEB116481ABB /* HeartRateSnapshotTests.swift */; };
+		B12F6825EB3D786BC02B3805 /* PhoneConnectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F249F8E86C0F2E31238CAFAE /* PhoneConnectionTests.swift */; };
 		B660308905DEB0EEA1F8A4AD /* BeatsPerMinute.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08B45B5F653289FF922714D7 /* BeatsPerMinute.swift */; };
+		BC92B2A5BE9544E32A3770C5 /* HeartRateScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9A20A32BA0B1C597E800E31 /* HeartRateScreen.swift */; };
 		BE9EAA0C636C32B38EB61C20 /* BleApi.pigeon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09214D17CA0BB94F188019FA /* BleApi.pigeon.swift */; };
 		C9F5D740239324996FE91AC0 /* AppSettingsApi.pigeon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 486A256F0D40CF28FBBF776A /* AppSettingsApi.pigeon.swift */; };
 		CA373E3E30A7EC7100D100CA /* MainThreadCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA373E3D30A7EC6D00D100CA /* MainThreadCheck.swift */; };
 		CA373E4030A7EC9400D100CA /* ScanAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA373E3F30A7EC9400D100CA /* ScanAction.swift */; };
 		CA373E4230A7ECC800D100CA /* CentralScan.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA373E4130A7ECC700D100CA /* CentralScan.swift */; };
 		CD6CDA9F233E42A28F5C0CDE /* BleStrapLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = B689CBDF1F8F57AB1F03F43E /* BleStrapLink.swift */; };
-		F4F2C9DE94C793870DC93D90 /* AppSettingsOpener.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C666555E37E01CA2533B886 /* AppSettingsOpener.swift */; };
 		D6508E50689770706CDED0D7 /* PulseLinkWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 0EB68EC379289534163041D2 /* PulseLinkWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		E88C0C9FC02811329BF7B10B /* PhoneWatchSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F069F082FD28E1D5DCCEF9 /* PhoneWatchSession.swift */; };
+		F4F2C9DE94C793870DC93D90 /* AppSettingsOpener.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C666555E37E01CA2533B886 /* AppSettingsOpener.swift */; };
 		F66ED4DC7B794547A9F31F7F /* ConnectAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = F26AAFE316A97D88945B8B5A /* ConnectAction.swift */; };
+		F8DFE18051CE05D225635E4C /* PhoneConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37371C751EE33B81FC5ED851 /* PhoneConnection.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +62,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
 			remoteInfo = Runner;
+		};
+		E10DF18A79107748EDC0247F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 26D6FEE0ACC4BAE2350BE59F;
+			remoteInfo = PulseLinkWatch;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -89,19 +101,22 @@
 		09214D17CA0BB94F188019FA /* BleApi.pigeon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BleApi.pigeon.swift; sourceTree = "<group>"; };
 		0DA65058955BF72E1A66B39D /* HeartRateSnapshot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HeartRateSnapshot.swift; sourceTree = "<group>"; };
 		0EB68EC379289534163041D2 /* PulseLinkWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PulseLinkWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		10F8376DE1B2C3F4025CD54D /* WatchHeartRateDisplay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchHeartRateDisplay.swift; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		37371C751EE33B81FC5ED851 /* PhoneConnection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhoneConnection.swift; sourceTree = "<group>"; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		3D553251847A01FB770A29B5 /* HeartRateSnapshot+Pigeon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "HeartRateSnapshot+Pigeon.swift"; sourceTree = "<group>"; };
 		486A256F0D40CF28FBBF776A /* AppSettingsApi.pigeon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppSettingsApi.pigeon.swift; sourceTree = "<group>"; };
 		5C666555E37E01CA2533B886 /* AppSettingsOpener.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppSettingsOpener.swift; sourceTree = "<group>"; };
-		3D553251847A01FB770A29B5 /* HeartRateSnapshot+Pigeon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "HeartRateSnapshot+Pigeon.swift"; sourceTree = "<group>"; };
 		6182AC4D8D63CEE0C65470BB /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
+		7A5E6C0493B9D70339EB48E8 /* PulseLinkWatchTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PulseLinkWatchTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
@@ -118,16 +133,26 @@
 		AC288B1A5EC6891DA1FF4CA5 /* WatchDeliveryAction.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchDeliveryAction.swift; sourceTree = "<group>"; };
 		B689CBDF1F8F57AB1F03F43E /* BleStrapLink.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BleStrapLink.swift; sourceTree = "<group>"; };
 		C1CCD16FD46408C037FC2FBC /* WatchBridgeTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchBridgeTests.swift; sourceTree = "<group>"; };
+		C9A20A32BA0B1C597E800E31 /* HeartRateScreen.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HeartRateScreen.swift; sourceTree = "<group>"; };
 		CA373E3D30A7EC6D00D100CA /* MainThreadCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainThreadCheck.swift; sourceTree = "<group>"; };
 		CA373E3F30A7EC9400D100CA /* ScanAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanAction.swift; sourceTree = "<group>"; };
 		CA373E4130A7ECC700D100CA /* CentralScan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CentralScan.swift; sourceTree = "<group>"; };
 		D0FDFA88DAA914DD638423FC /* ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		E72B88BCD5FC77ECD2FB15FA /* WatchLink.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchLink.swift; sourceTree = "<group>"; };
+		F249F8E86C0F2E31238CAFAE /* PhoneConnectionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PhoneConnectionTests.swift; sourceTree = "<group>"; };
 		F26AAFE316A97D88945B8B5A /* ConnectAction.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ConnectAction.swift; sourceTree = "<group>"; };
 		F5B1FF10782EEEB116481ABB /* HeartRateSnapshotTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HeartRateSnapshotTests.swift; sourceTree = "<group>"; };
+		FABEACF4F1CF040CCA4A870B /* WatchHeartRateDisplayTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchHeartRateDisplayTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		71700C723A7D7319010783FC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		97C146EB1CF9000F007C117D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -156,12 +181,22 @@
 			path = Shared;
 			sourceTree = "<group>";
 		};
+		24CDA7E751FF8E679A3EAB10 /* watchOS */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = watchOS;
+			sourceTree = "<group>";
+		};
 		2BEFA8D176EA731B7D7E98F1 /* PulseLinkWatch */ = {
 			isa = PBXGroup;
 			children = (
 				9B57008B8A630FC3F22822B2 /* PulseLinkWatchApp.swift */,
 				D0FDFA88DAA914DD638423FC /* ContentView.swift */,
 				6182AC4D8D63CEE0C65470BB /* Assets.xcassets */,
+				37371C751EE33B81FC5ED851 /* PhoneConnection.swift */,
+				10F8376DE1B2C3F4025CD54D /* WatchHeartRateDisplay.swift */,
+				C9A20A32BA0B1C597E800E31 /* HeartRateScreen.swift */,
 			);
 			name = PulseLinkWatch;
 			path = PulseLinkWatch;
@@ -175,6 +210,16 @@
 				C1CCD16FD46408C037FC2FBC /* WatchBridgeTests.swift */,
 			);
 			path = RunnerTests;
+			sourceTree = "<group>";
+		};
+		4223FB659A38AA528308504C /* PulseLinkWatchTests */ = {
+			isa = PBXGroup;
+			children = (
+				FABEACF4F1CF040CCA4A870B /* WatchHeartRateDisplayTests.swift */,
+				F249F8E86C0F2E31238CAFAE /* PhoneConnectionTests.swift */,
+			);
+			name = PulseLinkWatchTests;
+			path = PulseLinkWatchTests;
 			sourceTree = "<group>";
 		};
 		9740EEB11CF90186004384FC /* Flutter */ = {
@@ -198,6 +243,8 @@
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				2BEFA8D176EA731B7D7E98F1 /* PulseLinkWatch */,
 				0DBC2944FEF7B9702C03758C /* Shared */,
+				EB4EA48A3FB6DBBE7B57C11F /* Frameworks */,
+				4223FB659A38AA528308504C /* PulseLinkWatchTests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -207,6 +254,7 @@
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
 				0EB68EC379289534163041D2 /* PulseLinkWatch.app */,
+				7A5E6C0493B9D70339EB48E8 /* PulseLinkWatchTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -267,6 +315,14 @@
 			path = Components;
 			sourceTree = "<group>";
 		};
+		EB4EA48A3FB6DBBE7B57C11F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				24CDA7E751FF8E679A3EAB10 /* watchOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -303,6 +359,24 @@
 			name = RunnerTests;
 			productName = RunnerTests;
 			productReference = 331C8081294A63A400263BE5 /* RunnerTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		70A309E268375C0A82C2A2FA /* PulseLinkWatchTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1E597A8B45B6A095D3EB2525 /* Build configuration list for PBXNativeTarget "PulseLinkWatchTests" */;
+			buildPhases = (
+				BB8CF17E83658741D327EA13 /* Sources */,
+				71700C723A7D7319010783FC /* Frameworks */,
+				DD2D6BC91B497B240C6C8659 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BC3E8C488C8AED53D16229E8 /* PBXTargetDependency */,
+			);
+			name = PulseLinkWatchTests;
+			productName = PulseLinkWatchTests;
+			productReference = 7A5E6C0493B9D70339EB48E8 /* PulseLinkWatchTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		97C146ED1CF9000F007C117D /* Runner */ = {
@@ -345,6 +419,10 @@
 						CreatedOnToolsVersion = 14.0;
 						TestTargetID = 97C146ED1CF9000F007C117D;
 					};
+					70A309E268375C0A82C2A2FA = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = 26D6FEE0ACC4BAE2350BE59F;
+					};
 					97C146ED1CF9000F007C117D = {
 						CreatedOnToolsVersion = 7.3.1;
 						LastSwiftMigration = 1100;
@@ -370,6 +448,7 @@
 				97C146ED1CF9000F007C117D /* Runner */,
 				331C8080294A63A400263BE5 /* RunnerTests */,
 				26D6FEE0ACC4BAE2350BE59F /* PulseLinkWatch */,
+				70A309E268375C0A82C2A2FA /* PulseLinkWatchTests */,
 			);
 		};
 /* End PBXProject section */
@@ -390,6 +469,13 @@
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DD2D6BC91B497B240C6C8659 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -494,6 +580,9 @@
 				44284ACE349B610424AED638 /* ContentView.swift in Sources */,
 				B660308905DEB0EEA1F8A4AD /* BeatsPerMinute.swift in Sources */,
 				01F5861EE2CDEE2AE212EADE /* HeartRateSnapshot.swift in Sources */,
+				F8DFE18051CE05D225635E4C /* PhoneConnection.swift in Sources */,
+				5B3CDA6B91D2C020AA40EE8F /* WatchHeartRateDisplay.swift in Sources */,
+				BC92B2A5BE9544E32A3770C5 /* HeartRateScreen.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -524,6 +613,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BB8CF17E83658741D327EA13 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				835F83D4297A0CC5EFF2A61A /* WatchHeartRateDisplayTests.swift in Sources */,
+				B12F6825EB3D786BC02B3805 /* PhoneConnectionTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -537,6 +635,12 @@
 			isa = PBXTargetDependency;
 			target = 97C146ED1CF9000F007C117D /* Runner */;
 			targetProxy = 331C8085294A63A400263BE5 /* PBXContainerItemProxy */;
+		};
+		BC3E8C488C8AED53D16229E8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = PulseLinkWatch;
+			target = 26D6FEE0ACC4BAE2350BE59F /* PulseLinkWatch */;
+			targetProxy = E10DF18A79107748EDC0247F /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -560,6 +664,27 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		00220A846DFCF5524F9D5EF7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ER3Y6PM2YR;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jpeckner.pulselink.watchkitapp.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PulseLinkWatch.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PulseLinkWatch";
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
 		249021D3217E4FDB00AE95B9 /* Profile */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -683,6 +808,27 @@
 				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
+			};
+			name = Profile;
+		};
+		40CB74FFAEDA077F95D8C787 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ER3Y6PM2YR;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jpeckner.pulselink.watchkitapp.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PulseLinkWatch.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PulseLinkWatch";
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
 			};
 			name = Profile;
 		};
@@ -910,6 +1056,29 @@
 			};
 			name = Release;
 		};
+		C1A5BDAEE5AC44439933D75E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ER3Y6PM2YR;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jpeckner.pulselink.watchkitapp.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PulseLinkWatch.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PulseLinkWatch";
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
 		EA025345572F60AFB9C36397 /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 7AFA3C8E1D35360C0083082E /* Release.xcconfig */;
@@ -944,6 +1113,16 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		1E597A8B45B6A095D3EB2525 /* Build configuration list for PBXNativeTarget "PulseLinkWatchTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				00220A846DFCF5524F9D5EF7 /* Release */,
+				C1A5BDAEE5AC44439933D75E /* Debug */,
+				40CB74FFAEDA077F95D8C787 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		331C8087294A63A400263BE5 /* Build configuration list for PBXNativeTarget "RunnerTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
