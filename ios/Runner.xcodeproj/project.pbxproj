@@ -177,7 +177,6 @@
 				08B45B5F653289FF922714D7 /* BeatsPerMinute.swift */,
 				0DA65058955BF72E1A66B39D /* HeartRateSnapshot.swift */,
 			);
-			name = Shared;
 			path = Shared;
 			sourceTree = "<group>";
 		};
@@ -198,7 +197,6 @@
 				10F8376DE1B2C3F4025CD54D /* WatchHeartRateDisplay.swift */,
 				C9A20A32BA0B1C597E800E31 /* HeartRateScreen.swift */,
 			);
-			name = PulseLinkWatch;
 			path = PulseLinkWatch;
 			sourceTree = "<group>";
 		};
@@ -218,7 +216,6 @@
 				FABEACF4F1CF040CCA4A870B /* WatchHeartRateDisplayTests.swift */,
 				F249F8E86C0F2E31238CAFAE /* PhoneConnectionTests.swift */,
 			);
-			name = PulseLinkWatchTests;
 			path = PulseLinkWatchTests;
 			sourceTree = "<group>";
 		};
@@ -264,6 +261,7 @@
 			children = (
 				CA373E3C30A7EC5100D100CA /* Components */,
 				CA373E3B30A7EC3B00D100CA /* BLE */,
+				C018EC32B034353935604500 /* Watch */,
 				97C146FA1CF9000F007C117D /* Main.storyboard */,
 				97C146FD1CF9000F007C117D /* Assets.xcassets */,
 				97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */,
@@ -277,7 +275,6 @@
 				486A256F0D40CF28FBBF776A /* AppSettingsApi.pigeon.swift */,
 				5C666555E37E01CA2533B886 /* AppSettingsOpener.swift */,
 				9C52232EED3C064F1F95B3AA /* WatchApi.pigeon.swift */,
-				C018EC32B034353935604500 /* Watch */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -290,7 +287,6 @@
 				AC288B1A5EC6891DA1FF4CA5 /* WatchDeliveryAction.swift */,
 				3D553251847A01FB770A29B5 /* HeartRateSnapshot+Pigeon.swift */,
 			);
-			name = Watch;
 			path = Watch;
 			sourceTree = "<group>";
 		};
@@ -1025,6 +1021,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.jpeckner.pulselink;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_STRICT_CONCURRENCY = complete;

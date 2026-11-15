@@ -73,6 +73,18 @@ protocol's members sit together, apart from the type's own. A conformance
 that adds nothing, such as `Equatable` synthesized for an enum, can stay
 on the type's declaration. No lint checks this, so reviews do.
 
+## SwiftUI previews
+
+Preview code must never ship in a release build. Put every `#Preview`,
+`PreviewProvider` and `PreviewModifier`, and the sample data and helpers
+only previews use, inside `#if DEBUG` ... `#endif`, usually one block at the
+end of the file. Only the Debug build configuration defines `DEBUG`, in the
+Runner and PulseLinkWatch targets alike. `tool/check_swift_previews.py`
+(run by `tool/lint_native.sh` and every Xcode build) reports a preview
+outside `#if DEBUG`, and the pre-merge checks look for preview code in the
+release binaries. Nothing marks a helper as preview-only, so reviews check
+those.
+
 ## Calling Flutter from native code
 
 Flutter only accepts calls from the platform's main thread: the main thread

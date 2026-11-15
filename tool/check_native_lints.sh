@@ -60,6 +60,11 @@ func probeNoCatchAllCases(_ probe: NativeLintProbe) -> Int {
     return 2
   }
 }
+
+// Not inside #if DEBUG.
+#Preview {
+  Text("probe")
+}
 EOF
 cp "$swift_probe" "$watch_swift_probe"
 cp "$swift_probe" "$shared_swift_probe"
@@ -93,17 +98,20 @@ private fun probeUnsafeCast(value: String): Int = value as Int
 EOF
 
 # Rule names from the configs: SwiftLint's only_rules (other than the
-# custom_rules entry) and custom rule names; detekt's rules, all of which
-# are turned on in its config.
-swift_rules=$(awk '
+# custom_rules entry) and custom rule names, plus the preview check
+# (tool/check_swift_previews.py); detekt's rules, all of which are turned
+# on in its config.
+swift_rules="$(awk '
   /^[a-z_]+:/ { section = $1; next }
   section == "only_rules:" && /^  - / { if ($2 != "custom_rules") print $2 }
   section == "custom_rules:" && /^  [a-z_]+:$/ { sub(/:$/, "", $1); print $1 }
 ' .swiftlint.yml)
+swiftui_previews_debug_only"
 kotlin_rules="$(awk '/^  [A-Z][A-Za-z]+:$/ { sub(/:$/, "", $1); print $1 }' \
   android/config/detekt.yml)
 no_unchecked_cast"
-if [[ -z "$swift_rules" || "$kotlin_rules" == no_unchecked_cast ]]; then
+if [[ "$swift_rules" == swiftui_previews_debug_only ||
+  "$kotlin_rules" == no_unchecked_cast ]]; then
   echo 'Found no rules in .swiftlint.yml or android/config/detekt.yml.' >&2
   exit 1
 fi

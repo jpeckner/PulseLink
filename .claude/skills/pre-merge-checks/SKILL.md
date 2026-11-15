@@ -194,7 +194,7 @@ tool/lint_native.sh > "$LOGS/lint-native.log" 2>&1
 tool/check_native_lints.sh > "$LOGS/check-native-lints.log" 2>&1
 ```
 
-The first runs SwiftLint on the hand-written Swift and detekt (through Gradle) on the hand-written Kotlin, for `CLAUDE.md`'s native-code rules. It fails on any finding, and if either linter checked no files. The second plants a violation of every rule and fails unless each one reports, so a linter that silently did nothing can't pass. Both download their linter the first time (SwiftLint into `~/.cache/pulselink`, detekt into Gradle's cache), and Gradle needs a JDK: the script uses `JAVA_HOME`, `java` on the `PATH`, or Android Studio's. A failure in either is a fail; report each finding with its file, line and rule. Don't fix findings in code the branch didn't change.
+The first runs SwiftLint and the SwiftUI preview check on the hand-written Swift, and detekt (through Gradle) on the hand-written Kotlin, for `CLAUDE.md`'s native-code and preview rules. It fails on any finding, and if either linter checked no files. The second plants a violation of every rule and fails unless each one reports, so a linter that silently did nothing can't pass. Both download their linter the first time (SwiftLint into `~/.cache/pulselink`, detekt into Gradle's cache), and Gradle needs a JDK: the script uses `JAVA_HOME`, `java` on the `PATH`, or Android Studio's. A failure in either is a fail; report each finding with its file, line and rule. Don't fix findings in code the branch didn't change.
 
 ### 5g. Swift tests
 
@@ -236,6 +236,16 @@ python3 .claude/skills/pre-merge-checks/check_release_binary.py \
 ```
 
 Debug tooling must never ship. Debug-only code lives in `debug_*.dart` files or `debug/` folders, and only the `if (!kReleaseMode)` branch of `main()` uses it, so the release compiler drops it. The script searches the compiled Dart code for the names and strings those files declare. A hit fails the check. Find what pulls that file into release code, usually an import outside the `kReleaseMode` branch, and report it.
+
+Then check that no SwiftUI preview is in the iOS or watch app:
+
+```bash
+python3 .claude/skills/pre-merge-checks/check_release_previews.py \
+  build/ios/iphoneos/Runner.app/Runner \
+  build/ios/iphoneos/Runner.app/Watch/PulseLinkWatch.app/PulseLinkWatch
+```
+
+Preview code goes inside `#if DEBUG` (see "SwiftUI previews" in `CLAUDE.md`), and step 5f's native lint checks the source. This checks the build: it fails if either binary mentions `PreviewRegistry` or `PreviewProvider`, which Swift keeps for every compiled preview. Find the preview, or the `#if` around it, and report it. Skip this with the iOS build.
 
 ## 7. Project rules
 
@@ -330,6 +340,7 @@ Then a table with one row per check, giving its status (pass / fixed / fail / in
 - iOS release build
 - Android release build
 - debug code in release
+- previews in release
 - no assertions
 - error handling
 - rules in sync

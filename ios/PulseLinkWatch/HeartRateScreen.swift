@@ -187,6 +187,9 @@ private struct UnavailableReason: View {
 
 // MARK: - Previews
 
+// Debug builds only, previews and their helpers alike, so none of it ships
+// in a release build. See "SwiftUI previews" in CLAUDE.md.
+#if DEBUG
 private let previewNow = Date()
 
 private func previewDisplay(
@@ -248,3 +251,4 @@ private func previewMeasured(_ value: Int, secondsAgo: TimeInterval) -> HeartRat
 #Preview("Never heard from the phone") {
   HeartRateScreen(display: WatchHeartRateDisplay(snapshot: nil, isPhoneReachable: true, now: previewNow))
 }
+#endif
