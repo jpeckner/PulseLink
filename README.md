@@ -9,23 +9,27 @@ workout sessions for later review.
 ## Status
 
 Work in progress, built one milestone at a time. See the
-[build plan](<BLE Heart-Rate Monitor Flutter + Apple Watch Build Plan.md>) and the
-[learning log](docs/learning-log.md).
+[build plan](<BLE Heart-Rate Monitor Flutter + Apple Watch Build Plan.md>), the
+[learning log](docs/learning-log.md) and the
+[manual test plan](docs/test-plan.md) for checks that need a real phone and
+strap.
 
 - [x] 1. Setup and skeleton
 - [x] 2. Domain and fake data (demo mode)
-- [ ] 3. Real BLE on iOS, with reliability (in progress)
-- [ ] 4. Real BLE on Android, with reliability
+- [x] 3. Real BLE on iOS
+- [ ] 4. Real BLE on Android
 - [ ] 5. Apple Watch app
-- [ ] 6. Polish and portfolio (nice-to-have)
-- [ ] 7. Sessions and history (nice-to-have)
+- [ ] 6. Reliability for iOS
+- [ ] 7. Polish and portfolio (nice-to-have)
+- [ ] 8. Sessions and history (nice-to-have)
 
 ## Tech stack
 
 Flutter (iOS + Android), Material 3 via `material_ui`, `flutter_bloc` for state,
 `freezed` for immutable models and states, `very_good_analysis` for lints. iOS
-native dependencies use Swift Package Manager only; no CocoaPods. The watchOS app (Milestone 5) is native SwiftUI,
-bridged to Flutter with WatchConnectivity and platform channels.
+native dependencies use Swift Package Manager only; no CocoaPods. The watchOS
+app (Milestone 5) is native SwiftUI, bridged to Flutter with WatchConnectivity
+and platform channels.
 
 ```
 lib/
@@ -125,6 +129,38 @@ script spots this and rebuilds it by touching the plugin's files. If an
 editor shows a rule missing, touch `tool/pulselink_lints/lib/main.dart` and
 restart the analysis server.
 
+## iOS build warnings
+
+Every iOS build shows six Swift concurrency warnings, such as "sending 'api'
+risks causing data races" or "var 'bleApiPigeonMethodCodec' is not
+concurrency-safe". They're expected, and they're all in Pigeon's generated
+`ios/Runner/*.pigeon.swift` files; the hand-written Swift has none.
+
+- **Why they appear:** the Runner target turns on complete concurrency
+  checking (`SWIFT_STRICT_CONCURRENCY = complete`), so the hand-written BLE
+  code is checked for data races as strictly as Swift 6 checks it. That
+  checking covers every file in the target, including generated ones.
+- **What Pigeon 30.0.2 generates:**
+  - a mutable global codec (`bleApiPigeonMethodCodec`);
+  - `@async` host API handlers that pass the non-`Sendable` `api` and
+    `reply` into a `Task`;
+  - a reference to Flutter's `FlutterEndOfEventStream` global, which Flutter
+    doesn't mark as concurrency-safe.
+
+  Flutter calls all of these on the main thread, so none of them races in
+  practice.
+- **Why they aren't fixed or hidden:** `tool/pigeon.sh` regenerates those
+  files, so hand edits would be lost, and Swift can't silence warnings for one
+  file. Turning complete checking off would hide real problems in the
+  hand-written code.
+- **Why the app is still in Swift 5 mode:** Swift 6 mode turns these warnings
+  into errors, so the app wouldn't build. Once Pigeon generates
+  concurrency-safe Swift, switch the target to Swift 6.
+
+Xcode's build log also has "Metadata extraction skipped, no
+AppIntents.framework dependency found". Xcode prints that for any app that
+doesn't use App Intents, and it's harmless.
+
 ## Debug tools
 
 Debug and profile builds (never release builds) include a reading override
@@ -136,11 +172,11 @@ for exercising the app's warning states, with demo data or a real strap:
 2. **Skin-contact detection: supported / not supported** switches between a
    strap that can detect skin contact and one that can't.
 3. **Override: …** cycles through the conditions that kind of strap can be in:
-   - Supported: **Normal → No data (stale) → No skin contact → Zero bpm →
+   - Supported: **None → No data (stale) → No skin contact → Zero bpm →
      Implausible bpm**
-   - Not supported: **Normal → No data (stale) → Zero bpm → Implausible bpm**
+   - Not supported: **None → No data (stale) → Zero bpm → Implausible bpm**
      (such a strap can't report no skin contact; switching to it from No skin
-     contact resets to Normal)
+     contact resets to None)
 
    No data (stale) drops samples, so "No data from strap" appears after the
    real 10-second threshold.

@@ -4,7 +4,7 @@ import 'package:bloc/bloc.dart';
 
 /// Logs every Bloc and Cubit state change with a timestamp.
 ///
-/// A first step toward the in-app debug log planned for later in Milestone 3.
+/// A first step toward the in-app debug log planned for Milestone 6.
 class AppBlocObserver extends BlocObserver {
   const new();
 
