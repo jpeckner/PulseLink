@@ -26,6 +26,9 @@ import 'package:pulselink/ui/debug/debug_override_buttons.dart';
 /// widgets through constructors, so a missing dependency is a compile error,
 /// not a runtime lookup failure. These objects live as long as the app.
 void main() {
+  // Before anything below reaches the platform: WatchSync sends its first
+  // snapshot through a platform channel as soon as it starts, before runApp.
+  WidgetsFlutterBinding.ensureInitialized();
   Bloc.observer = const AppBlocObserver();
 
   // Demo mode at launch, until a strap is picked in the strap picker.
