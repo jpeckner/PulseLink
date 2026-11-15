@@ -27,6 +27,50 @@ void main() {
       expect(find.text(disclaimerText), findsOneWidget);
     });
 
+    group('tips after finding nothing for a while', () {
+      const tipsTitle = 'Still not finding it?';
+
+      testWidgets('appear after 15 seconds of finding nothing', (tester) async {
+        await pumpScreen(tester);
+        await tester.pump(const Duration(seconds: 14));
+        expect(find.text(tipsTitle), findsNothing);
+
+        await tester.pump(const Duration(seconds: 1));
+        expect(find.text(tipsTitle), findsOneWidget);
+        expect(find.textContaining('Dampen the strap'), findsOneWidget);
+        expect(
+          find.textContaining('connects to one device at a time'),
+          findsOneWidget,
+        );
+        // Still looking.
+        expect(find.text('Looking for heart-rate straps…'), findsOneWidget);
+      });
+
+      testWidgets('never appear once a strap is found', (tester) async {
+        await pumpScreen(tester);
+        scanner.emit(.found(discoveredStrapOf('polar', 'Polar H10')));
+        await tester.pump(const Duration(seconds: 30));
+        expect(find.text(tipsTitle), findsNothing);
+      });
+
+      testWidgets('wait 15 seconds again when scanning resumes after a '
+          'problem', (tester) async {
+        await pumpScreen(tester);
+        await tester.pump(const Duration(seconds: 15));
+        expect(find.text(tipsTitle), findsOneWidget);
+
+        scanner.emit(const .failed(.off));
+        await tester.pump();
+        scanner.emit(const .scanning());
+        // Builds the looking view again, which starts its 15 seconds.
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 14));
+        expect(find.text(tipsTitle), findsNothing);
+        await tester.pump(const Duration(seconds: 1));
+        expect(find.text(tipsTitle), findsOneWidget);
+      });
+    });
+
     testWidgets('lists the straps it finds, naming unnamed ones', (
       tester,
     ) async {
@@ -170,6 +214,10 @@ void main() {
       addTearDown(tester.view.reset);
 
       await pumpScreen(tester);
+      // With the tips showing, the tallest the looking view gets.
+      await tester.pump(const Duration(seconds: 15));
+      expect(find.text('Still not finding it?'), findsOneWidget);
+      expect(tester.takeException(), isNull, reason: 'tips');
       for (final event in [
         const StrapScanEvent.scanning(),
         StrapScanEvent.found(

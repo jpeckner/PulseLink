@@ -46,6 +46,16 @@ struct BatteryPercentTests {
   }
 }
 
+struct DiscoveryFailureTests {
+  @Test func anErrorMeansTheStrapCouldNotBeReached() {
+    #expect(StrapConnection.discoveryFailure(hadError: true) == .unreachable)
+  }
+
+  @Test func noErrorMeansTheStrapHasNoHeartRate() {
+    #expect(StrapConnection.discoveryFailure(hadError: false) == .notAHeartRateStrap)
+  }
+}
+
 struct StrapNameTests {
   @Test func prefersTheAdvertisedName() {
     #expect(CentralScan.strapName(advertised: "TICKR", cached: "Old name") == "TICKR")

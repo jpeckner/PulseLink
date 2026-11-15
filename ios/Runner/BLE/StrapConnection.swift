@@ -107,6 +107,14 @@ final class StrapConnection: NSObject {
     value.first.map { Int($0) }
   }
 
+  /// Why finding the strap's heart rate failed. An error from CoreBluetooth
+  /// means the strap couldn't be asked (it dropped out mid-way, or didn't
+  /// answer), so it counts as unreachable, and trying again may work. Only
+  /// a strap that answered without one has no heart rate to offer.
+  nonisolated static func discoveryFailure(hadError: Bool) -> BleConnectFailureReason {
+    hadError ? .unreachable : .notAHeartRateStrap
+  }
+
   func startSending(to sink: PigeonEventSink<BleStrapEvent>) {
     self.sink = sink
   }
@@ -183,8 +191,9 @@ extension StrapConnection: CBPeripheralDelegate {
       return
     }
     let id = peripheral.identifier
+    let hadError = error != nil
     MainActor.assumeIsolated {
-      servicesDiscovered(id)
+      servicesDiscovered(id, hadError: hadError)
     }
   }
 
@@ -198,8 +207,9 @@ extension StrapConnection: CBPeripheralDelegate {
     }
     let id = peripheral.identifier
     let serviceId = service.uuid.uuidString
+    let hadError = error != nil
     MainActor.assumeIsolated {
-      characteristicsDiscovered(id, serviceId: serviceId)
+      characteristicsDiscovered(id, serviceId: serviceId, hadError: hadError)
     }
   }
 
@@ -213,9 +223,15 @@ extension StrapConnection: CBPeripheralDelegate {
     }
     let id = peripheral.identifier
     let characteristicId = characteristic.uuid.uuidString
-    let subscribed = error == nil && characteristic.isNotifying
+    let hadError = error != nil
+    let isNotifying = characteristic.isNotifying
     MainActor.assumeIsolated {
-      notificationsChanged(id, characteristicId: characteristicId, subscribed: subscribed)
+      notificationsChanged(
+        id,
+        characteristicId: characteristicId,
+        hadError: hadError,
+        isNotifying: isNotifying
+      )
     }
   }
 
@@ -292,19 +308,24 @@ private extension StrapConnection {
     strap.discoverServices([heartRateService, batteryService])
   }
 
-  func servicesDiscovered(_ id: UUID) {
+  func servicesDiscovered(_ id: UUID, hadError: Bool) {
     guard pending != nil, let strap, strap.identifier == id else {
       return
     }
-    guard let service = strap.services?.first(where: { $0.uuid == heartRateService }) else {
-      finish(.failed(.notAHeartRateStrap))
+    guard
+      !hadError,
+      let service = strap.services?.first(where: { $0.uuid == heartRateService })
+    else {
+      finish(.failed(Self.discoveryFailure(hadError: hadError)))
       return
     }
     strap.discoverCharacteristics([heartRateMeasurement], for: service)
   }
 
-  func characteristicsDiscovered(_ id: UUID, serviceId: String) {
+  func characteristicsDiscovered(_ id: UUID, serviceId: String, hadError: Bool) {
     if serviceId == batteryService.uuidString {
+      // The battery level is optional: after an error there's just no
+      // characteristic to read, and the strap stays connected.
       batteryCharacteristicsDiscovered(id)
       return
     }
@@ -315,8 +336,8 @@ private extension StrapConnection {
       .first(where: { $0.uuid == heartRateService })?
       .characteristics?
       .first(where: { $0.uuid == heartRateMeasurement })
-    guard let measurement, measurement.properties.contains(.notify) else {
-      finish(.failed(.notAHeartRateStrap))
+    guard !hadError, let measurement, measurement.properties.contains(.notify) else {
+      finish(.failed(Self.discoveryFailure(hadError: hadError)))
       return
     }
     // Finishes in peripheral(_:didUpdateNotificationStateFor:error:).
@@ -326,12 +347,17 @@ private extension StrapConnection {
   /// Finishes connecting once heart-rate notifications are on, then reads
   /// the battery level. The battery's own notifications don't affect
   /// connecting.
-  func notificationsChanged(_ id: UUID, characteristicId: String, subscribed: Bool) {
+  func notificationsChanged(
+    _ id: UUID,
+    characteristicId: String,
+    hadError: Bool,
+    isNotifying: Bool
+  ) {
     guard isCurrentStrap(id), characteristicId == heartRateMeasurement.uuidString else {
       return
     }
-    guard subscribed else {
-      finish(.failed(.notAHeartRateStrap))
+    guard !hadError, isNotifying else {
+      finish(.failed(Self.discoveryFailure(hadError: hadError)))
       return
     }
     finish(.connected)

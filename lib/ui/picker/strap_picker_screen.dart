@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/blocs/strap_picker/strap_picker_cubit.dart';
@@ -40,8 +42,12 @@ class _StrapPickerView extends StatelessWidget {
               Expanded(
                 child: BlocBuilder<StrapPickerCubit, StrapPickerState>(
                   builder: (context, state) => switch (state) {
+                    // Scrolls if the tips don't fit, such as on a small
+                    // screen or with large text.
                     StrapPickerScanning(:final straps) when straps.isEmpty =>
-                      const Center(child: _LookingView()),
+                      const Center(
+                        child: SingleChildScrollView(child: _LookingView()),
+                      ),
                     StrapPickerScanning(:final straps) => _StrapList(
                       straps: straps,
                     ),
@@ -62,8 +68,38 @@ class _StrapPickerView extends StatelessWidget {
   }
 }
 
-class _LookingView extends StatelessWidget {
+/// Looking for straps, with tips once it has found nothing for a while.
+class _LookingView extends StatefulWidget {
   const new();
+
+  /// How long to look before showing tips. A strap that's on and nearby
+  /// usually turns up within a few seconds.
+  static const tipsAfter = Duration(seconds: 15);
+
+  @override
+  State<_LookingView> createState() => _LookingViewState();
+}
+
+class _LookingViewState extends State<_LookingView> {
+  // Starts again whenever this view does: when the picker opens, and when
+  // scanning resumes after a Bluetooth problem.
+  Timer? _tipsTimer;
+  bool _showsTips = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tipsTimer = Timer(
+      _LookingView.tipsAfter,
+      () => setState(() => _showsTips = true),
+    );
+  }
+
+  @override
+  void dispose() {
+    _tipsTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +120,23 @@ class _LookingView extends StatelessWidget {
           style: theme.textTheme.bodyMedium,
           textAlign: .center,
         ),
+        if (_showsTips) ...[
+          const SizedBox(height: 24),
+          Text(
+            'Still not finding it?',
+            style: theme.textTheme.titleSmall,
+            textAlign: .center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Dampen the strap where it touches your skin, so it can sense '
+            'your heart.\n\n'
+            'A strap connects to one device at a time. If another phone, '
+            'watch or gym machine is connected to it, disconnect it there.',
+            style: theme.textTheme.bodyMedium,
+            textAlign: .center,
+          ),
+        ],
       ],
     );
   }
