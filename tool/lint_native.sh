@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Lints the hand-written Swift and Kotlin against CLAUDE.md's native-code
-# rules. Fails on any finding, and if a linter doesn't run.
+# rules, and runs the Kotlin unit tests. Fails on any finding or failing
+# test, and if a linter or the tests don't run.
 #
 # Run from anywhere: tool/lint_native.sh [swift|kotlin|all]   (default: all)
 # CI and the pre-merge-checks skill run it, and tool/check_native_lints.sh
@@ -141,7 +142,7 @@ lint_kotlin() {
   use_jdk || return 1
   use_gradle_files || return 1
   local status=0
-  echo '==> detekt and no_unchecked_cast'
+  echo '==> detekt, no_unchecked_cast and Kotlin unit tests'
   # detektMain analyses the app's production Kotlin with type resolution,
   # which UnsafeCallOnNullableType and ElseCaseInsteadOfExhaustiveWhen need,
   # once per build variant (debug, profile and release).
@@ -149,11 +150,15 @@ lint_kotlin() {
   # Deleting the reports makes Gradle rerun detekt rather than skip it as up
   # to date, so the reports checked below are always from this run.
   rm -rf "$reports"
-  # Fails on any finding; the reports below are written either way.
-  # --continue runs the cast check even if detekt fails, so one run reports
-  # everything.
-  (cd android && ./gradlew --quiet --continue :app:detektMain :app:checkUncheckedCasts) ||
-    status=1
+  local results=build/app/test-results/testDebugUnitTest
+  rm -rf "$results"
+  # Fails on any finding or failing test; the reports below are written
+  # either way. --continue runs every task even if one fails, so one run
+  # reports everything. testDebugUnitTest runs the JUnit tests in
+  # android/app/src/test on the computer's JVM, like `flutter test`; no
+  # phone or emulator is needed.
+  (cd android && ./gradlew --quiet --continue :app:detektMain :app:checkUncheckedCasts \
+    :app:testDebugUnitTest) || status=1
 
   # Guards against detekt passing because it analysed nothing, such as after
   # a change to its source paths or excludes.
@@ -172,6 +177,18 @@ lint_kotlin() {
     return 1
   fi
   echo "detekt analysed ${count} Kotlin files in each of $checked build variants."
+
+  # Guards against the tests passing because none ran, such as after a
+  # change to the test source paths.
+  local tests
+  tests=$(cat "$results"/*.xml 2> /dev/null |
+    sed -nE 's/.*<testsuite [^>]*tests="([0-9]+)".*/\1/p' |
+    awk '{ total += $1 } END { print total + 0 }')
+  if ((tests == 0)); then
+    echo "No Kotlin unit tests ran; expected results in $results." >&2
+    return 1
+  fi
+  echo "Kotlin unit tests: $tests ran."
 
   return "$status"
 }

@@ -52,7 +52,8 @@ flutter run
 The app starts in **demo mode**: `FakeStrapDataSource` simulates a strap, and
 the screen shows a "Demo" badge. On an iPhone, tap **Find strap** to pick a real
 strap; that needs a physical phone, since BLE doesn't work in the iOS Simulator.
-Android runs in demo mode only until Milestone 4.
+On Android (12 or later), **Find strap** lists nearby straps, but connecting to
+one comes later in Milestone 4; until then, Android stays in demo mode.
 
 Models and states use `freezed`, which generates `*.freezed.dart` files. They're
 committed, and CI fails if they're out of date. After changing an annotated

@@ -125,7 +125,7 @@ Each milestone ends with something I can run on a device and a commit. Each one 
    - Done when: demo mode shows a moving bpm with timestamps, and the parser tests pass.
 3. **Real BLE on iOS.** Done. On iOS: Bluetooth permission, scan filtered by service UUID, device picker (listing straps already connected to the phone), connect, subscribe to notifications, battery level, a "Strap disconnected" state with Try again, and an Open Settings button when permission is denied. Native BLE code in Swift behind a Pigeon contract. Android reports that BLE isn't supported yet, and runs in demo mode.
    - Done when: on an iPhone, a real strap shows live bpm and battery level, and every failure (Bluetooth off, permission denied, strap unreachable, strap dropped) is explained on screen.
-4. **Real BLE on Android.** Kotlin scanning and connecting behind the same Pigeon contract, runtime permissions (`BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT` on Android 12+, location on 11 and below), a `connectedDevice` foreground service for streaming in the background, retries after GATT error 133, and staying under Android's scan throttling. The Dart above the data layer is shared with iOS and needs no changes.
+4. **Real BLE on Android.** Kotlin scanning and connecting behind the same Pigeon contract, runtime permissions (`BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT`; the app needs Android 12 or later, so no location permission), a `connectedDevice` foreground service for streaming in the background, retries after GATT error 133, and staying under Android's scan throttling. The Dart above the data layer is shared with iOS and needs no changes.
    - Done when: the same checks as Milestone 3 pass on an Android phone.
 5. **Apple Watch app.** Add the watchOS target, write the Swift WatchConnectivity bridge and platform channels, and build the SwiftUI live view. It needs only the iOS app, so it doesn't depend on Milestone 4.
    - Done when: the watch shows live bpm with its age and connection status, and handles "phone not reachable".
@@ -167,7 +167,7 @@ Parser test fixtures to start with:
 Platform setup:
 
 - **iOS**: `NSBluetoothAlwaysUsageDescription` in Info.plist; the `bluetooth-central` background mode so notifications keep arriving while backgrounded. Background scans must filter by service UUID. BLE doesn't work in the iOS Simulator, so use a real iPhone.
-- **Android 12+**: `BLUETOOTH_SCAN` (with `neverForLocation`) and `BLUETOOTH_CONNECT`. Android 11 and below: location permission is required to scan. To keep streaming in the background, use a foreground service of type `connectedDevice` (Android 14 also needs the matching foreground-service permission).
+- **Android 12+** (the app's minimum, `minSdk = 31`): `BLUETOOTH_SCAN` (with `neverForLocation`) and `BLUETOOTH_CONNECT`, asked for in Kotlin when a scan starts. Older versions would also need location permission, and location services switched on, to scan. To keep streaming in the background, use a foreground service of type `connectedDevice` (Android 14 also needs the matching foreground-service permission).
 
 Reliability rules to build in:
 
