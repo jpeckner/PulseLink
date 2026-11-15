@@ -13,8 +13,9 @@ import 'package:pulselink/domain/strap_connection_failure.dart';
 
 /// Heart rate from a real strap, connected through the phone's own Bluetooth
 /// stack via the Pigeon contract in pigeons/ble_api.dart (CoreBluetooth on
-/// iOS). Each Heart Rate Measurement notification is stamped with the time
-/// it arrives and parsed by [parseHeartRateMeasurement].
+/// iOS, Android's Bluetooth LE APIs on Android). Each Heart Rate Measurement
+/// notification is stamped with the time it arrives and parsed by
+/// [parseHeartRateMeasurement].
 ///
 /// When a connected strap drops, it reports [StrapConnectionLost] on
 /// [connectionLost]; starting it again reconnects. Reconnecting by itself

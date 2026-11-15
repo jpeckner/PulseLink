@@ -400,3 +400,136 @@ limited to Flutter itself. A regulated team would also:
 - treat "connected to the wrong strap" as a hazard (the picker shows names,
   which two identical straps share);
 - keep signed evidence of each manual test run on real hardware.
+
+## Milestone 4: Real BLE on Android (2026-11-14 to 2026-11-15)
+
+Built: Bluetooth scanning and connecting on Android, written by hand in
+Kotlin behind the same Pigeon contract as iOS. Runtime permissions, a scan
+filtered by the Heart Rate Service that stays under Android's scan limit, the
+picker's list of straps already connected, connecting with one retry after
+GATT error 133, live bpm, the battery level, and the same typed failures as
+iOS. Android now passes the Milestone 3 checks on a real phone. 323 Dart
+tests and 29 Kotlin tests.
+
+The Dart needed no changes: apart from one doc comment, nothing in `lib/`
+changed. Every platform difference stayed below the Pigeon contract, which is
+the payoff of the split chosen in Milestone 3.
+
+Streaming in the background was built and works, but is shelved until
+Milestone 6 (see the end of this entry).
+
+### Android BLE needs more hand-holding than CoreBluetooth
+
+The Kotlin (`LeScan`, `LeConnection`) is laid out like the Swift
+(`CentralScan`, `StrapConnection`), so the two can be read side by side. The
+differences are where Android leaves work to the app:
+- **One GATT operation at a time.** Starting a second operation before the
+  first one's callback makes the call return false, or on some phones drops
+  it silently. CoreBluetooth queues operations itself; Android doesn't, so
+  `GattQueue` runs them one at a time, with a timeout on each so a lost
+  callback can't stall it.
+- **Notifications take two steps.** `setCharacteristicNotification` only
+  tells Android to pass notifications on; the app must also write the Client
+  Characteristic Configuration descriptor (`0x2902`) to tell the strap to
+  send them. iOS's `setNotifyValue(true)` does both.
+- **GATT error 133** is Android's catch-all for a failed connection, often
+  from a busy Bluetooth stack, and a second try usually works. Android
+  doesn't name it publicly. `ConnectionChange` retries once after 600 ms,
+  within the same 10-second timeout as iOS. Android gives up by itself only
+  after about 30 seconds.
+- **Every connection must be closed.** `disconnect()` ends the link, but only
+  `close()` frees Android's connection slot, of which there are only a few.
+  Leaked slots stay taken until the app is killed, so every way a connection
+  ends goes through one `closeGatt()`.
+- **Android 13 changed the GATT API.** Reads, notifications and descriptor
+  writes gained versions that pass the value directly. The old ones keep it
+  on a shared object that the next notification overwrites. With a minimum of
+  Android 12, the app handles both: on Android 12 the value is copied before
+  leaving the callback's thread.
+- **Device ids are MAC addresses,** where iOS hides them behind per-phone
+  UUIDs. Dart treats both as an opaque `StrapBleIdentifier`.
+  `getRemoteDevice` throws on a malformed address, so the address is checked
+  with `checkBluetoothAddress` first.
+- **Listing straps already connected is less reliable than on iOS.** Android
+  lists connected devices, but only knows a device's services if it cached
+  them from an earlier connection. iOS's
+  `retrieveConnectedPeripherals(withServices:)` doesn't depend on a cache.
+
+### Permissions and scanning
+
+- **Requiring Android 12 (`minSdk = 31`) takes location out of the picture.**
+  `BLUETOOTH_SCAN` with `neverForLocation`, and `BLUETOOTH_CONNECT`, are
+  enough. Before Android 12, scanning needed location permission and location
+  services switched on.
+- **Android asks explicitly; iOS asks by itself.** The app calls
+  `requestPermissions` on the activity, and the answer comes back to
+  `MainActivity.onRequestPermissionsResult`. So Android's `ScanAction` has a
+  case iOS's lacks: ask for permission. After the user refuses twice, Android
+  refuses by itself without showing the dialog, so the picker explains, and
+  Open Settings is the way back.
+- **More than 5 scan starts in 30 seconds return nothing,** with no error,
+  just a log line. Opening and closing the picker can get there quickly.
+  `ScanThrottle` delays a start that would break the limit.
+- **Coming back from Settings isn't announced.** The scan rechecks the
+  permission in `onResume`. (iOS restarts the app instead.)
+
+### Threads and Pigeon in Kotlin
+
+- **Android's BLE callbacks arrive on background threads,** so each
+  `ScanCallback` and `BluetoothGattCallback` posts to the main looper before
+  touching state or calling Dart. Each callback is tagged with its scan or
+  connection, so a late one from something already stopped is ignored.
+- **Pigeon's `@async` becomes a `suspend fun`,** which Pigeon calls in a
+  coroutine on the main dispatcher. `connect` suspends once, with
+  `suspendCoroutine`, and only one function resumes it, like the Swift's
+  checked continuation.
+- **Pigeon names Kotlin enum cases by splitting camel case,** so
+  `notAHeartRateStrap` became `NOT_AHEART_RATE_STRAP`.
+- **The Flutter engine lives as long as the activity.**
+  `cleanUpFlutterEngine` stops the scan and closes the connection, since Dart
+  can no longer do it.
+
+### Testing and tooling
+
+- **The decisions are pure Kotlin, tested on the computer.** `ScanAction`,
+  `ScanThrottle`, `ConnectAction`, `ConnectionChange`, `GattQueue` and
+  `BatteryValue` make no Android calls, so JUnit runs them on the JVM like
+  `flutter test`, with no phone. Android's framework classes can't be
+  created in these tests, but their constants (such as
+  `BluetoothProfile.STATE_CONNECTED`) are compiled in and work.
+  `tool/lint_native.sh` runs the tests, and fails if none ran. The
+  connection itself is checked on a phone, in `docs/test-plan.md`.
+- **Gradle's build caches can go stale.** Moving the launch screen out of
+  `drawable-v21` broke the build until the cached resources under
+  `build/app/intermediates` were deleted. The no-tests guard caught it.
+- **Android lint needs a JDK.** Use Android Studio's, with `JAVA_HOME`
+  pointing at its `jbr` folder.
+- **Android lint earns its keep.** It caught that notification permission
+  exists only from Android 13, which would have meant asking for a permission
+  that's refused straight away on Android 12. It also suggested `core-ktx`,
+  which the app only gets four levels deep inside Flutter's own dependencies,
+  so the app doesn't use it.
+
+### Background streaming, built and shelved
+
+Android may freeze or end an app in the background within minutes. The
+standard fix is a foreground service of type `connectedDevice`, with an
+ongoing notification. `feat/Milestone4_ForegroundService` adds one that only
+keeps the app alive while a strap is connected, plus a one-time request for
+notification permission on Android 13 and later. It works on a real phone.
+
+It's shelved, unmerged, until Milestone 6, so iOS (which needs the
+`bluetooth-central` background mode) and Android gain background streaming
+together. One lesson is worth keeping: Android crashes an app whose
+foreground service is stopped before it calls `startForeground`, and a strap
+dropping just after connecting would do exactly that. `KeepAliveState` holds
+such a stop until the service is in the foreground.
+
+Regulated-app notes: Android adds failure modes iOS doesn't have (error 133,
+scan throttling, leaked connection slots), and each is handled in code rather
+than left to the OS: a bounded retry, a throttle and a single close path. The
+same contract and Dart logic run on both platforms, so one parser and one set
+of failure states serve both. A regulated team would also:
+- test across Android makers and versions, since Bluetooth stacks differ
+  (error 133 is far more common on some phones);
+- record which phones and Android versions each release was checked on.

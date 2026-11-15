@@ -81,9 +81,10 @@ jobs:
           path: ~/.cache/pulselink
           key: native-linters-${{ runner.os }}-${{ hashFiles('tool/lint_native.sh') }}
 
-      # SwiftLint and detekt, for CLAUDE.md's native-code rules. The script
-      # fails on any finding, and if either linter checked no files.
-      - name: Lint native code (SwiftLint and detekt)
+      # SwiftLint and detekt, for CLAUDE.md's native-code rules, plus the
+      # Kotlin unit tests. The script fails on any finding or failing test,
+      # and if either linter checked no files or no tests ran.
+      - name: Lint native code (SwiftLint and detekt) and run Kotlin tests
         run: tool/lint_native.sh
 
       # A linter that silently does nothing (a skipped download, a config

@@ -194,7 +194,7 @@ tool/lint_native.sh > "$LOGS/lint-native.log" 2>&1
 tool/check_native_lints.sh > "$LOGS/check-native-lints.log" 2>&1
 ```
 
-The first runs SwiftLint and the SwiftUI preview check on the hand-written Swift, and detekt (through Gradle) on the hand-written Kotlin, for `CLAUDE.md`'s native-code and preview rules. It fails on any finding, and if either linter checked no files. The second plants a violation of every rule and fails unless each one reports, so a linter that silently did nothing can't pass. Both download their linter the first time (SwiftLint into `~/.cache/pulselink`, detekt into Gradle's cache), and Gradle needs a JDK: the script uses `JAVA_HOME`, `java` on the `PATH`, or Android Studio's. A failure in either is a fail; report each finding with its file, line and rule. Don't fix findings in code the branch didn't change.
+The first runs SwiftLint and the SwiftUI preview check on the hand-written Swift, and detekt (through Gradle) on the hand-written Kotlin, for `CLAUDE.md`'s native-code and preview rules, and the Kotlin unit tests in `android/app/src/test` (through Gradle, on the computer's JVM). It fails on any finding or failing test, and if either linter checked no files or no tests ran. Report the Kotlin test count it prints. The second plants a violation of every rule and fails unless each one reports, so a linter that silently did nothing can't pass. Both download their linter the first time (SwiftLint into `~/.cache/pulselink`, detekt into Gradle's cache), and Gradle needs a JDK: the script uses `JAVA_HOME`, `java` on the `PATH`, or Android Studio's. A failure in either is a fail; report each finding with its file, line and rule. Don't fix findings in code the branch didn't change.
 
 ### 5g. Swift tests
 
