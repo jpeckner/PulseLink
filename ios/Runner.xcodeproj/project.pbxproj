@@ -3,19 +3,29 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* RunnerTests.swift */; };
+		351483C12BFC634B42A4F35A /* StrapConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A64F731707EAAB8AEE5A138E /* StrapConnection.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
+		8A3C036C99A37D7078A3BC2B /* BleStrapScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DA734D939828240740F350F /* BleStrapScanner.swift */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		BE9EAA0C636C32B38EB61C20 /* BleApi.pigeon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09214D17CA0BB94F188019FA /* BleApi.pigeon.swift */; };
+		C9F5D740239324996FE91AC0 /* AppSettingsApi.pigeon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 486A256F0D40CF28FBBF776A /* AppSettingsApi.pigeon.swift */; };
+		CA373E3E30A7EC7100D100CA /* MainThreadCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA373E3D30A7EC6D00D100CA /* MainThreadCheck.swift */; };
+		CA373E4030A7EC9400D100CA /* ScanAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA373E3F30A7EC9400D100CA /* ScanAction.swift */; };
+		CA373E4230A7ECC800D100CA /* CentralScan.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA373E4130A7ECC700D100CA /* CentralScan.swift */; };
+		CD6CDA9F233E42A28F5C0CDE /* BleStrapLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = B689CBDF1F8F57AB1F03F43E /* BleStrapLink.swift */; };
+		F4F2C9DE94C793870DC93D90 /* AppSettingsOpener.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C666555E37E01CA2533B886 /* AppSettingsOpener.swift */; };
+		F66ED4DC7B794547A9F31F7F /* ConnectAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = F26AAFE316A97D88945B8B5A /* ConnectAction.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -42,11 +52,14 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		09214D17CA0BB94F188019FA /* BleApi.pigeon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BleApi.pigeon.swift; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
+		486A256F0D40CF28FBBF776A /* AppSettingsApi.pigeon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppSettingsApi.pigeon.swift; sourceTree = "<group>"; };
+		5C666555E37E01CA2533B886 /* AppSettingsOpener.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppSettingsOpener.swift; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Runner-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -59,6 +72,13 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		9DA734D939828240740F350F /* BleStrapScanner.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BleStrapScanner.swift; sourceTree = "<group>"; };
+		A64F731707EAAB8AEE5A138E /* StrapConnection.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StrapConnection.swift; sourceTree = "<group>"; };
+		B689CBDF1F8F57AB1F03F43E /* BleStrapLink.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BleStrapLink.swift; sourceTree = "<group>"; };
+		CA373E3D30A7EC6D00D100CA /* MainThreadCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainThreadCheck.swift; sourceTree = "<group>"; };
+		CA373E3F30A7EC9400D100CA /* ScanAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanAction.swift; sourceTree = "<group>"; };
+		CA373E4130A7ECC700D100CA /* CentralScan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CentralScan.swift; sourceTree = "<group>"; };
+		F26AAFE316A97D88945B8B5A /* ConnectAction.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ConnectAction.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -115,6 +135,8 @@
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
+				CA373E3C30A7EC5100D100CA /* Components */,
+				CA373E3B30A7EC3B00D100CA /* BLE */,
 				97C146FA1CF9000F007C117D /* Main.storyboard */,
 				97C146FD1CF9000F007C117D /* Assets.xcassets */,
 				97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */,
@@ -124,8 +146,32 @@
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
+				09214D17CA0BB94F188019FA /* BleApi.pigeon.swift */,
+				486A256F0D40CF28FBBF776A /* AppSettingsApi.pigeon.swift */,
+				5C666555E37E01CA2533B886 /* AppSettingsOpener.swift */,
 			);
 			path = Runner;
+			sourceTree = "<group>";
+		};
+		CA373E3B30A7EC3B00D100CA /* BLE */ = {
+			isa = PBXGroup;
+			children = (
+				B689CBDF1F8F57AB1F03F43E /* BleStrapLink.swift */,
+				9DA734D939828240740F350F /* BleStrapScanner.swift */,
+				CA373E4130A7ECC700D100CA /* CentralScan.swift */,
+				F26AAFE316A97D88945B8B5A /* ConnectAction.swift */,
+				CA373E3F30A7EC9400D100CA /* ScanAction.swift */,
+				A64F731707EAAB8AEE5A138E /* StrapConnection.swift */,
+			);
+			path = BLE;
+			sourceTree = "<group>";
+		};
+		CA373E3C30A7EC5100D100CA /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				CA373E3D30A7EC6D00D100CA /* MainThreadCheck.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -154,6 +200,7 @@
 			buildPhases = (
 				9740EEB61CF901F6004384FC /* Run Script */,
 				97C146EA1CF9000F007C117D /* Sources */,
+				7790BC83A50BA674365E5F1F /* SwiftLint */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
@@ -251,6 +298,25 @@
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
 		};
+		7790BC83A50BA674365E5F1F /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = SwiftLint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Lints the hand-written Swift with the same pinned SwiftLint and rules as CI\n# (see tool/lint_native.sh and .swiftlint.yml). Findings appear inline as\n# errors and fail the build.\n\"$SRCROOT/../tool/lint_native.sh\" swift\n";
+		};
 		9740EEB61CF901F6004384FC /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -281,9 +347,19 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CA373E3E30A7EC7100D100CA /* MainThreadCheck.swift in Sources */,
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
+				CA373E4230A7ECC800D100CA /* CentralScan.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
+				BE9EAA0C636C32B38EB61C20 /* BleApi.pigeon.swift in Sources */,
+				CA373E4030A7EC9400D100CA /* ScanAction.swift in Sources */,
+				8A3C036C99A37D7078A3BC2B /* BleStrapScanner.swift in Sources */,
+				F66ED4DC7B794547A9F31F7F /* ConnectAction.swift in Sources */,
+				351483C12BFC634B42A4F35A /* StrapConnection.swift in Sources */,
+				CD6CDA9F233E42A28F5C0CDE /* BleStrapLink.swift in Sources */,
+				C9F5D740239324996FE91AC0 /* AppSettingsApi.pigeon.swift in Sources */,
+				F4F2C9DE94C793870DC93D90 /* AppSettingsOpener.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -387,6 +463,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.jpeckner.pulselink;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
+				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
@@ -404,6 +481,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
 			};
@@ -419,6 +497,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jpeckner.pulselink.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
 			};
@@ -434,6 +513,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jpeckner.pulselink.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Runner.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Runner";
 			};
@@ -570,6 +650,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};
@@ -592,6 +673,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.jpeckner.pulselink;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
+				SWIFT_STRICT_CONCURRENCY = complete;
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};

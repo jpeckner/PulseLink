@@ -92,12 +92,13 @@ extension LiveHeartRateStatePatterns on LiveHeartRateState {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( LiveHeartRateWaiting value)?  waiting,TResult Function( LiveHeartRateReading value)?  reading,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( LiveHeartRateWaiting value)?  waiting,TResult Function( LiveHeartRateReading value)?  reading,TResult Function( LiveHeartRateConnectionFailed value)?  connectionFailed,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case LiveHeartRateWaiting() when waiting != null:
 return waiting(_that);case LiveHeartRateReading() when reading != null:
-return reading(_that);case _:
+return reading(_that);case LiveHeartRateConnectionFailed() when connectionFailed != null:
+return connectionFailed(_that);case _:
   return orElse();
 
 }
@@ -115,12 +116,13 @@ return reading(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( LiveHeartRateWaiting value)  waiting,required TResult Function( LiveHeartRateReading value)  reading,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( LiveHeartRateWaiting value)  waiting,required TResult Function( LiveHeartRateReading value)  reading,required TResult Function( LiveHeartRateConnectionFailed value)  connectionFailed,}){
 final _that = this;
 switch (_that) {
 case LiveHeartRateWaiting():
 return waiting(_that);case LiveHeartRateReading():
-return reading(_that);}
+return reading(_that);case LiveHeartRateConnectionFailed():
+return connectionFailed(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -134,12 +136,13 @@ return reading(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( LiveHeartRateWaiting value)?  waiting,TResult? Function( LiveHeartRateReading value)?  reading,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( LiveHeartRateWaiting value)?  waiting,TResult? Function( LiveHeartRateReading value)?  reading,TResult? Function( LiveHeartRateConnectionFailed value)?  connectionFailed,}){
 final _that = this;
 switch (_that) {
 case LiveHeartRateWaiting() when waiting != null:
 return waiting(_that);case LiveHeartRateReading() when reading != null:
-return reading(_that);case _:
+return reading(_that);case LiveHeartRateConnectionFailed() when connectionFailed != null:
+return connectionFailed(_that);case _:
   return null;
 
 }
@@ -156,11 +159,12 @@ return reading(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( bool isSimulated)?  waiting,TResult Function( HeartRateSample sample,  bool isStale,  bool isSimulated)?  reading,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( bool isSimulated)?  waiting,TResult Function( HeartRateSample sample,  bool isStale,  bool isSimulated)?  reading,TResult Function( StrapConnectionFailure failure,  bool isSimulated)?  connectionFailed,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case LiveHeartRateWaiting() when waiting != null:
 return waiting(_that.isSimulated);case LiveHeartRateReading() when reading != null:
-return reading(_that.sample,_that.isStale,_that.isSimulated);case _:
+return reading(_that.sample,_that.isStale,_that.isSimulated);case LiveHeartRateConnectionFailed() when connectionFailed != null:
+return connectionFailed(_that.failure,_that.isSimulated);case _:
   return orElse();
 
 }
@@ -178,11 +182,12 @@ return reading(_that.sample,_that.isStale,_that.isSimulated);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( bool isSimulated)  waiting,required TResult Function( HeartRateSample sample,  bool isStale,  bool isSimulated)  reading,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( bool isSimulated)  waiting,required TResult Function( HeartRateSample sample,  bool isStale,  bool isSimulated)  reading,required TResult Function( StrapConnectionFailure failure,  bool isSimulated)  connectionFailed,}) {final _that = this;
 switch (_that) {
 case LiveHeartRateWaiting():
 return waiting(_that.isSimulated);case LiveHeartRateReading():
-return reading(_that.sample,_that.isStale,_that.isSimulated);}
+return reading(_that.sample,_that.isStale,_that.isSimulated);case LiveHeartRateConnectionFailed():
+return connectionFailed(_that.failure,_that.isSimulated);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -196,11 +201,12 @@ return reading(_that.sample,_that.isStale,_that.isSimulated);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( bool isSimulated)?  waiting,TResult? Function( HeartRateSample sample,  bool isStale,  bool isSimulated)?  reading,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( bool isSimulated)?  waiting,TResult? Function( HeartRateSample sample,  bool isStale,  bool isSimulated)?  reading,TResult? Function( StrapConnectionFailure failure,  bool isSimulated)?  connectionFailed,}) {final _that = this;
 switch (_that) {
 case LiveHeartRateWaiting() when waiting != null:
 return waiting(_that.isSimulated);case LiveHeartRateReading() when reading != null:
-return reading(_that.sample,_that.isStale,_that.isSimulated);case _:
+return reading(_that.sample,_that.isStale,_that.isSimulated);case LiveHeartRateConnectionFailed() when connectionFailed != null:
+return connectionFailed(_that.failure,_that.isSimulated);case _:
   return null;
 
 }
@@ -353,6 +359,85 @@ $HeartRateSampleCopyWith<$Res> get sample {
   
   return $HeartRateSampleCopyWith<$Res>(_self.sample, (value) {
     return _then(_self.copyWith(sample: value));
+  });
+}
+}
+
+/// @nodoc
+
+
+class LiveHeartRateConnectionFailed implements LiveHeartRateState {
+  const LiveHeartRateConnectionFailed({required this.failure, required this.isSimulated});
+  
+
+ final  StrapConnectionFailure failure;
+@override final  bool isSimulated;
+
+/// Create a copy of LiveHeartRateState
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$LiveHeartRateConnectionFailedCopyWith<LiveHeartRateConnectionFailed> get copyWith => _$LiveHeartRateConnectionFailedCopyWithImpl<LiveHeartRateConnectionFailed>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is LiveHeartRateConnectionFailed&&(identical(other.failure, failure) || other.failure == failure)&&(identical(other.isSimulated, isSimulated) || other.isSimulated == isSimulated));
+}
+
+
+@override
+int get hashCode {
+    return Object.hash(runtimeType,failure,isSimulated);
+}
+
+@override
+String toString() {
+    return 'LiveHeartRateState.connectionFailed(failure: $failure, isSimulated: $isSimulated)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $LiveHeartRateConnectionFailedCopyWith<$Res> implements $LiveHeartRateStateCopyWith<$Res> {
+  factory $LiveHeartRateConnectionFailedCopyWith(LiveHeartRateConnectionFailed value, $Res Function(LiveHeartRateConnectionFailed) _then) = _$LiveHeartRateConnectionFailedCopyWithImpl;
+@override @useResult
+$Res call({
+ StrapConnectionFailure failure, bool isSimulated
+});
+
+
+$StrapConnectionFailureCopyWith<$Res> get failure;
+
+}
+/// @nodoc
+class _$LiveHeartRateConnectionFailedCopyWithImpl<$Res>
+    implements $LiveHeartRateConnectionFailedCopyWith<$Res> {
+  _$LiveHeartRateConnectionFailedCopyWithImpl(this._self, this._then);
+
+  final LiveHeartRateConnectionFailed _self;
+  final $Res Function(LiveHeartRateConnectionFailed) _then;
+
+/// Create a copy of LiveHeartRateState
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? failure = null,Object? isSimulated = null,}) {
+  return _then(LiveHeartRateConnectionFailed(
+failure: null == failure ? _self.failure : failure // ignore: cast_nullable_to_non_nullable
+as StrapConnectionFailure,isSimulated: null == isSimulated ? _self.isSimulated : isSimulated // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+/// Create a copy of LiveHeartRateState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$StrapConnectionFailureCopyWith<$Res> get failure {
+  
+  return $StrapConnectionFailureCopyWith<$Res>(_self.failure, (value) {
+    return _then(_self.copyWith(failure: value));
   });
 }
 }

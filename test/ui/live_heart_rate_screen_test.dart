@@ -7,14 +7,25 @@ import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
+import 'package:pulselink/blocs/strap_battery/strap_battery_cubit.dart';
+import 'package:pulselink/domain/battery_level.dart';
+import 'package:pulselink/domain/bluetooth_problem.dart';
+import 'package:pulselink/domain/discovered_strap.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/strap_connection_failure.dart';
 import 'package:pulselink/ui/live/live_heart_rate_screen.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
 import '../helpers/beats_per_minute.dart';
+import '../helpers/discovered_strap.dart';
+import '../helpers/strap_connection_failures.dart';
+import '../helpers/stub_app_settings.dart';
 
 class _MockLiveHeartRateCubit extends MockCubit<LiveHeartRateState>
     implements LiveHeartRateCubit;
+
+class _MockStrapBatteryCubit extends MockCubit<BatteryLevel?>
+    implements StrapBatteryCubit;
 
 final _timestamp = DateTime(2026, 11, 11, 10, 52, 31);
 final String _time = DateFormat.jms().format(_timestamp);
@@ -43,11 +54,24 @@ LiveHeartRateState _unavailable(
   isSimulated: false,
 );
 
+/// For tests that never open the strap picker.
+Widget _noPicker(BuildContext context) => const SizedBox.shrink();
+
+/// For tests that never pick a strap.
+void _noSelection(DiscoveredStrap strap) {}
+
 void main() {
   group('LiveHeartRateScreen', () {
     late _MockLiveHeartRateCubit cubit;
+    late _MockStrapBatteryCubit battery;
+    late StubAppSettings settings;
 
-    setUp(() => cubit = _MockLiveHeartRateCubit());
+    setUp(() {
+      cubit = _MockLiveHeartRateCubit();
+      battery = _MockStrapBatteryCubit();
+      settings = StubAppSettings();
+      when(() => battery.state).thenReturn(null);
+    });
 
     Future<void> pumpScreen(WidgetTester tester, LiveHeartRateState state) {
       when(() => cubit.state).thenReturn(state);
@@ -56,7 +80,14 @@ void main() {
       // pump several states would silently only check the first.
       return tester.pumpWidget(
         MaterialApp(
-          home: LiveHeartRateScreen(key: UniqueKey(), cubit: cubit),
+          home: LiveHeartRateScreen(
+            key: UniqueKey(),
+            cubit: cubit,
+            batteryCubit: battery,
+            appSettings: settings,
+            buildStrapPicker: _noPicker,
+            onStrapSelected: _noSelection,
+          ),
         ),
       );
     }
@@ -243,6 +274,214 @@ void main() {
       });
     });
 
+    group('connection failed', () {
+      final messages = {
+        const StrapConnectionFailure.bluetooth(BluetoothProblem.off): (
+          'Bluetooth is off',
+          'Turn on Bluetooth to connect to your strap.',
+          false,
+        ),
+        const StrapConnectionFailure.bluetooth(BluetoothProblem.unavailable): (
+          "Bluetooth isn't available",
+          "This phone can't connect to a heart-rate strap.",
+          false,
+        ),
+        const StrapConnectionFailure.bluetooth(
+          BluetoothProblem.permissionDenied,
+        ): (
+          'Bluetooth permission needed',
+          'Allow PulseLink to use Bluetooth in Settings, then try again.',
+          true,
+        ),
+        const StrapConnectionFailure.strapUnreachable(): (
+          "Can't reach the strap",
+          "Make sure it's on, being worn and nearby, and not connected to "
+              'another app.',
+          false,
+        ),
+        const StrapConnectionFailure.notAHeartRateStrap(): (
+          'Not a heart-rate strap',
+          "This device doesn't send heart-rate data.",
+          false,
+        ),
+        const StrapConnectionFailure.connectionLost(): (
+          'Strap disconnected',
+          "Make sure it's on, being worn and nearby, then try again.",
+          false,
+        ),
+      };
+
+      test('every failure has a message', () {
+        expect(messages.keys, unorderedEquals(allStrapConnectionFailures));
+      });
+
+      for (final MapEntry(key: failure, value: (title, detail, hasSettings))
+          in messages.entries) {
+        testWidgets('$failure: says why, what to do, and no number', (
+          tester,
+        ) async {
+          await pumpScreen(
+            tester,
+            LiveHeartRateState.connectionFailed(
+              failure: failure,
+              isSimulated: false,
+            ),
+          );
+          expect(find.text(title), findsOneWidget);
+          expect(find.text(detail), findsOneWidget);
+          expect(find.text('Try again'), findsOneWidget);
+          expect(
+            find.text('Open Settings'),
+            hasSettings ? findsOneWidget : findsNothing,
+          );
+          expect(find.text('--'), findsNothing);
+          expect(find.text('bpm'), findsNothing);
+        });
+      }
+
+      testWidgets('Open Settings opens the settings', (tester) async {
+        await pumpScreen(
+          tester,
+          const LiveHeartRateState.connectionFailed(
+            failure: .bluetooth(.permissionDenied),
+            isSimulated: false,
+          ),
+        );
+        await tester.tap(find.text('Open Settings'));
+        await tester.pump();
+        expect(settings.openCount, 1);
+      });
+
+      testWidgets('Try again starts the cubit again', (tester) async {
+        when(() => cubit.start()).thenAnswer((_) async {});
+        await pumpScreen(
+          tester,
+          const LiveHeartRateState.connectionFailed(
+            failure: StrapConnectionFailure.bluetooth(BluetoothProblem.off),
+            isSimulated: false,
+          ),
+        );
+        await tester.tap(find.text('Try again'));
+        verify(() => cubit.start()).called(1);
+      });
+    });
+
+    testWidgets('Find strap opens the strap picker', (tester) async {
+      when(() => cubit.state)
+          .thenReturn(const LiveHeartRateState.waiting(isSimulated: false));
+      await tester.pumpWidget(
+        MaterialApp(
+          home: LiveHeartRateScreen(
+            cubit: cubit,
+            batteryCubit: battery,
+            appSettings: settings,
+            buildStrapPicker: (_) => const Text('strap picker'),
+            onStrapSelected: _noSelection,
+          ),
+        ),
+      );
+      await tester.tap(find.byTooltip('Find strap'));
+      await tester.pumpAndSettle();
+      expect(find.text('strap picker'), findsOneWidget);
+    });
+
+    group('battery level', () {
+      Future<void> pumpWithBattery(WidgetTester tester, int? percent) {
+        when(() => battery.state)
+            .thenReturn(percent == null ? null : BatteryLevel.tryFrom(percent));
+        return pumpScreen(tester, _reading());
+      }
+
+      testWidgets('shows the percentage once known', (tester) async {
+        await pumpWithBattery(tester, 85);
+        expect(find.text('85%'), findsOneWidget);
+        expect(find.byIcon(Icons.battery_std), findsOneWidget);
+        expect(
+          find.bySemanticsLabel('Strap battery 85 percent'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('warns once it is low', (tester) async {
+        await pumpWithBattery(tester, 15);
+        expect(find.text('15%'), findsOneWidget);
+        expect(find.byIcon(Icons.battery_alert), findsOneWidget);
+        expect(
+          find.bySemanticsLabel('Strap battery 15 percent, low'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('shows nothing while it is unknown', (tester) async {
+        await pumpWithBattery(tester, null);
+        expect(find.textContaining('%'), findsNothing);
+        expect(find.byIcon(Icons.battery_std), findsNothing);
+      });
+
+      testWidgets('fits a 320 px wide app bar with the Demo badge', (
+        tester,
+      ) async {
+        tester.view
+          ..physicalSize = const Size(320, 640)
+          ..devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        when(() => battery.state).thenReturn(BatteryLevel.tryFrom(100));
+        await pumpScreen(tester, _reading(isSimulated: true));
+        expect(tester.takeException(), isNull);
+        expect(find.text('100%'), findsOneWidget);
+        expect(find.text('Demo'), findsOneWidget);
+      });
+    });
+
+    group('picking a strap', () {
+      late List<DiscoveredStrap> selected;
+      final strap = discoveredStrapOf('strap-1', 'TICKR');
+
+      Future<void> pumpWithPicker(
+        WidgetTester tester, {
+        required DiscoveredStrap? pickedStrap,
+      }) {
+        selected = [];
+        when(() => cubit.state)
+            .thenReturn(const LiveHeartRateState.waiting(isSimulated: true));
+        return tester.pumpWidget(
+          MaterialApp(
+            home: LiveHeartRateScreen(
+              cubit: cubit,
+              batteryCubit: battery,
+              appSettings: settings,
+              // A stand-in picker that closes with pickedStrap.
+              buildStrapPicker: (context) => TextButton(
+                onPressed: () => Navigator.of(context).pop(pickedStrap),
+                child: const Text('close picker'),
+              ),
+              onStrapSelected: selected.add,
+            ),
+          ),
+        );
+      }
+
+      testWidgets('passes on the strap picked in the picker', (tester) async {
+        await pumpWithPicker(tester, pickedStrap: strap);
+        await tester.tap(find.byTooltip('Find strap'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('close picker'));
+        await tester.pumpAndSettle();
+        expect(selected, [strap]);
+      });
+
+      testWidgets('closing the picker without picking passes nothing on', (
+        tester,
+      ) async {
+        await pumpWithPicker(tester, pickedStrap: null);
+        await tester.tap(find.byTooltip('Find strap'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('close picker'));
+        await tester.pumpAndSettle();
+        expect(selected, isEmpty);
+      });
+    });
+
     group('demo badge', () {
       testWidgets('shows for simulated data', (tester) async {
         await pumpScreen(tester, _reading(isSimulated: true));
@@ -272,7 +511,15 @@ void main() {
         initialState: const LiveHeartRateState.waiting(isSimulated: false),
       );
       await tester.pumpWidget(
-        MaterialApp(home: LiveHeartRateScreen(cubit: cubit)),
+        MaterialApp(
+          home: LiveHeartRateScreen(
+            cubit: cubit,
+            batteryCubit: battery,
+            appSettings: settings,
+            buildStrapPicker: _noPicker,
+            onStrapSelected: _noSelection,
+          ),
+        ),
       );
       expect(find.text('--'), findsOneWidget);
 
@@ -306,6 +553,11 @@ void main() {
         _unavailable(HeartRateUnavailableReason.zeroBeatsPerMinute),
         _unavailable(HeartRateUnavailableReason.implausibleBeatsPerMinute),
         _unavailable(HeartRateUnavailableReason.noSkinContact, isStale: true),
+        for (final failure in allStrapConnectionFailures)
+          LiveHeartRateState.connectionFailed(
+            failure: failure,
+            isSimulated: false,
+          ),
       ]) {
         await pumpScreen(tester, state);
         expect(tester.takeException(), isNull, reason: '$state');
@@ -321,6 +573,10 @@ void main() {
           MaterialApp(
             home: LiveHeartRateScreen(
               cubit: cubit,
+              batteryCubit: battery,
+              appSettings: settings,
+              buildStrapPicker: _noPicker,
+              onStrapSelected: _noSelection,
               debugControls: const Text('debug controls'),
             ),
           ),
@@ -337,6 +593,10 @@ void main() {
             MaterialApp(
               home: LiveHeartRateScreen(
                 cubit: cubit,
+                batteryCubit: battery,
+                appSettings: settings,
+                buildStrapPicker: _noPicker,
+                onStrapSelected: _noSelection,
                 debugControls: debugControls,
               ),
             ),
@@ -364,6 +624,10 @@ void main() {
           MaterialApp(
             home: LiveHeartRateScreen(
               cubit: cubit,
+              batteryCubit: battery,
+              appSettings: settings,
+              buildStrapPicker: _noPicker,
+              onStrapSelected: _noSelection,
               onTitleLongPress: () => longPresses++,
             ),
           ),

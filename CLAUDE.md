@@ -43,6 +43,56 @@ work, and wait for explicit sign-off before proceeding any further. Once
 approved, leave a short comment at that line explaining why it's needed, and
 ignore the lint there.
 
+Native code (Swift in `ios/`, Kotlin in `android/`) follows the same rule.
+`tool/lint_native.sh` enforces it with SwiftLint (`.swiftlint.yml`) and
+detekt (`android/config/detekt.yml`) on app code, and
+`tool/check_native_lints.sh` proves each rule reports. The Runner target's
+SwiftLint build phase also runs the Swift half on every Xcode build, so
+findings show inline as errors, and every Android build (Android Studio's
+Run, `flutter run`, `flutter build apk`) runs the Kotlin half, so findings
+fail the build. Where a catch-all is truly needed, disable the rule on that
+line with a comment saying why.
+
+- Swift: no `!` force unwraps, `as!` casts, implicitly unwrapped optionals
+  (`Type!`) or `try!`, and no `fatalError`, `precondition` or `assert`. Use
+  `if let`, `guard let`, `as?` and `try?` or `do`/`catch`. Switch on the
+  app's own enums without `default`. The `@unknown default` Swift requires
+  for Apple's enums is fine, with a comment saying what it does and why.
+- Kotlin: no `!!`, unchecked `as` casts or `lateinit`, and no `error()`,
+  `require` or `check`. Use `?.`, `?:`, `as?` and `firstOrNull()`. Write
+  `when` on sealed classes and enums without `else`.
+
+Pigeon's generated `*.pigeon.swift` and `*.pigeon.kt` files are exempt.
+
+## Swift protocol conformances
+
+Declare a protocol conformance in its own extension whenever it adds
+anything (methods, properties, initializers or subscripts), such as
+`extension CentralScan: CBCentralManagerDelegate { ... }`. Then each
+protocol's members sit together, apart from the type's own. A conformance
+that adds nothing, such as `Equatable` synthesized for an enum, can stay
+on the type's declaration. No lint checks this, so reviews do.
+
+## Calling Flutter from native code
+
+Flutter only accepts calls from the platform's main thread: the main thread
+on iOS, and the main (UI) thread on Android. That covers platform-channel
+messages, Pigeon event sinks and Flutter API calls. Native code must never
+send to Dart from any other thread.
+
+- Swift: a type that holds Flutter channel state or sends to Dart is
+  `@MainActor`. Where Flutter or a system framework calls in without actor
+  isolation, check `isOnMainThread()` first. If that's false, skip the call,
+  since the check has already logged a fault. Then use
+  `MainActor.assumeIsolated`. Create CoreBluetooth managers with
+  `queue: nil`, so their delegate methods run on the main queue.
+- Kotlin: system callbacks such as `BluetoothGattCallback` and
+  `ScanCallback` arrive on background threads. Post to the main looper, for
+  example with `Handler(Looper.getMainLooper())`, before calling a Pigeon
+  sink or channel.
+
+No lint can tell which thread code runs on, so reviews check this.
+
 ## Error handling
 
 Handle errors on purpose. Dart has no checked exceptions and no lint can tell

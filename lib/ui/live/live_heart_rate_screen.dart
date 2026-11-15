@@ -1,22 +1,47 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
+import 'package:pulselink/blocs/strap_battery/strap_battery_cubit.dart';
+import 'package:pulselink/data/app_settings.dart';
+import 'package:pulselink/domain/battery_level.dart';
+import 'package:pulselink/domain/discovered_strap.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/strap_connection_failure.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
+import 'package:pulselink/ui/widgets/problem_view.dart';
 
 /// Live heart rate: the latest bpm, when it arrived, skin contact, and a clear
 /// "no data from strap" state once the reading goes stale.
 class LiveHeartRateScreen extends StatelessWidget {
   const new({
     required this.cubit,
+    required this.batteryCubit,
+    required this.appSettings,
+    required this.buildStrapPicker,
+    required this.onStrapSelected,
     this.debugControls,
     this.onTitleLongPress,
     super.key,
   });
 
   final LiveHeartRateCubit cubit;
+
+  /// The strap's battery level, shown in the app bar once it's known.
+  final StrapBatteryCubit batteryCubit;
+
+  /// Opened when a problem is fixed in this app's settings, such as
+  /// Bluetooth permission being denied.
+  final AppSettings appSettings;
+
+  /// Builds the screen that finds a strap, opened from the app bar.
+  final WidgetBuilder buildStrapPicker;
+
+  /// Called with the strap picked in the strap picker, if any.
+  final ValueChanged<DiscoveredStrap> onStrapSelected;
 
   /// Shown just above the disclaimer, overlaid so it takes no layout space.
   /// Only supplied in non-release builds.
@@ -36,7 +61,25 @@ class LiveHeartRateScreen extends StatelessWidget {
             onLongPress: onTitleLongPress,
             child: const Text('PulseLink'),
           ),
-          actions: [if (state.isSimulated) const _DemoBadge()],
+          actions: [
+            BlocBuilder<StrapBatteryCubit, BatteryLevel?>(
+              bloc: batteryCubit,
+              builder: (context, level) {
+                if (level case final known?) {
+                  return _BatteryIndicator(level: known);
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.bluetooth_searching),
+              tooltip: 'Find strap',
+              // Not awaited: it only opens the picker and passes on what it
+              // returns; connecting reports through the cubit's state.
+              onPressed: () => unawaited(_findStrap(context)),
+            ),
+            if (state.isSimulated) const _DemoBadge(),
+          ],
         ),
         body: SafeArea(
           child: Padding(
@@ -56,6 +99,17 @@ class LiveHeartRateScreen extends StatelessWidget {
                           LiveHeartRateWaiting() => const _WaitingView(),
                           LiveHeartRateReading(:final sample, :final isStale) =>
                             _ReadingView(sample: sample, isStale: isStale),
+                          LiveHeartRateConnectionFailed(:final failure) =>
+                            _ConnectionFailedView(
+                              failure: failure,
+                              appSettings: appSettings,
+                              // Not awaited: start() reports how it went by
+                              // changing the cubit's state, which this screen
+                              // already shows. It only throws on a bug in a
+                              // source, which is left to the zone's error
+                              // handler (see main.dart).
+                              onTryAgain: () => unawaited(cubit.start()),
+                            ),
                         },
                       ),
                       if (debugControls case final controls?)
@@ -74,6 +128,16 @@ class LiveHeartRateScreen extends StatelessWidget {
       ),
     );
   }
+
+  /// Opens the strap picker, and passes on the strap picked there, if any.
+  /// Closing the picker without picking one changes nothing.
+  Future<void> _findStrap(BuildContext context) async {
+    final strap = await Navigator.of(context)
+        .push(MaterialPageRoute<DiscoveredStrap>(builder: buildStrapPicker));
+    if (strap case final picked?) {
+      onStrapSelected(picked);
+    }
+  }
 }
 
 class _WaitingView extends StatelessWidget {
@@ -91,6 +155,50 @@ class _WaitingView extends StatelessWidget {
           style: Theme.of(context).textTheme.bodyLarge,
         ),
       ],
+    );
+  }
+}
+
+/// Why there's no heart rate, what to do about it, and a way to retry.
+class _ConnectionFailedView extends StatelessWidget {
+  const new({
+    required this.failure,
+    required this.appSettings,
+    required this.onTryAgain,
+  });
+
+  final StrapConnectionFailure failure;
+  final AppSettings appSettings;
+  final VoidCallback onTryAgain;
+
+  @override
+  Widget build(BuildContext context) {
+    return ProblemView(
+      message: switch (failure) {
+        BluetoothFailure(:final problem) => bluetoothProblemMessage(problem),
+        StrapUnreachable() => (
+          icon: Icons.sensors_off,
+          title: "Can't reach the strap",
+          detail:
+              "Make sure it's on, being worn and nearby, and not connected "
+              'to another app.',
+          isFixedInSettings: false,
+        ),
+        NotAHeartRateStrap() => (
+          icon: Icons.heart_broken_outlined,
+          title: 'Not a heart-rate strap',
+          detail: "This device doesn't send heart-rate data.",
+          isFixedInSettings: false,
+        ),
+        StrapConnectionLost() => (
+          icon: Icons.link_off,
+          title: 'Strap disconnected',
+          detail: "Make sure it's on, being worn and nearby, then try again.",
+          isFixedInSettings: false,
+        ),
+      },
+      appSettings: appSettings,
+      onTryAgain: onTryAgain,
     );
   }
 }
@@ -264,6 +372,43 @@ class _StrapStatusChip extends StatelessWidget {
           label: const Text('Strap reading out of range'),
         ),
     };
+  }
+}
+
+/// The strap's battery level: an icon and a percentage, with a warning
+/// icon in the error colour once it's low.
+class _BatteryIndicator extends StatelessWidget {
+  const new({required this.level});
+
+  final BatteryLevel level;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colour = level.isLow ? theme.colorScheme.error : null;
+    return Semantics(
+      label:
+          'Strap battery ${level.percent} percent'
+          '${level.isLow ? ', low' : ''}',
+      excludeSemantics: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              level.isLow ? Icons.battery_alert : Icons.battery_std,
+              size: 20,
+              color: colour,
+            ),
+            Text(
+              '${level.percent}%',
+              style: theme.textTheme.labelLarge?.copyWith(color: colour),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

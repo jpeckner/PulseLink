@@ -58,12 +58,12 @@ git rev-list --count HEAD..develop
 tool/regenerate.sh > "$LOGS/regenerate.log" 2>&1
 ```
 
-It cleans `build/`, gets packages, runs `build_runner` and, on macOS, regenerates the iOS project config. If it fails, show the end of the log and stop. If the branch has the lint plugin and the script doesn't already fetch the plugin's packages, also run `(cd tool/pulselink_lints && dart pub get)`.
+It cleans `build/`, gets packages, runs `build_runner` and `tool/pigeon.sh` and, on macOS, regenerates the iOS project config. If it fails, show the end of the log and stop. If the branch has the lint plugin and the script doesn't already fetch the plugin's packages, also run `(cd tool/pulselink_lints && dart pub get)`.
 
 Then:
 
 1. Run `git status --porcelain` and sort what changed:
-   - **Generated output:** `*.freezed.dart`, `*.g.dart`, `pubspec.lock`, `tool/pulselink_lints/pubspec.lock`. This is out of date on the branch.
+   - **Generated output:** `*.freezed.dart`, `*.g.dart`, `pubspec.lock`, `tool/pulselink_lints/pubspec.lock`, and Pigeon's `*.pigeon.dart`, `*.pigeon.swift` and `*.pigeon.kt` (the last two live under `ios/` and `android/`, but they're generated, so the next bullet doesn't apply to them). This is out of date on the branch.
    - **Anything under `ios/` or `android/`.** Flutter's tool rewrites these files after an upgrade, or when plugins change. Stop, show `git diff --stat`, and ask the user whether to commit them. Native project changes need a human look.
    - **Anything else.** It's unexpected, so stop and report it.
 2. Look for generated files left behind by a deleted or renamed source. `build_runner` doesn't remove them:
@@ -71,6 +71,12 @@ Then:
    for f in $(git ls-files '*.freezed.dart' '*.g.dart'); do
      src="${f%.freezed.dart}"; src="${src%.g.dart}.dart"
      grep -qF "part '$(basename "$f")';" "$src" 2>/dev/null || echo "Orphaned: $f"
+   done
+   ```
+   Pigeon output isn't a `part` file, so check it against the `pigeons/` contracts instead:
+   ```bash
+   for f in $(git ls-files '*.pigeon.dart' '*.pigeon.swift' '*.pigeon.kt'); do
+     grep -qF "'$f'" pigeons/*.dart 2>/dev/null || echo "Orphaned: $f"
    done
    ```
    Delete each orphan with `git rm`, since nothing can import it.
@@ -110,9 +116,9 @@ Then handle each remaining **unused** finding. Prefer the first of these that fi
    - mentions in `README.md`, `lib/*/README.md` and `docs/`.
 2. **Keep it with a comment**, when it has to stay: it's groundwork for an upcoming milestone in the build plan, or something outside Dart (a platform channel, reflection) uses it. Put `// unused-code: keep, <reason>` on the line above the declaration, after its doc comment. If you're not sure the code is planned, ask the user instead of guessing.
 
-Never edit `*.freezed.dart` or `*.g.dart` by hand. If a finding points at a generated class, fix its source.
+Never edit `*.freezed.dart`, `*.g.dart` or `*.pigeon.*` by hand. If a finding points at a generated class, fix its source.
 
-Rerun the tool until it reports nothing unused; deleting code often makes more code unused. Then rerun step 3's `build_runner` check, stage the changes by path and commit, e.g. `refactor(heart_rate_monitor): Milestone 2 - unused code`.
+Rerun the tool until it reports nothing unused; deleting code often makes more code unused. Then rerun step 3's `build_runner` and `tool/pigeon.sh` check, stage the changes by path and commit, e.g. `refactor(heart_rate_monitor): Milestone 2 - unused code`.
 
 **Used only by tests** findings are informational. Report them, and don't delete them. At this stage of the project, they're usually the next milestone's groundwork, e.g. the Heart Rate Measurement parser before BLE arrives in Milestone 3.
 
@@ -144,7 +150,7 @@ If it lists files, run `dart format lib test`, stage those files, and commit: `s
 flutter analyze --fatal-infos --fatal-warnings > "$LOGS/analyze.log" 2>&1
 ```
 
-This covers the very_good_analysis lints and, when the branch has it, the `pulselink_lints` plugin (`no_assertions`, `no_catch_all_cases`, `no_dynamic`, `no_ignored_results`, `use_switch_on_closed_types`). `develop` passes CI, so any issue comes from the branch or from a Flutter upgrade, and fails the check. Fix only issues caused by this run's own commits, e.g. an import left unused by step 4. Report the rest with file, line and rule.
+This covers the very_good_analysis lints and, when the branch has it, the `pulselink_lints` plugin (`keep_pigeon_imports_local`, `no_assertions`, `no_catch_all_cases`, `no_dynamic`, `no_ignored_results`, `use_switch_on_closed_types`). `develop` passes CI, so any issue comes from the branch or from a Flutter upgrade, and fails the check. Fix only issues caused by this run's own commits, e.g. an import left unused by step 4. Report the rest with file, line and rule.
 
 A clean analyze doesn't prove the plugin ran: if it fails to load, analyze reports "No issues found!" anyway. If the branch has `tool/check_lint_plugin.sh`, run it; it analyzes a file that breaks each enabled rule and fails unless every rule reports. A failure here fails the analyze check. If it says it rebuilt the plugin's cached copy and then passed, the first analyze ran with a stale copy, so run analyze again and use that result.
 
@@ -179,7 +185,18 @@ If the branch has `tool/pulselink_lints`, run its own checks, as CI does:
 
 If the branch changed `.claude/skills/pre-merge-checks/find_unused_code/`, run `dart test` there too.
 
-### 5f. Coverage of the branch's changes (informational)
+### 5f. Native lints
+
+If the branch has `tool/lint_native.sh`, run it and its probe, as CI does:
+
+```bash
+tool/lint_native.sh > "$LOGS/lint-native.log" 2>&1
+tool/check_native_lints.sh > "$LOGS/check-native-lints.log" 2>&1
+```
+
+The first runs SwiftLint on the hand-written Swift and detekt (through Gradle) on the hand-written Kotlin, for `CLAUDE.md`'s native-code rules. It fails on any finding, and if either linter checked no files. The second plants a violation of every rule and fails unless each one reports, so a linter that silently did nothing can't pass. Both download their linter the first time (SwiftLint into `~/.cache/pulselink`, detekt into Gradle's cache), and Gradle needs a JDK: the script uses `JAVA_HOME`, `java` on the `PATH`, or Android Studio's. A failure in either is a fail; report each finding with its file, line and rule. Don't fix findings in code the branch didn't change.
+
+### 5g. Coverage of the branch's changes (informational)
 
 ```bash
 python3 .claude/skills/pre-merge-checks/changed_line_coverage.py coverage/lcov.info
@@ -224,7 +241,7 @@ Each must have a comment next to it explaining why it's needed, which means the 
 On a branch without the rule, list the added lines in `lib/` that might be assertions:
 
 ```bash
-git diff develop...HEAD -- 'lib/*.dart' ':!*.freezed.dart' ':!*.g.dart' \
+git diff develop...HEAD -- 'lib/*.dart' ':!*.freezed.dart' ':!*.g.dart' ':!*.pigeon.dart' \
   | grep -nE '^\+.*(\bassert\(|@Assert|\blate\b|throw (ArgumentError|StateError|RangeError|UnsupportedError|UnimplementedError|Exception)|[A-Za-z0-9_)\]]![.;,)\[ ]| as [A-Z])' \
   | grep -vE "^\+\s*(//|import )"
 ```
@@ -265,7 +282,7 @@ git log --format='%h %s' develop..HEAD | grep -iE '\bwip\b|^[0-9a-f]+ (fixup|squ
 
 **Leftovers in the diff.** These are added lines only, with generated code excluded:
 ```bash
-git diff develop...HEAD -- '*.dart' ':!*.freezed.dart' ':!*.g.dart' \
+git diff develop...HEAD -- '*.dart' ':!*.freezed.dart' ':!*.g.dart' ':!*.pigeon.dart' \
   | grep -nE '^\+.*(TODO|FIXME|XXX|HACK|\bprint\(|debugPrint\(|debugger\(|\bsolo: true|\bskip: (true|'"'"'))'
 ```
 `print` and `debugPrint` don't belong in app code, and `solo:` or `skip:` in a test hides other tests. Report each match with its file. Some may be intentional, so don't remove them.
@@ -294,6 +311,7 @@ Then a table with one row per check, giving its status (pass / fixed / fail / in
 - CocoaPods
 - formatting
 - analyze
+- native lints
 - tests (with totals and the seed)
 - lint plugin
 - coverage of changes

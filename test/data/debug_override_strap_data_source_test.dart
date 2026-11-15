@@ -1,10 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pulselink/data/debug_override_heart_rate_source.dart';
+import 'package:pulselink/data/debug_override_strap_data_source.dart';
+import 'package:pulselink/data/strap_data_source.dart';
+import 'package:pulselink/domain/battery_level.dart';
+import 'package:pulselink/domain/bluetooth_problem.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/strap_connection_failure.dart';
 
 import '../helpers/beats_per_minute.dart';
-import '../helpers/failing_heart_rate_source.dart';
-import '../helpers/stub_heart_rate_source.dart';
+import '../helpers/failing_strap_data_source.dart';
+import '../helpers/stub_strap_data_source.dart';
 
 final _timestamp = DateTime(2026, 11, 11, 10, 52, 31);
 
@@ -24,6 +28,24 @@ const ReadingOverride Function(NonDetectingStrapCondition condition)
 _nonDetecting = ReadingOverride.nonDetectingStrap;
 
 void main() {
+  test('DebugOverrideStrapDataSource passes on the battery level', () async {
+    final inner = StubStrapDataSource();
+    final source = DebugOverrideStrapDataSource(inner);
+    final levels = <BatteryLevel?>[];
+    source.batteryLevel.listen(levels.add);
+    inner.reportBatteryLevel(BatteryLevel.tryFrom(60));
+    expect(levels, [BatteryLevel.tryFrom(60)]);
+    await source.dispose();
+  });
+  test('DebugOverrideStrapDataSource passes on lost connections', () async {
+    final inner = StubStrapDataSource();
+    final source = DebugOverrideStrapDataSource(inner);
+    final lost = <StrapConnectionFailure>[];
+    source.connectionLost.listen(lost.add);
+    inner.loseConnection(const StrapConnectionFailure.connectionLost());
+    expect(lost, [const StrapConnectionFailure.connectionLost()]);
+    await source.dispose();
+  });
   group('condition cycles', () {
     test('a detecting strap cycles normal, stale, no skin contact, zero bpm, '
         'implausible bpm', () {
@@ -127,14 +149,14 @@ void main() {
     });
   });
 
-  group('DebugOverrideHeartRateSource', () {
-    late StubHeartRateSource inner;
-    late DebugOverrideHeartRateSource source;
+  group('DebugOverrideStrapDataSource', () {
+    late StubStrapDataSource inner;
+    late DebugOverrideStrapDataSource source;
     late List<HeartRateSample> received;
 
     setUp(() {
-      inner = StubHeartRateSource(isSimulated: true);
-      source = DebugOverrideHeartRateSource(inner);
+      inner = StubStrapDataSource(isSimulated: true);
+      source = DebugOverrideStrapDataSource(inner);
       received = [];
       source.samples.listen(received.add);
     });
@@ -315,31 +337,67 @@ void main() {
     test('passes through isSimulated, start, stop and dispose', () async {
       expect(source.isSimulated, isTrue);
       expect(
-        DebugOverrideHeartRateSource(StubHeartRateSource()).isSimulated,
+        DebugOverrideStrapDataSource(StubStrapDataSource()).isSimulated,
         isFalse,
       );
 
-      await source.start();
+      expect(await source.start(), const StrapDataSourceStartResult.started());
       await source.stop();
       await source.dispose();
       expect(inner.startCount, 1);
       expect(inner.stopCount, 1);
       expect(inner.isDisposed, isTrue);
     });
+
+    test("passes through the wrapped source's start failure", () async {
+      inner.startResult = const StrapDataSourceStartResult.failed(
+        StrapConnectionFailure.bluetooth(BluetoothProblem.off),
+      );
+      expect(
+        await source.start(),
+        const StrapDataSourceStartResult.failed(
+          StrapConnectionFailure.bluetooth(BluetoothProblem.off),
+        ),
+      );
+    });
+
+    test('a second start joins the one in progress', () async {
+      inner
+        ..holdStart = true
+        ..startResult = const StrapDataSourceStartResult.failed(
+          StrapConnectionFailure.strapUnreachable(),
+        );
+      final first = source.start();
+      final second = source.start();
+      inner.finishStart();
+      const failed = StrapDataSourceStartResult.failed(
+        StrapConnectionFailure.strapUnreachable(),
+      );
+      expect(await first, failed);
+      expect(await second, failed);
+    });
+
+    test('stop cancels a start the wrapped source is still making', () async {
+      inner.holdStart = true;
+      final start = source.start();
+      expect(inner.isStarting, isTrue);
+      await source.stop();
+      expect(await start, const StrapDataSourceStartResult.cancelled());
+    });
   });
 
-  group('DebugOverrideHeartRateSource passes cleanup errors on when', () {
+  group('DebugOverrideStrapDataSource passes cleanup errors on when', () {
     // Passing the source's stop as a function lets the matcher catch an
     // error thrown before a future is returned, as well as a failed future.
     for (final failure in [
-      HeartRateSourceFailure.stop,
-      HeartRateSourceFailure.stopBeforeFuture,
+      StrapDataSourceFailure.stop,
+      StrapDataSourceFailure.stopBeforeFuture,
     ]) {
       test(failure.description, () async {
-        final source = DebugOverrideHeartRateSource(
-          FailingHeartRateSource(failure),
+        final source = DebugOverrideStrapDataSource(
+          FailingStrapDataSource(failure),
         );
-        await expectLater(source.stop, throwsA(same(heartRateSourceFailure)));
+        await expectLater(source.stop, throwsA(same(strapDataSourceFailure)));
       });
     }
 
@@ -348,12 +406,12 @@ void main() {
           ? 'dispose() throws before returning a future'
           : 'dispose() fails';
       test(description, () async {
-        final source = DebugOverrideHeartRateSource(
+        final source = DebugOverrideStrapDataSource(
           _FailingDisposeSource(throwsBeforeFuture: throwsBeforeFuture),
         );
         await expectLater(
           source.dispose,
-          throwsA(same(heartRateSourceFailure)),
+          throwsA(same(strapDataSourceFailure)),
         );
       });
     }
@@ -362,13 +420,13 @@ void main() {
 
 /// A source whose dispose() fails, either with a failed future or by throwing
 /// before it returns one.
-class _FailingDisposeSource extends StubHeartRateSource {
+class _FailingDisposeSource extends StubStrapDataSource {
   new({required this.throwsBeforeFuture});
 
   final bool throwsBeforeFuture;
 
   @override
   Future<void> dispose() => throwsBeforeFuture
-      ? throw heartRateSourceFailure
-      : Future.error(heartRateSourceFailure);
+      ? throw strapDataSourceFailure
+      : Future.error(strapDataSourceFailure);
 }

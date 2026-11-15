@@ -5,8 +5,8 @@ include: package:very_good_analysis/analysis_options.11.0.0.yaml
 analyzer:
   errors:
     # very_good_analysis ignores close_sinks for its false positives. It's on
-    # here (see below): an unclosed StreamController leaks, and BLE streams
-    # arrive in Milestone 3.
+    # here (see below): an unclosed StreamController leaks, and the data
+    # sources use several.
     close_sinks: info
   exclude:
     - build/**
@@ -14,6 +14,8 @@ analyzer:
     - ios/**
     - "**/*.g.dart"
     - "**/*.freezed.dart"
+    # Pigeon platform-channel code; its contracts in pigeons/ are analyzed.
+    - "**/*.pigeon.dart"
     # Its own package, with its own analysis options; CI checks it separately.
     - tool/pulselink_lints/**
 
@@ -48,6 +50,9 @@ plugins:
   pulselink_lints:
     path: tool/pulselink_lints
     diagnostics:
+      # Pigeon's generated types have public, mutable fields, so only the
+      # folder holding them uses them, converting them into domain types.
+      keep_pigeon_imports_local: true
       no_assertions: true
       no_catch_all_cases: true
       # Every written `dynamic`, not just on parameters as the built-in

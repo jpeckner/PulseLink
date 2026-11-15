@@ -1,8 +1,10 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:pulselink/data/heart_rate_source.dart';
+import 'package:pulselink/data/strap_data_source.dart';
+import 'package:pulselink/domain/battery_level.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/strap_connection_failure.dart';
 
-part 'debug_override_heart_rate_source.freezed.dart';
+part 'debug_override_strap_data_source.freezed.dart';
 
 /// Whether a strap can detect skin contact. A property of the strap, not of
 /// any one reading.
@@ -60,7 +62,7 @@ enum NonDetectingStrapCondition {
   };
 }
 
-/// What [DebugOverrideHeartRateSource] simulates: a kind of strap, and a
+/// What [DebugOverrideStrapDataSource] simulates: a kind of strap, and a
 /// condition that kind of strap can actually be in. Impossible combinations,
 /// such as "no skin contact" on a strap that can't detect it, can't be built.
 @freezed
@@ -114,13 +116,13 @@ extension ReadingOverrideControls on ReadingOverride {
   };
 }
 
-/// Debug and profile builds only. Wraps any [HeartRateSource], real or fake,
+/// Debug and profile builds only. Wraps any [StrapDataSource], real or fake,
 /// and rewrites its samples according to [readingOverride], so each strap
 /// condition can be shown on demand.
-class DebugOverrideHeartRateSource implements HeartRateSource {
+class DebugOverrideStrapDataSource implements StrapDataSource {
   new(this._inner);
 
-  final HeartRateSource _inner;
+  final StrapDataSource _inner;
   SkinContactDetection? _reportedDetection;
 
   /// Applied to each sample as it arrives. Null passes samples through
@@ -139,7 +141,13 @@ class DebugOverrideHeartRateSource implements HeartRateSource {
   Stream<HeartRateSample> get samples => _inner.samples.expand(_apply);
 
   @override
-  Future<void> start() => _inner.start();
+  Stream<StrapConnectionFailure> get connectionLost => _inner.connectionLost;
+
+  @override
+  Stream<BatteryLevel?> get batteryLevel => _inner.batteryLevel;
+
+  @override
+  Future<StrapDataSourceStartResult> start() => _inner.start();
 
   @override
   Future<void> stop() => _inner.stop();

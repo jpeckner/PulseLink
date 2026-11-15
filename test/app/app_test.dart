@@ -5,23 +5,35 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/app/app.dart';
 import 'package:pulselink/blocs/debug_override/debug_override_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
-import 'package:pulselink/data/debug_override_heart_rate_source.dart';
+import 'package:pulselink/blocs/strap_battery/strap_battery_cubit.dart';
+import 'package:pulselink/data/debug_override_strap_data_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/ui/debug/debug_override_buttons.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
 import '../helpers/beats_per_minute.dart';
-import '../helpers/stub_heart_rate_source.dart';
+import '../helpers/stub_app_settings.dart';
+import '../helpers/stub_strap_data_source.dart';
+import '../helpers/stub_strap_scanner.dart';
 
 void main() {
   group('PulseLinkApp', () {
     testWidgets('shows live samples from the cubit it is given', (
       tester,
     ) async {
-      final source = StubHeartRateSource(isSimulated: true);
+      final source = StubStrapDataSource(isSimulated: true);
       final cubit = LiveHeartRateCubit(source: source);
+      final batteryCubit = StrapBatteryCubit(source: source);
       unawaited(cubit.start());
-      await tester.pumpWidget(PulseLinkApp(liveHeartRateCubit: cubit));
+      await tester.pumpWidget(
+        PulseLinkApp(
+          liveHeartRateCubit: cubit,
+          strapBatteryCubit: batteryCubit,
+          strapScanner: StubStrapScanner(),
+          appSettings: StubAppSettings(),
+          onStrapSelected: (_) {},
+        ),
+      );
 
       expect(find.text('PulseLink'), findsOneWidget);
       expect(find.text('Demo'), findsOneWidget);
@@ -41,20 +53,53 @@ void main() {
       // The caller owns the cubit. Closing it here also cancels its stale
       // timer, which must not outlive the test.
       unawaited(cubit.close());
+      unawaited(batteryCubit.close());
+      await tester.pump();
+    });
+
+    testWidgets('Find strap opens the picker, which scans with the scanner '
+        'it is given', (tester) async {
+      final source = StubStrapDataSource();
+      final cubit = LiveHeartRateCubit(source: source);
+      final batteryCubit = StrapBatteryCubit(source: source);
+      final scanner = StubStrapScanner();
+      await tester.pumpWidget(
+        PulseLinkApp(
+          liveHeartRateCubit: cubit,
+          strapBatteryCubit: batteryCubit,
+          strapScanner: scanner,
+          appSettings: StubAppSettings(),
+          onStrapSelected: (_) {},
+        ),
+      );
+      await tester.tap(find.byTooltip('Find strap'));
+      // Not pumpAndSettle: the picker's progress indicator never settles.
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text('Find your strap'), findsOneWidget);
+      expect(scanner.isScanning, isTrue);
+
+      unawaited(cubit.close());
+      unawaited(batteryCubit.close());
       await tester.pump();
     });
 
     testWidgets('debug wiring: long-press reveals the override buttons, '
         'which rewrite samples, and hiding them restores them', (tester) async {
       // Wired the way main() does in debug and profile builds.
-      final source = StubHeartRateSource(isSimulated: true);
-      final overrideSource = DebugOverrideHeartRateSource(source);
+      final source = StubStrapDataSource(isSimulated: true);
+      final overrideSource = DebugOverrideStrapDataSource(source);
       final overrideCubit = DebugOverrideCubit(source: overrideSource);
       final cubit = LiveHeartRateCubit(source: overrideSource);
+      final batteryCubit = StrapBatteryCubit(source: overrideSource);
       unawaited(cubit.start());
       await tester.pumpWidget(
         PulseLinkApp(
           liveHeartRateCubit: cubit,
+          strapBatteryCubit: batteryCubit,
+          strapScanner: StubStrapScanner(),
+          appSettings: StubAppSettings(),
+          onStrapSelected: (_) {},
           debugControls: DebugOverrideButtons(cubit: overrideCubit),
           onTitleLongPress: overrideCubit.toggleVisibility,
         ),
@@ -106,6 +151,7 @@ void main() {
       expect(find.text('72'), findsOneWidget);
 
       unawaited(cubit.close());
+      unawaited(batteryCubit.close());
       unawaited(overrideCubit.close());
       await tester.pump();
     });

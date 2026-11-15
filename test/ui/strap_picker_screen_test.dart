@@ -1,0 +1,271 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:pulselink/data/strap_scanner.dart';
+import 'package:pulselink/domain/bluetooth_problem.dart';
+import 'package:pulselink/domain/discovered_strap.dart';
+import 'package:pulselink/ui/picker/strap_picker_screen.dart';
+import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
+
+import '../helpers/discovered_strap.dart';
+import '../helpers/stub_app_settings.dart';
+import '../helpers/stub_strap_scanner.dart';
+
+void main() {
+  group('StrapPickerScreen', () {
+    late StubStrapScanner scanner;
+    late StubAppSettings settings;
+
+    setUp(() {
+      scanner = StubStrapScanner();
+      settings = StubAppSettings();
+    });
+
+    Future<void> pumpScreen(WidgetTester tester) => tester.pumpWidget(
+      MaterialApp(
+        home: StrapPickerScreen(scanner: scanner, appSettings: settings),
+      ),
+    );
+
+    testWidgets('scans while open, and says it is looking', (tester) async {
+      await pumpScreen(tester);
+      expect(scanner.isScanning, isTrue);
+      expect(find.text('Find your strap'), findsOneWidget);
+      expect(find.text('Looking for heart-rate straps…'), findsOneWidget);
+      expect(find.text(disclaimerText), findsOneWidget);
+    });
+
+    group('tips after finding nothing for a while', () {
+      const tipsTitle = 'Still not finding it?';
+
+      testWidgets('appear after 15 seconds of finding nothing', (tester) async {
+        await pumpScreen(tester);
+        await tester.pump(const Duration(seconds: 14));
+        expect(find.text(tipsTitle), findsNothing);
+
+        await tester.pump(const Duration(seconds: 1));
+        expect(find.text(tipsTitle), findsOneWidget);
+        expect(find.textContaining('Dampen the strap'), findsOneWidget);
+        expect(
+          find.textContaining('connects to one device at a time'),
+          findsOneWidget,
+        );
+        // Still looking.
+        expect(find.text('Looking for heart-rate straps…'), findsOneWidget);
+      });
+
+      testWidgets('never appear once a strap is found', (tester) async {
+        await pumpScreen(tester);
+        scanner.emit(.found(discoveredStrapOf('polar', 'Polar H10')));
+        await tester.pump(const Duration(seconds: 30));
+        expect(find.text(tipsTitle), findsNothing);
+      });
+
+      testWidgets('wait 15 seconds again when scanning resumes after a '
+          'problem', (tester) async {
+        await pumpScreen(tester);
+        await tester.pump(const Duration(seconds: 15));
+        expect(find.text(tipsTitle), findsOneWidget);
+
+        scanner.emit(const .failed(.off));
+        await tester.pump();
+        scanner.emit(const .scanning());
+        // Builds the looking view again, which starts its 15 seconds.
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 14));
+        expect(find.text(tipsTitle), findsNothing);
+        await tester.pump(const Duration(seconds: 1));
+        expect(find.text(tipsTitle), findsOneWidget);
+      });
+    });
+
+    testWidgets('lists the straps it finds, naming unnamed ones', (
+      tester,
+    ) async {
+      await pumpScreen(tester);
+      scanner
+        ..emit(.found(discoveredStrapOf('polar', 'Polar H10')))
+        ..emit(.found(discoveredStrapOf('other')));
+      await tester.pump();
+      expect(find.text('Polar H10'), findsOneWidget);
+      expect(find.text('Unnamed heart-rate strap'), findsOneWidget);
+      expect(find.text('Looking for heart-rate straps…'), findsNothing);
+      // Still scanning, and connecting comes later. Neither is connected.
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.byIcon(Icons.check_circle), findsNothing);
+      expect(find.text('Tap your strap to connect to it.'), findsOneWidget);
+    });
+
+    testWidgets('marks a strap that is already connected with a green check, '
+        'in place of the progress bar', (tester) async {
+      await pumpScreen(tester);
+      scanner
+        ..emit(.found(discoveredStrapOf('polar', 'Polar H10')))
+        ..emit(.found(connectedStrapOf('tickr', 'TICKR')));
+      await tester.pump();
+
+      final check = find.byIcon(Icons.check_circle);
+      expect(check, findsOneWidget);
+      expect(tester.widget<Icon>(check).color, Colors.green);
+      expect(
+        find.descendant(
+          of: find.widgetWithText(ListTile, 'TICKR'),
+          matching: check,
+        ),
+        findsOneWidget,
+      );
+      // ListTile merges the row into one label, so screen readers say the
+      // strap's name, then that it's connected.
+      expect(
+        find.bySemanticsLabel(RegExp(r'^TICKR\s+Connected$')),
+        findsOneWidget,
+      );
+      expect(find.byType(LinearProgressIndicator), findsNothing);
+    });
+
+    testWidgets('tapping a strap closes the picker with that strap', (
+      tester,
+    ) async {
+      DiscoveredStrap? picked;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                picked = await Navigator.of(context).push(
+                  MaterialPageRoute<DiscoveredStrap>(
+                    builder: (_) => StrapPickerScreen(
+                      scanner: scanner,
+                      appSettings: settings,
+                    ),
+                  ),
+                );
+              },
+              child: const Text('open picker'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open picker'));
+      // Not pumpAndSettle: the picker's progress indicators never settle.
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      final strap = discoveredStrapOf('polar', 'Polar H10');
+      scanner.emit(StrapScanEvent.found(strap));
+      await tester.pump();
+
+      await tester.tap(find.text('Polar H10'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(picked, strap);
+      expect(find.text('Find your strap'), findsNothing);
+      expect(scanner.isScanning, isFalse);
+    });
+
+    group('a failed scan', () {
+      const messages = {
+        BluetoothProblem.off: (
+          'Bluetooth is off',
+          'Turn on Bluetooth to connect to your strap.',
+          false,
+        ),
+        BluetoothProblem.unavailable: (
+          "Bluetooth isn't available",
+          "This phone can't connect to a heart-rate strap.",
+          false,
+        ),
+        BluetoothProblem.permissionDenied: (
+          'Bluetooth permission needed',
+          'Allow PulseLink to use Bluetooth in Settings, then try again.',
+          true,
+        ),
+      };
+
+      test('every problem has a message', () {
+        expect(messages.keys, unorderedEquals(BluetoothProblem.values));
+      });
+
+      for (final MapEntry(key: problem, value: (title, detail, hasSettings))
+          in messages.entries) {
+        testWidgets('${problem.name}: says why and what to do', (tester) async {
+          await pumpScreen(tester);
+          scanner.emit(StrapScanEvent.failed(problem));
+          await tester.pump();
+          expect(find.text(title), findsOneWidget);
+          expect(find.text(detail), findsOneWidget);
+          expect(
+            find.text('Open Settings'),
+            hasSettings ? findsOneWidget : findsNothing,
+          );
+          // Scanning resumes by itself once the problem is fixed.
+          expect(find.text('Try again'), findsNothing);
+        });
+      }
+
+      testWidgets('Open Settings opens the settings', (tester) async {
+        await pumpScreen(tester);
+        scanner.emit(const .failed(.permissionDenied));
+        await tester.pump();
+        await tester.tap(find.text('Open Settings'));
+        await tester.pump();
+        expect(settings.openCount, 1);
+      });
+
+      testWidgets('scanning resumes when the problem goes away', (
+        tester,
+      ) async {
+        await pumpScreen(tester);
+        scanner.emit(const .failed(.off));
+        await tester.pump();
+        scanner.emit(const .scanning());
+        await tester.pump();
+        expect(find.text('Bluetooth is off'), findsNothing);
+        expect(find.text('Looking for heart-rate straps…'), findsOneWidget);
+      });
+    });
+
+    testWidgets('closing the screen stops the scan', (tester) async {
+      await pumpScreen(tester);
+      expect(scanner.isScanning, isTrue);
+      await tester.pumpWidget(const SizedBox.shrink());
+      expect(scanner.isScanning, isFalse);
+    });
+
+    testWidgets('every state fits a 320 px wide screen without overflow', (
+      tester,
+    ) async {
+      // Smaller than any current iPhone. Flutter fails the test on overflow.
+      tester.view
+        ..physicalSize = const Size(320, 640)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await pumpScreen(tester);
+      // With the tips showing, the tallest the looking view gets.
+      await tester.pump(const Duration(seconds: 15));
+      expect(find.text('Still not finding it?'), findsOneWidget);
+      expect(tester.takeException(), isNull, reason: 'tips');
+      for (final event in [
+        const StrapScanEvent.scanning(),
+        StrapScanEvent.found(
+          connectedStrapOf(
+            'connected',
+            'A connected heart-rate strap with a very long name',
+          ),
+        ),
+        for (var i = 0; i < 20; i++)
+          StrapScanEvent.found(
+            discoveredStrapOf(
+              'strap-$i',
+              'A heart-rate strap with a very long name, number $i',
+            ),
+          ),
+        for (final problem in BluetoothProblem.values)
+          StrapScanEvent.failed(problem),
+      ]) {
+        scanner.emit(event);
+        await tester.pump();
+        expect(tester.takeException(), isNull, reason: '$event');
+      }
+    });
+  });
+}

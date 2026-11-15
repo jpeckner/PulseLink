@@ -19,7 +19,9 @@ them.
 - Otherwise review everything on this branch that isn't on `develop` (where
   feature branches start), plus uncommitted changes:
   `git diff develop...HEAD -- lib test` and `git diff HEAD -- lib test`.
-- Skip generated files (`*.freezed.dart`, `*.g.dart`).
+- Skip generated files (`*.freezed.dart`, `*.g.dart`, `*.pigeon.*`), but
+  review the Pigeon contracts in `pigeons/` and the hand-written native code
+  behind them.
 
 Read each changed file in full, not just the diff hunks: a cleanup bug is
 usually about what runs after the changed line.
@@ -46,7 +48,7 @@ subscription, timer, controller or platform resource)
   make cleanup finish.
 
 **Data-layer boundary** (`lib/data/` implementations calling packages such as
-`flutter_blue_plus`, platform channels or `drift`)
+Pigeon platform channels or `drift`)
 
 - Expected failures (Bluetooth off, permission denied, out of range, a failed
   write) are caught as specific types and returned as a typed sealed result,
@@ -82,7 +84,7 @@ subscription, timer, controller or platform resource)
 **Tests**
 
 - Every new or changed cleanup path has a test where a dependency fails.
-  `test/helpers/failing_heart_rate_source.dart` covers `HeartRateSource`; add
+  `test/helpers/failing_strap_data_source.dart` covers `StrapDataSource`; add
   similar helpers for other dependencies.
 - Each case of a new typed result has a test.
 

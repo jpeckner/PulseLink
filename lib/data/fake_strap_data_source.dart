@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:clock/clock.dart';
-import 'package:pulselink/data/heart_rate_source.dart';
+import 'package:pulselink/data/strap_data_source.dart';
+import 'package:pulselink/domain/battery_level.dart';
 import 'package:pulselink/domain/beats_per_minute.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/strap_connection_failure.dart';
 
 /// Simulated heart rate for demo mode, screenshots and tests.
 ///
@@ -12,7 +14,7 @@ import 'package:pulselink/domain/heart_rate_sample.dart';
 /// that changes every so often, like effort changing during a workout, with a
 /// little beat-to-beat noise, always between [minBeatsPerMinute] and
 /// [maxBeatsPerMinute]. Pass a seeded [Random] for repeatable output.
-class FakeHeartRateSource implements HeartRateSource {
+class FakeStrapDataSource implements StrapDataSource {
   new({Random? random, this.interval = const Duration(seconds: 1)})
     : _random = random ?? Random();
 
@@ -25,6 +27,8 @@ class FakeHeartRateSource implements HeartRateSource {
 
   final Random _random;
   final _controller = StreamController<HeartRateSample>.broadcast();
+  final _connectionLost = StreamController<StrapConnectionFailure>.broadcast();
+  final _batteryLevel = StreamController<BatteryLevel?>.broadcast();
   Timer? _timer;
   double _beatsPerMinute = _initialBeatsPerMinute;
   double _targetBeatsPerMinute = _initialBeatsPerMinute;
@@ -36,25 +40,48 @@ class FakeHeartRateSource implements HeartRateSource {
   @override
   Stream<HeartRateSample> get samples => _controller.stream;
 
-  /// Does nothing after [dispose].
+  /// Never emits: simulated data can't lose a connection.
   @override
-  Future<void> start() async {
+  Stream<StrapConnectionFailure> get connectionLost => _connectionLost.stream;
+
+  /// A steady [simulatedBatteryLevel] while started, and null once stopped,
+  /// so demo mode shows a battery level without hardware.
+  @override
+  Stream<BatteryLevel?> get batteryLevel => _batteryLevel.stream;
+
+  /// The battery level demo mode shows.
+  static final BatteryLevel? simulatedBatteryLevel = BatteryLevel.tryFrom(80);
+
+  /// Starts at once, so it's never still starting when [stop] is called.
+  /// After [dispose], it does nothing and completes with
+  /// [StrapDataSourceStartCancelled].
+  @override
+  Future<StrapDataSourceStartResult> start() async {
     if (_controller.isClosed) {
-      return;
+      return const StrapDataSourceStartResult.cancelled();
     }
-    _timer ??= Timer.periodic(interval, (_) => _emitSample());
+    if (_timer == null) {
+      _timer = Timer.periodic(interval, (_) => _emitSample());
+      _batteryLevel.add(simulatedBatteryLevel);
+    }
+    return const StrapDataSourceStartResult.started();
   }
 
   @override
   Future<void> stop() async {
-    _timer?.cancel();
-    _timer = null;
+    if (_timer case final timer?) {
+      timer.cancel();
+      _timer = null;
+      _batteryLevel.add(null);
+    }
   }
 
   @override
   Future<void> dispose() async {
     await stop();
     await _controller.close();
+    await _connectionLost.close();
+    await _batteryLevel.close();
   }
 
   void _emitSample() {

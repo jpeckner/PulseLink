@@ -214,3 +214,189 @@ be checked on a device.
 Later renamed `BeatsPerMinute` for clarity, along with everything named after
 it: the sample's `beatsPerMinute` field and the `zeroBeatsPerMinute` and
 `implausibleBeatsPerMinute` reasons. On-screen text still says "bpm".
+
+## Milestone 3: Real BLE on iOS (2026-11-13 to 2026-11-14)
+
+Built: Bluetooth scanning and connecting on iOS, written by hand in Swift on
+CoreBluetooth behind a Pigeon contract. A strap picker that also lists
+straps already connected to the phone. Live bpm from a real strap, and its
+battery level. A typed failure for every expected problem (Bluetooth off,
+permission denied with an Open Settings button, strap unreachable, not a
+heart-rate strap, strap disconnected), each explained on screen. SwiftLint
+and detekt for the native code. Android answers every BLE call with
+"unsupported" until Milestone 4, so it stays in demo mode. 323 Dart tests and
+10 Swift tests.
+
+Milestones were renumbered when this one closed: Android BLE is now
+Milestone 4, the Apple Watch app 5, and reliability (reconnecting,
+backgrounding, remembering the strap, the debug log) 6. The earlier entries
+keep the numbers they had then, so where they mention Milestone 4's debug log
+or connection state, that's now Milestone 6.
+
+### Why native BLE through Pigeon, not a plugin
+
+Three options were weighed:
+- `flutter_blue_plus`, the plan's first choice. Its license charges for
+  for-profit use, and it needs `permission_handler` as well for Android's
+  runtime permissions.
+- `universal_ble`, which is BSD-licensed.
+- Native code on each platform, talking to Dart over platform channels.
+
+The third option came from Punch Through's
+[Cross-Platform Flutter BLE Architecture: The Case for a Disciplined Hybrid](https://punchthrough.com/flutter-ble-architecture/).
+It argues for native Swift and Kotlin modules that own the BLE mechanics,
+with Dart owning orchestration and product logic. Not all of its reasons fit
+an app this size: Dart's event-loop latency doesn't matter for one packet a
+second, and this app talks to one standard GATT service, not many device
+types.
+
+Native won, even though everything gets written twice (Swift now, Kotlin in
+Milestone 4):
+
+- **The hard parts of BLE live in the native APIs.** Connection timeouts,
+  background limits, state restoration and Android's GATT quirks are what
+  this project is meant to teach, and a plugin hides them. Background
+  reconnects in Milestone 6 also work best when the app owns its
+  `CBCentralManager`.
+- **Less third-party code at runtime.** The app depends only on Flutter and
+  the OS frameworks. Pigeon runs at build time, and the code it generates is
+  checked in and reviewed like any other source.
+- **Native code handles the mechanics; Dart makes the decisions.** Swift
+  scans, connects and forwards each Heart Rate Measurement as raw bytes. Dart
+  parses them, tracks staleness and decides what the user sees. So there's
+  one tested parser for both platforms, and the native layer stays thin.
+  This is the same split as a Swift app keeping CoreBluetooth in one service
+  class behind a protocol.
+
+**Why Pigeon rather than raw `MethodChannel` and `EventChannel`:** raw
+channels carry untyped maps (`Map<Object?, Object?>`), so every message would
+be decoded by hand three times, in Dart, Swift and Kotlin, and could drift
+apart. Pigeon is the Flutter team's code generator. It reads one Dart
+contract (`pigeons/ble_api.dart`) and generates matching Dart, Swift and
+Kotlin, much like generating clients from an OpenAPI or protobuf schema:
+- a sealed class becomes a Swift protocol and a Kotlin sealed class;
+- an enum stays an enum;
+- an `@async` method becomes Swift `async throws` and a Kotlin `suspend fun`;
+- an `@EventChannelApi` method becomes a stream.
+
+What Pigeon 30 taught along the way:
+- **One event-channel class per contract,** so both streams (scan, strap
+  events) share `BleEventApi`.
+- **Generated fields can't be private.** The `keep_pigeon_imports_local` lint
+  keeps the raw types inside `lib/data/`, which turns them into domain types
+  such as `StrapBleIdentifier`, so nothing above the data layer sees a raw
+  string id.
+- **Two contracts in one app clash.** Each generates its own error class, so
+  `app_settings_api.dart` sets `includeErrorClass: false` and reuses
+  `ble_api.dart`'s.
+- **Its Swift isn't ready for strict concurrency,** which is why every iOS
+  build shows warnings and the app stays in Swift 5 mode (see the README's
+  "iOS build warnings").
+- **A message that fails to decode is dropped by Flutter's messenger.** That
+  only happens if the Dart and native sides come from different versions of
+  the contract, which `tool/pigeon.sh` and CI rule out.
+
+The Open Settings button went the same way. It's a second small Pigeon
+contract rather than `url_launcher`, so it adds no plugin.
+
+### CoreBluetooth lessons
+
+- **Creating a `CBCentralManager` shows the permission prompt,** so it's
+  created on the first scan, not at launch.
+- **Bluetooth's state arrives later,** in `centralManagerDidUpdateState`.
+  Scanning before `.poweredOn` does nothing. `ScanAction` turns each state
+  into scan, fail with a reason, or wait (`.unknown`, `.resetting`): a pure
+  enum, unit-tested without hardware. `@unknown default` waits for the next
+  state, since Apple may add cases.
+- **Turning Bluetooth off stops a scan.** Turning it back on calls the same
+  delegate method again, so the scan resumes by itself.
+- **Scans filter by the Heart Rate Service (`0x180D`).** Background scans
+  require a filter anyway.
+- **A connected strap stops advertising.** If any app on the phone is
+  connected to it, a scan never finds it. `retrieveConnectedPeripherals(
+  withServices:)` lists those straps, and the picker marks them with a check.
+  A strap also talks to one device at a time, which is why the picker's tips
+  say to disconnect it from other phones, watches and gym machines.
+- **Identifiers are per-phone UUIDs, not MAC addresses.** iOS hides the MAC;
+  Android uses it. Dart treats the id as opaque (`StrapBleIdentifier`).
+  Connecting needs a `CBPeripheral`, which
+  `retrievePeripherals(withIdentifiers:)` recovers from a UUID seen before,
+  so there's no second scan.
+- **Names come from two places:** the advertised local name, which is
+  current, or the name iOS cached from an earlier connection. The advertised
+  one wins.
+- **CoreBluetooth never gives up on a connection attempt,** so
+  `StrapConnection` times out after 10 seconds and reports the strap as
+  unreachable.
+- **Connecting takes four asynchronous steps,** and each can fail with an
+  error: connect, discover services (Heart Rate and Battery), discover the
+  characteristic, and subscribe with `setNotifyValue(true)` until
+  `didUpdateNotificationState` confirms. An error along the way means the
+  strap is unreachable, and trying again may work. A device that answers but
+  lacks the characteristic is "not a heart-rate strap". Telling the two apart
+  matters, because only one is worth retrying.
+- **Battery level (`0x2A19`) is read once, then followed with notifications
+  if the strap sends them.** A strap without the Battery Service still
+  connects, and battery errors never fail the connection.
+- **An unexpected disconnect arrives in `didDisconnectPeripheral`.** The
+  screen shows "Strap disconnected" straight away, instead of waiting 10
+  seconds for the reading to go stale.
+- **iOS ends the app when the user changes its Bluetooth permission.** So
+  after Open Settings, allowing Bluetooth means a fresh launch that can scan.
+  Apps can only open their own page in Settings, not the Bluetooth page.
+- **BLE doesn't work in the Simulator,** where CoreBluetooth reports
+  `.unsupported`. Swift tests (Swift Testing's `@Test` and `#expect`) cover
+  the pure decisions; the rest needs a phone and a strap, so it's in
+  `docs/test-plan.md`.
+
+### Threads and Swift concurrency
+
+- **Flutter accepts channel messages only on its platform thread,** the main
+  thread on iOS. Creating the central manager with `queue: nil` puts
+  CoreBluetooth's callbacks on the main queue too.
+- **`@MainActor` turns that convention into a compile-time check.** Flutter's
+  and CoreBluetooth's protocols have no actor isolation, so each entry point
+  checks `Thread.isMainThread`, logs a fault and skips the call if it's ever
+  false, and only then uses `MainActor.assumeIsolated`. That combination can
+  never crash. Kotlin will do the same by posting to the main looper.
+- **Complete concurrency checking is on,** so the compiler checks the
+  hand-written Swift for data races now, ahead of Swift 6 mode.
+
+### Dart side
+
+- **`StrapDataSource` has three implementations:** demo, BLE, and a
+  switchable source that owns whichever one is current. Picking a strap
+  switches from demo data to the strap. The debug override wraps the
+  switchable source, so it works on a real strap too.
+- **`start()` returns a sealed result** (started, cancelled, or failed with a
+  `StrapConnectionFailure`) and never throws for expected failures. A
+  `PlatformException` is caught at the data-layer boundary, logged and turned
+  into "Bluetooth isn't available".
+- **The real channels are tested without a phone.**
+  `TestDefaultBinaryMessengerBinding` answers Pigeon's channel names using
+  Pigeon's own codecs, so the generated encoding and decoding run end to end
+  in a unit test.
+- **Testing traps:**
+  - closing a `StreamController` that was never listened to never completes,
+    so a test that awaits it hangs;
+  - `ListTile` merges its children's semantics, so a screen-reader label
+    test has to match the whole merged label.
+
+### Native lints
+
+The no-assertions rule now covers native code too. SwiftLint bans `!`,
+`as!`, `try!` and `fatalError`, and detekt bans `!!`, `lateinit` and
+`error()`. They run on every Xcode and Gradle build and in CI, and
+`tool/check_native_lints.sh` plants a violation of each rule to prove it
+reports. Gradle's wrapper is gitignored, so on a fresh checkout the lint
+script generates it with `flutter build apk --config-only`.
+
+Regulated-app notes: every expected failure is a typed value shown with
+advice, never a crash or a silent blank. The app never shows a reading after
+the strap drops. The connection timeout is explicit rather than left to the
+OS. Raw bytes are parsed in exactly one place. Third-party code at runtime is
+limited to Flutter itself. A regulated team would also:
+- trace each failure state to a requirement;
+- treat "connected to the wrong strap" as a hazard (the picker shows names,
+  which two identical straps share);
+- keep signed evidence of each manual test run on real hardware.

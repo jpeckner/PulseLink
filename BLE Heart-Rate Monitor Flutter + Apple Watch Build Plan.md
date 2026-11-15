@@ -25,6 +25,9 @@ Constraints:
 - Keep the BLE and watch layers behind interfaces so they can be faked in tests.
 - Avoid assertions as much as possible. Instead, build compile-time safe components that can't fail at runtime: make invalid states unrepresentable with sealed classes, dedicated enums and value types (such as `BeatsPerMinute`), and have untrusted input (BLE packets, platform-channel messages, stored data) return a typed result or `null` rather than fail. This covers anything in app code that fails at runtime because of a programmer error: `assert`, freezed `@Assert`, the `!` null-assertion operator, unchecked `as` casts, `late` fields that could be read before they're set, and functions or constructors that throw on invalid arguments (`ArgumentError`, `StateError` and the like). That includes SDK calls that throw on an empty collection or bad input, where Swift returns an optional: use `firstOrNull`, `tryParse` and the like instead of `.first` or `int.parse`. Test code is exempt: `expect`, `fail` and casts in tests are fine. The `no_assertions` lint (`tool/pulselink_lints`) enforces this outside tests.
 - In the rare case where there's no alternative to an assertion, stop before writing it. Explain the case, the alternatives considered and why each doesn't work, and wait for my explicit sign-off before proceeding any further. Once I approve, leave a short comment at that line explaining why it's needed, and ignore the lint there.
+- Native code (Swift in `ios/`, Kotlin in `android/`) follows the same rule. `tool/lint_native.sh` enforces it with SwiftLint (`.swiftlint.yml`) and detekt (`android/config/detekt.yml`) on app code, and `tool/check_native_lints.sh` proves each rule reports. The Runner target's SwiftLint build phase also runs the Swift half on every Xcode build, so findings show inline as errors, and every Android build (Android Studio's Run, `flutter run`, `flutter build apk`) runs the Kotlin half, so findings fail the build. Where a catch-all is truly needed, disable the rule on that line with a comment saying why. Swift: no `!` force unwraps, `as!` casts, implicitly unwrapped optionals (`Type!`) or `try!`, and no `fatalError`, `precondition` or `assert`; use `if let`, `guard let`, `as?` and `try?` or `do`/`catch`. Switch on the app's own enums without `default`; the `@unknown default` Swift requires for Apple's enums is fine, with a comment saying what it does and why. Kotlin: no `!!`, unchecked `as` casts or `lateinit`, and no `error()`, `require` or `check`; use `?.`, `?:`, `as?` and `firstOrNull()`, and write `when` on sealed classes and enums without `else`. Pigeon's generated `*.pigeon.swift` and `*.pigeon.kt` files are exempt.
+- In Swift, declare a protocol conformance in its own extension whenever it adds anything (methods, properties, initializers or subscripts), such as `extension CentralScan: CBCentralManagerDelegate { ... }`. Then each protocol's members sit together, apart from the type's own. A conformance that adds nothing, such as `Equatable` synthesized for an enum, can stay on the type's declaration. No lint checks this, so reviews do.
+- Flutter only accepts calls from the platform's main thread: the main thread on iOS, and the main (UI) thread on Android. That covers platform-channel messages, Pigeon event sinks and Flutter API calls. Native code must never send to Dart from any other thread. Swift: a type that holds Flutter channel state or sends to Dart is `@MainActor`. Where Flutter or a system framework calls in without actor isolation, check `isOnMainThread()` first. If that's false, skip the call, since the check has already logged a fault. Then use `MainActor.assumeIsolated`. Create CoreBluetooth managers with `queue: nil`, so their delegate methods run on the main queue. Kotlin: system callbacks such as `BluetoothGattCallback` and `ScanCallback` arrive on background threads. Post to the main looper, for example with `Handler(Looper.getMainLooper())`, before calling a Pigeon sink or channel. No lint can tell which thread code runs on, so reviews check this.
 - Switch on closed types without a catch-all. Model a fixed set of cases as an enum or sealed class (not an `int`, a `String` or a plain abstract class), and when switching on it, list every case: no `default`, `_`, untyped variable or other catch-all. Then adding a case is a compile error at every switch that must handle it, as in Swift. The `no_catch_all_cases` lint (`tool/pulselink_lints`) enforces this; where a catch-all is truly needed, ignore the lint with a comment saying why. For the same reason, don't test a closed type for one case with `if (x case ...)`, `is` or `==`: those silently skip new cases, so use a switch, with an explicit do-nothing case where one applies. The `use_switch_on_closed_types` lint enforces this; a null check such as `if (x case final y?)` is still fine.
 - Handle errors on purpose. Dart has no checked exceptions and no lint can tell what throws, so this rule and the tests are the check. Expected failures (Bluetooth off, permission denied, strap out of range, a failed write) are outcomes, not exceptions: data-layer implementations catch what packages and platform channels throw and return a typed result, so callers must handle every case. The `no_ignored_results` lint flags a typed result that's thrown away; to discard one on purpose, write `final _ = ...;` with a comment saying why. Cleanup in `close()`, `dispose()` and the like goes in `try`/`finally` so it always finishes, and the error still reaches the caller. Catch specific types (`on SomeException`), never swallow an error silently, and when an exception is left uncaught on purpose, add a short comment saying why and what handles it. Every cleanup path gets a test with a dependency that fails. Before committing changes to `lib/` that add async calls, cleanup code, catch blocks or data-layer implementations, run the `error-handling-review` project skill and resolve its findings.
 
@@ -55,7 +58,7 @@ Flutter can't build watchOS apps, so the watch app is native SwiftUI. It talks t
 | --- | --- | --- |
 | Phone UI | Flutter (iOS + Android) | Material 3; one codebase |
 | State | Bloc (flutter\_bloc) | Cubits for simple screens; a full Bloc for the connection state machine |
-| BLE | `flutter_blue_plus` | Scan, connect, subscribe to notifications |
+| BLE | CoreBluetooth (iOS) and Android's BLE APIs, through Pigeon platform channels | Scan, connect, subscribe to notifications; written by hand for learning, with Dart, Swift and Kotlin generated from one contract in `pigeons/` |
 | Storage | `drift` (SQLite) | Sessions and samples |
 | Charts | `fl_chart` | Session history graphs |
 | Watch app | SwiftUI, watchOS | Embedded in the iOS Runner project |
@@ -68,7 +71,7 @@ Layers in the Flutter app, top to bottom:
 1. **UI**: widgets only. They rebuild from Bloc states (BlocBuilder) and send events.
 2. **Blocs and Cubits**: connection state machine, live session, history.
 3. **Domain**: plain Dart models (`HeartRateSample`, `Session`, `ConnectionState`) and the HR packet parser.
-4. **Data**: `HeartRateSource` interface with `BleHeartRateSource` and `FakeHeartRateSource`; `SessionRepository` on drift; `WatchBridge` interface with a platform-channel implementation.
+4. **Data**: `StrapDataSource` interface with `BleStrapDataSource` and `FakeStrapDataSource`; `StrapScanner` interface with `BleStrapScanner`; `SessionRepository` on drift; `WatchBridge` interface with a platform-channel implementation.
 
 &#91;embedded content: PulseLink architecture · strap to phone to watch\]
 
@@ -90,15 +93,18 @@ MVP (phone):
 - Live screen: big bpm number, last-updated time, connection status, sensor-contact indicator, battery level if available
 - Clear states: scanning, connecting, connected, reconnecting, disconnected, Bluetooth off, permission denied
 - Automatic reconnect to the last device after a drop or app restart
-- Start and stop a session; store samples (bpm, RR intervals, timestamp)
-- History list and session detail: duration, average, min and max, and a chart
-- Demo mode using `FakeHeartRateSource`, so the app works with no hardware (also useful for screenshots and tests)
+- Demo mode using `FakeStrapDataSource`, so the app works with no hardware (also useful for screenshots and tests)
 
 MVP (watch):
 
 - Live bpm with a stale-data indicator and connection status
-- Start and stop session buttons that control the phone
 - Shows a clear "phone not reachable" state
+
+Nice-to-have (Milestone 8, Sessions and history):
+
+- Start and stop a session; store samples (bpm, RR intervals, timestamp)
+- History list and session detail: duration, average, min and max, and a chart
+- Start and stop session buttons on the watch that control the phone
 
 Stretch, in priority order:
 
@@ -115,18 +121,22 @@ Each milestone ends with something I can run on a device and a commit. Each one 
 
 1. **Setup and skeleton.** Install Flutter, Xcode and Android Studio. Create the project, folder structure, lint rules (`flutter_lints` or `very_good_analysis`), flutter\_bloc and an empty CI workflow.
    - Done when: the app runs on my iPhone and an Android phone, and CI is green.
-2. **Domain and fake data.** Models, the HR packet parser with unit tests, the `HeartRateSource` interface, `FakeHeartRateSource` and the live screen in demo mode.
+2. **Domain and fake data.** Models, the HR packet parser with unit tests, the `StrapDataSource` interface, `FakeStrapDataSource` and the live screen in demo mode.
    - Done when: demo mode shows a moving bpm with timestamps, and the parser tests pass.
-3. **Real BLE.** Permissions on both platforms, scan filtered by service UUID, device picker, connect, subscribe to notifications, battery level.
-   - Done when: a real strap shows live bpm on both platforms.
-4. **Reliability.** Connection state machine, automatic reconnect with backoff, Bluetooth off and on, permission denied, app backgrounded, remembering the last device, stale-data display.
-   - Done when: I can walk out of range and back, toggle Bluetooth, and kill and reopen the app, and it always recovers or explains itself.
-5. **Sessions and history.** drift schema, recording, history list, session detail with chart and stats.
-   - Done when: a 20-minute session saves and charts correctly.
-6. **Apple Watch app.** Add the watchOS target, write the Swift WatchConnectivity bridge and platform channels, build the SwiftUI live view and start/stop controls.
-   - Done when: the watch shows live bpm and can start and stop a session, and handles "phone not reachable".
-7. **Polish and portfolio.** Tests filled in, CI building iOS and Android, README with screenshots and a demo GIF, architecture doc, hazard table.
+3. **Real BLE on iOS.** Done. On iOS: Bluetooth permission, scan filtered by service UUID, device picker (listing straps already connected to the phone), connect, subscribe to notifications, battery level, a "Strap disconnected" state with Try again, and an Open Settings button when permission is denied. Native BLE code in Swift behind a Pigeon contract. Android reports that BLE isn't supported yet, and runs in demo mode.
+   - Done when: on an iPhone, a real strap shows live bpm and battery level, and every failure (Bluetooth off, permission denied, strap unreachable, strap dropped) is explained on screen.
+4. **Real BLE on Android.** Kotlin scanning and connecting behind the same Pigeon contract, runtime permissions (`BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT` on Android 12+, location on 11 and below), a `connectedDevice` foreground service for streaming in the background, retries after GATT error 133, and staying under Android's scan throttling. The Dart above the data layer is shared with iOS and needs no changes.
+   - Done when: the same checks as Milestone 3 pass on an Android phone.
+5. **Apple Watch app.** Add the watchOS target, write the Swift WatchConnectivity bridge and platform channels, and build the SwiftUI live view. It needs only the iOS app, so it doesn't depend on Milestone 4.
+   - Done when: the watch shows live bpm with its age and connection status, and handles "phone not reachable".
+6. **Reliability for iOS.** Connection state machine (a Bloc), automatic reconnect with backoff, Bluetooth off and on, app backgrounded, remembering the last device, and the in-app debug log; on iOS, one shared `CBCentralManager` and the `bluetooth-central` background mode. Most of it is shared Dart, so Android runs it too, but only the iPhone is checked here.
+   - Done when: on an iPhone, I can walk out of range and back, toggle Bluetooth, background the app, and kill and reopen it, and it always recovers or explains itself.
+7. **Polish and portfolio** (nice-to-have). Tests filled in, CI building iOS and Android, README with screenshots and a demo GIF, architecture doc, hazard table.
    - Done when: the repo is public and I can walk through it in an interview in 5 minutes.
+8. **Sessions and history** (nice-to-have). drift schema, recording, history list, session detail with chart and stats, and start and stop buttons on the watch that control the phone.
+   - Done when: a 20-minute session saves and charts correctly, and the watch can start and stop it.
+
+Milestones 7 and 8 are nice-to-haves: plan as if the project may be shown in interviews without them, so Milestones 1-6 must stand on their own.
 
 Then pick stretch items, starting with the watch complication.
 
@@ -175,7 +185,7 @@ Testing:
 
 - Unit tests: packet parser (fixtures above), connection state machine Bloc (every transition, using bloc\_test), session stats.
 - Widget tests: live screen in each connection state, including stale data.
-- Fakes: `FakeHeartRateSource` with scripted drops and reconnects; `FakeWatchBridge`.
+- Fakes: `FakeStrapDataSource` with scripted drops and reconnects; `FakeWatchBridge`.
 - Native: XCTest for message encoding and decoding on the watch side.
 - Manual test checklist in `docs/test-plan.md`: out of range, Bluetooth toggled, app killed, phone locked, watch unreachable, strap battery low.
 

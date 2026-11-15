@@ -3,36 +3,98 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:clock/clock.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
-import 'package:pulselink/data/heart_rate_source.dart';
+import 'package:pulselink/data/strap_data_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
+import 'package:pulselink/domain/strap_connection_failure.dart';
 
-/// Turns a [HeartRateSource] into screen state: the latest sample, and whether
+/// Turns a [StrapDataSource] into screen state: the latest sample, and whether
 /// it has gone stale.
 ///
 /// A sample is stale once it's older than [staleAfter], measured from its own
 /// timestamp, even if the source still says it's connected.
 class LiveHeartRateCubit extends Cubit<LiveHeartRateState> {
   new({
-    required HeartRateSource source,
+    required StrapDataSource source,
     this.staleAfter = const Duration(seconds: 10),
   }) : _source = source,
        super(LiveHeartRateState.waiting(isSimulated: source.isSimulated));
 
   final Duration staleAfter;
 
-  final HeartRateSource _source;
+  final StrapDataSource _source;
   StreamSubscription<HeartRateSample>? _subscription;
+  StreamSubscription<StrapConnectionFailure>? _connectionLostSubscription;
   Timer? _staleTimer;
 
-  /// Subscribes to the source and starts it. Safe to call more than once;
-  /// does nothing after [close].
+  /// Subscribes to the source and starts it. If the source can't start, the
+  /// state becomes [LiveHeartRateConnectionFailed]; calling this again
+  /// retries, showing [LiveHeartRateWaiting] meanwhile. Safe to call more
+  /// than once; does nothing after [close].
   Future<void> start() async {
     if (isClosed) {
       return;
     }
-    // No onError: HeartRateSource.samples never carries errors.
+    switch (state) {
+      case LiveHeartRateConnectionFailed():
+        emit(LiveHeartRateState.waiting(isSimulated: _source.isSimulated));
+      case LiveHeartRateWaiting() || LiveHeartRateReading():
+        // Already showing what's arrived so far.
+        break;
+    }
+
+    // No onError: neither of StrapDataSource's streams carries errors.
     _subscription ??= _source.samples.listen(_onSample);
-    await _source.start();
+    _connectionLostSubscription ??= _source.connectionLost.listen(
+      _onConnectionLost,
+    );
+    final result = await _source.start();
+
+    // close() stops the source, which cancels a start in progress, so a
+    // start can complete after the cubit has closed.
+    if (isClosed) {
+      return;
+    }
+    switch (result) {
+      case StrapDataSourceStarted() || StrapDataSourceStartCancelled():
+        // Samples will arrive, or stopping was asked for: nothing to show.
+        break;
+      case StrapDataSourceStartFailed(:final failure):
+        emit(
+          LiveHeartRateState.connectionFailed(
+            failure: failure,
+            isSimulated: _source.isSimulated,
+          ),
+        );
+    }
+  }
+
+  /// Starts over from [LiveHeartRateWaiting], for a source whose data has
+  /// just changed underneath it, such as a strap picked in place of demo
+  /// data. Forgets the last reading, so nothing from before is shown as
+  /// current, then starts the source as [start] does. Does nothing after
+  /// [close].
+  Future<void> restart() async {
+    if (isClosed) {
+      return;
+    }
+    _staleTimer?.cancel();
+    _staleTimer = null;
+    emit(LiveHeartRateState.waiting(isSimulated: _source.isSimulated));
+    await start();
+  }
+
+  /// The source lost its connection, such as a strap going out of range:
+  /// shows why straight away, rather than waiting for the last reading to go
+  /// stale. Calling [start] again reconnects.
+  void _onConnectionLost(StrapConnectionFailure failure) {
+    _staleTimer?.cancel();
+    _staleTimer = null;
+    emit(
+      LiveHeartRateState.connectionFailed(
+        failure: failure,
+        isSimulated: _source.isSimulated,
+      ),
+    );
   }
 
   void _onSample(HeartRateSample sample) {
@@ -61,7 +123,7 @@ class LiveHeartRateCubit extends Cubit<LiveHeartRateState> {
     switch (state) {
       case final LiveHeartRateReading reading:
         emit(reading.copyWith(isStale: true));
-      case LiveHeartRateWaiting():
+      case LiveHeartRateWaiting() || LiveHeartRateConnectionFailed():
         // No reading to mark. The stale timer only starts once a reading has
         // been emitted, so this doesn't happen in practice.
         break;
@@ -77,11 +139,16 @@ class LiveHeartRateCubit extends Cubit<LiveHeartRateState> {
       // throws, no timer is left to fire into the closed cubit.
       _staleTimer?.cancel();
       final cancelSubscription = _subscription?.cancel();
+      final cancelConnectionLost = _connectionLostSubscription?.cancel();
 
       // Waits for the source to stop and the unsubscribe to finish.
       // Future.sync turns a stop() that throws before returning a future into
       // a failed future, so every failure is handled the same way.
-      await Future.wait([Future.sync(_source.stop), ?cancelSubscription]);
+      await Future.wait([
+        Future.sync(_source.stop),
+        ?cancelSubscription,
+        ?cancelConnectionLost,
+      ]);
     } finally {
       // Close even if stopping failed; the error still reaches the caller.
       await super.close();
