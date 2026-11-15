@@ -9,8 +9,8 @@
 # tool/lint_native.sh pass without checking anything. This script writes a
 # Swift file and a Kotlin file that break every rule, runs the real lint,
 # checks that it failed and that each rule reported, and deletes the files.
-# The Swift probe goes in both the iOS app and the watch app, so a config
-# that stops linting either one fails this check.
+# The Swift probe goes in the iOS app, the watch app and the code they
+# share, so a config that stops linting any of them fails this check.
 #
 # The rules are read from .swiftlint.yml and android/config/detekt.yml, so a
 # rule added there without a violation below fails this check.
@@ -20,10 +20,11 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 swift_probe=ios/Runner/NativeLintProbe.swift
-# A different name, so each probe's findings can be told apart.
+# Different names, so each probe's findings can be told apart.
 watch_swift_probe=ios/PulseLinkWatch/WatchNativeLintProbe.swift
+shared_swift_probe=ios/Shared/SharedNativeLintProbe.swift
 kotlin_probe=android/app/src/main/kotlin/com/jpeckner/pulselink/NativeLintProbe.kt
-for probe in "$swift_probe" "$watch_swift_probe" "$kotlin_probe"; do
+for probe in "$swift_probe" "$watch_swift_probe" "$shared_swift_probe" "$kotlin_probe"; do
   if [[ -e "$probe" ]]; then
     echo "$probe already exists. Remove it and rerun." >&2
     exit 2
@@ -31,7 +32,7 @@ for probe in "$swift_probe" "$watch_swift_probe" "$kotlin_probe"; do
 done
 # The probes aren't in the Xcode project, and are deleted before anything
 # else could build the Kotlin one.
-trap 'rm -f "$swift_probe" "$watch_swift_probe" "$kotlin_probe"' EXIT
+trap 'rm -f "$swift_probe" "$watch_swift_probe" "$shared_swift_probe" "$kotlin_probe"' EXIT
 
 # One violation per rule. Add one here when adding a rule.
 cat > "$swift_probe" <<'EOF'
@@ -61,6 +62,7 @@ func probeNoCatchAllCases(_ probe: NativeLintProbe) -> Int {
 }
 EOF
 cp "$swift_probe" "$watch_swift_probe"
+cp "$swift_probe" "$shared_swift_probe"
 
 cat > "$kotlin_probe" <<'EOF'
 // Written by tool/check_native_lints.sh, which deletes it when it finishes.
@@ -149,7 +151,7 @@ check() {
   done
 }
 
-check swift "$swift_rules" "$swift_probe" "$watch_swift_probe"
+check swift "$swift_rules" "$swift_probe" "$watch_swift_probe" "$shared_swift_probe"
 check kotlin "$kotlin_rules" "$kotlin_probe"
 
 exit "$failed"

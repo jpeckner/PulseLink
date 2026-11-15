@@ -54,6 +54,10 @@ the screen shows a "Demo" badge. On an iPhone, tap **Find strap** to pick a real
 strap; that needs a physical phone, since BLE doesn't work in the iOS Simulator.
 Android runs in demo mode only until Milestone 4.
 
+The iOS project includes an Apple Watch app, so Flutter needs a device ID to
+run on an iOS simulator: `flutter run -d <id>`, with an ID from
+`flutter devices`.
+
 Models and states use `freezed`, which generates `*.freezed.dart` files. They're
 committed, and CI fails if they're out of date. After changing an annotated
 class:
@@ -76,6 +80,13 @@ Checks (the same ones CI runs):
 dart format --set-exit-if-changed lib test
 flutter analyze
 flutter test
+```
+
+The Swift tests in `ios/RunnerTests` run on an iPhone simulator (macOS only;
+CI doesn't run them until Milestone 7):
+
+```bash
+tool/test_swift.sh
 ```
 
 Lints come from `very_good_analysis`, plus
