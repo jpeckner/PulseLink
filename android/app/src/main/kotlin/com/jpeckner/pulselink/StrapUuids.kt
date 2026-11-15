@@ -11,6 +11,15 @@ object StrapUuids {
     val HEART_RATE_MEASUREMENT: UUID = UUID.fromString("00002a37-0000-1000-8000-00805f9b34fb")
 
     /**
+     * The Battery Service, 0x180F. Optional: a strap without it connects
+     * the same, with no battery level.
+     */
+    val BATTERY_SERVICE: UUID = UUID.fromString("0000180f-0000-1000-8000-00805f9b34fb")
+
+    /** The Battery Level characteristic, 0x2A19. */
+    val BATTERY_LEVEL: UUID = UUID.fromString("00002a19-0000-1000-8000-00805f9b34fb")
+
+    /**
      * The Client Characteristic Configuration descriptor, 0x2902. Writing
      * to it tells the strap to send a characteristic's notifications.
      */
