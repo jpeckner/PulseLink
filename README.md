@@ -65,6 +65,36 @@ it on its paired watch, which can take a minute. To run it straight away, or on
 a watch simulator paired with the iPhone simulator, run the `PulseLinkWatch`
 scheme from Xcode. It shows what the phone app shows, including demo mode.
 
+Debug, profile and release builds install side by side, on iOS, Android and
+the watch, so a release build can stay on the phone while you develop. Each
+has its own ID, name and icon background:
+
+| Build | iPhone and Android ID | Watch app ID | Name | Icon background |
+| --- | --- | --- | --- | --- |
+| Debug | `com.jpeckner.pulselink.debug` | `com.jpeckner.pulselink.debug.watchkitapp` | PulseLink Debug | Light grey, `#C7C7CC` |
+| Profile | `com.jpeckner.pulselink.profile` | `com.jpeckner.pulselink.profile.watchkitapp` | PulseLink Profile | Green, `#248A3D` |
+| Release | `com.jpeckner.pulselink` | `com.jpeckner.pulselink.watchkitapp` | PulseLink | White |
+
+- **iOS:** `PULSELINK_BUNDLE_ID`, `PULSELINK_DISPLAY_NAME` and
+  `PULSELINK_APP_ICON` (`AppIcon`, `AppIcon-Profile` or `AppIcon-Debug`), set
+  once per configuration at the project level in `Runner.xcodeproj`. Every target
+  builds its own from them. Apple requires the watch app's ID to start with
+  the iPhone app's, and its companion ID matches the iPhone app's, so each
+  watch app talks only to the phone app of the same build. Xcode's automatic
+  signing registers each ID with your team the first time you build that
+  configuration for a device.
+- **Android:** `applicationIdSuffix`, and `appName` and `appIcon` manifest
+  placeholders, per build type in `android/app/build.gradle.kts`. Debug and
+  Profile use an adaptive icon, `ic_launcher_build`, whose background colour
+  is in `android/app/src/debug/res` and `android/app/src/profile/res`.
+
+The Debug and Profile icons are made from the Release one. After changing the
+Release icon, or a colour in the script, regenerate them:
+
+```bash
+swift tool/make_build_icons.swift
+```
+
 Models and states use `freezed`, which generates `*.freezed.dart` files. They're
 committed, and CI fails if they're out of date. After changing an annotated
 class:

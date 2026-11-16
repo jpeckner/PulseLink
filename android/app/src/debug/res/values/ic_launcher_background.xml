@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Apple's light systemGray3, as in the iOS and watch Debug icons (see
+         tool/make_build_icons.swift). -->
+    <color name="ic_launcher_background">#C7C7CC</color>
+</resources>
