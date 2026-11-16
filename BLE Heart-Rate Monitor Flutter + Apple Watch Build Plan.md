@@ -63,7 +63,7 @@ Flutter can't build watchOS apps, so the watch app is native SwiftUI. It talks t
 | Storage | `drift` (SQLite) | Sessions and samples |
 | Charts | `fl_chart` | Session history graphs |
 | Watch app | SwiftUI, watchOS | Embedded in the iOS Runner project |
-| Phone-watch bridge | WatchConnectivity + Flutter `MethodChannel` / `EventChannel` | Written by hand for learning; the `watch_connectivity` package is the fallback |
+| Phone-watch bridge | WatchConnectivity in Swift, called from Dart through Pigeon (`pigeons/watch_api.dart`) | Written by hand for learning, rather than the `watch_connectivity` package |
 | Tests | `flutter_test`, `mocktail`, bloc\_test, XCTest | Fakes for BLE and watch |
 | CI | GitHub Actions | Analyze, test, build |
 
@@ -128,7 +128,7 @@ Each milestone ends with something I can run on a device and a commit. Each one 
    - Done when: on an iPhone, a real strap shows live bpm and battery level, and every failure (Bluetooth off, permission denied, strap unreachable, strap dropped) is explained on screen.
 4. **Real BLE on Android.** Done. Kotlin scanning and connecting behind the same Pigeon contract, runtime permissions (`BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT`; the app needs Android 12 or later, so no location permission), a hand-written GATT queue, retries after GATT error 133, staying under Android's scan throttling, and the battery level. The Dart above the data layer is shared with iOS and needed no changes. The `connectedDevice` foreground service for streaming in the background was built (`feat/Milestone4_ForegroundService`) and works, but moved to Milestone 6, so both platforms gain background streaming together.
    - Done when: the same checks as Milestone 3 pass on an Android phone.
-5. **Apple Watch app.** Add the watchOS target, write the Swift WatchConnectivity bridge and platform channels, and build the SwiftUI live view. It needs only the iOS app, so it doesn't depend on Milestone 4.
+5. **Apple Watch app.** Done. A native SwiftUI watchOS app embedded in the iOS app, fed over WatchConnectivity: the phone's Swift sends a snapshot of the live state, as a live message and as the application context, through a second Pigeon contract. The watch shows the bpm with when it was measured, marks it stale after 10 seconds by its own clock, shows why there's no heart rate, tags demo data, says when the iPhone has been unreachable for 5 seconds, and shows the latest state on launch. Swift Testing covers both apps, in `RunnerTests` and `PulseLinkWatchTests`. It needs only the iOS app, so it didn't depend on Milestone 4.
    - Done when: the watch shows live bpm with its age and connection status, and handles "phone not reachable".
 6. **Reliability for iOS.** Connection state machine (a Bloc), automatic reconnect with backoff, Bluetooth off and on, app backgrounded, remembering the last device, and the in-app debug log; on iOS, one shared `CBCentralManager` and the `bluetooth-central` background mode; on Android, the `connectedDevice` foreground service shelved in Milestone 4. Most of it is shared Dart, so Android runs it too, but only the iPhone is checked for the rest.
    - Done when: on an iPhone, I can walk out of range and back, toggle Bluetooth, background the app, and kill and reopen it, and it always recovers or explains itself; and on an Android phone, streaming carries on in the background.
@@ -187,7 +187,7 @@ Testing:
 - Unit tests: packet parser (fixtures above), connection state machine Bloc (every transition, using bloc\_test), session stats.
 - Widget tests: live screen in each connection state, including stale data.
 - Fakes: `FakeStrapDataSource` with scripted drops and reconnects; `FakeWatchBridge`.
-- Native: XCTest for message encoding and decoding on the watch side.
+- Native: Swift Testing in `RunnerTests` (iPhone app, including the shared message encoding and decoding) and `PulseLinkWatchTests` (watch app), and JUnit for the Kotlin; `tool/test_swift.sh` runs the Swift tests on simulators.
 - Manual test checklist in `docs/test-plan.md`: out of range, Bluetooth toggled, app killed, phone locked, watch unreachable, strap battery low.
 
 CI (GitHub Actions): `flutter analyze`, `dart format --set-exit-if-changed`, `flutter test` with coverage on every push; an Android build on Ubuntu and an iOS build on macOS (no code signing).
@@ -195,7 +195,7 @@ CI (GitHub Actions): `flutter analyze`, `dart format --set-exit-if-changed`, `fl
 Docs to commit:
 
 - `README.md`: what it does, screenshots, demo GIF, how to run, demo mode, disclaimer.
-- `docs/architecture.md`: layers, the phone-watch design, and Mermaid sequence diagrams for connect-and-stream and watch start/stop.
+- `docs/architecture.md`: layers, the phone-watch design, and Mermaid sequence diagrams for connect-and-stream and watch start/stop. Started in Milestone 5 with the phone app, the watch app and the messages between them; connect-and-stream and watch start/stop are still to come.
 - `docs/hazards.md`: a lightweight hazard table (hazard, cause, mitigation), such as stale bpm shown as current, or a session lost on crash. It mirrors how regulated teams think without claiming compliance.
 - `docs/learning-log.md`: what I learned per milestone, with Flutter-vs-native notes. Useful interview material.
 
@@ -212,6 +212,6 @@ Docs to commit:
 Open questions:
 
 - Which features need a full Bloc (events) versus a simpler Cubit? Plan: Bloc for connection and sessions, Cubits elsewhere.
-- Hand-written platform channels, or the `watch_connectivity` package? (Plan: hand-written, for learning.)
+- Hand-written platform channels, or the `watch_connectivity` package? Decided in Milestone 5: hand-written Swift, called through Pigeon.
 - App name and bundle ID
 - Android-only Wear OS app later, or never?
