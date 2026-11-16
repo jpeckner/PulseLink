@@ -25,6 +25,7 @@ trap 'rm -f "$probe"' EXIT
 # One violation per rule. Add one here when adding a rule.
 cat > "$probe" <<'EOF'
 // Written by tool/check_lint_plugin.sh, which deletes it when it finishes.
+import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/data/ble/ble_api.pigeon.dart';
 
 BleBatteryLevel? keepPigeonImportsLocal;
@@ -45,6 +46,8 @@ _Probe _probeResult() => _Probe.a;
 void noIgnoredResults() => _probeResult();
 
 void noDynamic(List<dynamic> values) {}
+
+const noHardcodedUiStrings = Text('Hello');
 EOF
 
 # The rules enabled under `plugins: pulselink_lints: diagnostics:`.

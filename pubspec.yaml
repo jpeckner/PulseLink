@@ -12,6 +12,10 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_bloc: ^9.1.1
+  # Generated strings (lib/l10n, see l10n.yaml) and Flutter's own
+  # translations of its widgets' text.
+  flutter_localizations:
+    sdk: flutter
   freezed_annotation: ^3.1.0
   intl: ^0.20.3
   material_ui: ^1.11.0
@@ -29,6 +33,8 @@ dev_dependencies:
   very_good_analysis: ^11.0.0
 flutter:
   uses-material-design: true
+  # Runs gen-l10n (l10n.yaml) on pub get, run and build.
+  generate: true
   config:
     # iOS native dependencies come from Swift Package Manager only; this
     # project never uses CocoaPods (CI fails if an ios/Podfile appears).

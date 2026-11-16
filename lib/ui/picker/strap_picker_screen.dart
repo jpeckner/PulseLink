@@ -7,6 +7,7 @@ import 'package:pulselink/blocs/strap_picker/strap_picker_state.dart';
 import 'package:pulselink/data/app_settings.dart';
 import 'package:pulselink/data/strap_scanner.dart';
 import 'package:pulselink/domain/discovered_strap.dart';
+import 'package:pulselink/l10n/l10n.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 import 'package:pulselink/ui/widgets/problem_view.dart';
 
@@ -39,7 +40,7 @@ class _StrapPickerView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Find your strap')),
+      appBar: AppBar(title: Text(context.l10n.pickerTitle)),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -59,7 +60,7 @@ class _StrapPickerView extends StatelessWidget {
                     ),
                     StrapPickerFailed(:final problem) => Center(
                       child: ProblemView(
-                        message: bluetoothProblemMessage(problem),
+                        message: bluetoothProblemMessage(context.l10n, problem),
                         appSettings: appSettings,
                       ),
                     ),
@@ -111,35 +112,33 @@ class _LookingViewState extends State<_LookingView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         const CircularProgressIndicator(),
         const SizedBox(height: 24),
         Text(
-          'Looking for heart-rate straps…',
+          l10n.lookingForStraps,
           style: theme.textTheme.titleMedium,
           textAlign: .center,
         ),
         const SizedBox(height: 8),
         Text(
-          'Put your strap on so it wakes up, and keep it close to your phone.',
+          l10n.lookingHint,
           style: theme.textTheme.bodyMedium,
           textAlign: .center,
         ),
         if (_showsTips) ...[
           const SizedBox(height: 24),
           Text(
-            'Still not finding it?',
+            l10n.tipsTitle,
             style: theme.textTheme.titleSmall,
             textAlign: .center,
           ),
           const SizedBox(height: 8),
           Text(
-            'Dampen the strap where it touches your skin, so it can sense '
-            'your heart.\n\n'
-            'A strap connects to one device at a time. If another phone, '
-            'watch or gym machine is connected to it, disconnect it there.',
+            l10n.tipsBody,
             style: theme.textTheme.bodyMedium,
             textAlign: .center,
           ),
@@ -157,6 +156,7 @@ class _StrapList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     return Column(
       children: [
         // Still scanning, so more straps may appear. Once a strap that's
@@ -170,12 +170,12 @@ class _StrapList extends StatelessWidget {
               for (final strap in straps)
                 ListTile(
                   leading: const Icon(Icons.monitor_heart_outlined),
-                  title: Text(strap.name?.value ?? 'Unnamed heart-rate strap'),
+                  title: Text(strap.name?.value ?? l10n.unnamedStrap),
                   trailing: strap.isConnected
-                      ? const Icon(
+                      ? Icon(
                           Icons.check_circle,
                           color: Colors.green,
-                          semanticLabel: 'Connected',
+                          semanticLabel: l10n.strapConnectedLabel,
                         )
                       : null,
                   // Closes the picker with this strap; the screen that
@@ -186,7 +186,7 @@ class _StrapList extends StatelessWidget {
           ),
         ),
         Text(
-          'Tap your strap to connect to it.',
+          l10n.tapToConnect,
           style: theme.textTheme.bodyMedium,
           textAlign: .center,
         ),

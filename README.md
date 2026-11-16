@@ -122,6 +122,10 @@ A few more built-in lints bring it closer to Swift's compile-time checks:
   an enum, `bool` or sealed type.
 - `no_dynamic`: no written `dynamic`, including in type arguments such as
   `Map<String, dynamic>`; use `Object?` or a precise type.
+- `no_hardcoded_ui_strings`: no string literal as a `Text`'s text or a
+  user-facing argument such as `tooltip:`, `semanticLabel:`, `label:` or
+  `title:`; it goes in `lib/l10n/app_en.arb` (see "Text and translations").
+  Tests and debug-only code are exempt.
 - `no_ignored_results`: no thrown-away value of an enum or sealed type, such
   as a typed result. Discard one on purpose with `final _ = ...;`.
 - `use_switch_on_closed_types`: no `if (x case ...)`, `is` or `==` test that
@@ -147,6 +151,32 @@ can be built from another branch's plugin and silently lack newer rules. The
 script spots this and rebuilds it by touching the plugin's files. If an
 editor shows a rule missing, touch `tool/pulselink_lints/lib/main.dart` and
 restart the analysis server.
+
+## Text and translations
+
+Every string the app shows comes from `lib/l10n/app_en.arb`, through Flutter's
+gen-l10n (`flutter_localizations` and `intl`, configured in `l10n.yaml`). It
+generates `AppLocalizations`, with one typed getter or method per string, so
+the UI reads `context.l10n.tryAgain`, and a missing or misspelled string is a
+compile error. The app is English only for now.
+
+To add a string:
+
+1. Add it to `app_en.arb` with an `@` entry: a description, plus typed
+   placeholders if it has any (`int`, or `DateTime` with a format such as
+   `jms`). Use an ICU plural rather than choosing words in Dart.
+2. Run `flutter gen-l10n` (`flutter run` and `flutter build` also do it), and
+   commit the regenerated `lib/l10n/app_localizations*.dart`. CI fails if
+   they're out of date.
+3. Use it as `context.l10n.yourString`. Tests find text through
+   `test/helpers/english.dart`.
+
+The `no_hardcoded_ui_strings` lint flags a string literal in the UI. Debug-only
+code (`debug_*.dart` files and `debug/` folders) is exempt, since release
+builds drop it. To add a language later, add `app_<code>.arb` beside the
+English one and regenerate; `MaterialApp` picks it up through
+`AppLocalizations.supportedLocales`. The watch app's SwiftUI text isn't
+covered yet.
 
 ## iOS build warnings
 

@@ -126,3 +126,21 @@ what throws, so this rule and the tests are the check.
 Before committing changes to `lib/` that add async calls, cleanup code, catch
 blocks or data-layer implementations, run the `error-handling-review` project
 skill (`.claude/skills/error-handling-review/`) and resolve its findings.
+
+## User-facing text
+
+User-facing text goes in `lib/l10n/app_en.arb`, never in a string literal in
+the UI. Read it through the `AppLocalizations` class that `flutter gen-l10n`
+generates from the ARB file, as `context.l10n.tryAgain`, so a missing or
+misspelled string is a compile error, and the app can be translated later
+without touching the widgets.
+
+- Give every string a description, for whoever translates it.
+- Use typed placeholders (`int`, `DateTime` with a format) and plurals rather
+  than building text by concatenation or interpolation in Dart.
+- The `no_hardcoded_ui_strings` lint (`tool/pulselink_lints`) enforces this.
+  Debug-only code (`debug_*.dart` files and `debug/` folders) is exempt,
+  since release builds drop it. Where a literal truly isn't text for the
+  user, ignore the lint with a comment saying why.
+
+The watch app's SwiftUI text isn't covered yet.

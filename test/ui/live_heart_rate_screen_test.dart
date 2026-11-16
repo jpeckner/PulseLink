@@ -14,10 +14,10 @@ import 'package:pulselink/domain/discovered_strap.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
 import 'package:pulselink/ui/live/live_heart_rate_screen.dart';
-import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
 import '../helpers/beats_per_minute.dart';
 import '../helpers/discovered_strap.dart';
+import '../helpers/english.dart';
 import '../helpers/strap_connection_failures.dart';
 import '../helpers/stub_app_settings.dart';
 
@@ -94,7 +94,7 @@ void main() {
 
     testWidgets('always shows the disclaimer', (tester) async {
       await pumpScreen(tester, _reading());
-      expect(find.text(disclaimerText), findsOneWidget);
+      expect(find.text(english.disclaimer), findsOneWidget);
     });
 
     group('waiting', () {
@@ -582,7 +582,7 @@ void main() {
           ),
         );
         final controls = tester.getTopLeft(find.text('debug controls'));
-        final disclaimer = tester.getTopLeft(find.text(disclaimerText));
+        final disclaimer = tester.getTopLeft(find.text(english.disclaimer));
         expect(controls.dy, lessThan(disclaimer.dy));
       });
 

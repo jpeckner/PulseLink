@@ -9,9 +9,9 @@ import 'package:pulselink/blocs/strap_battery/strap_battery_cubit.dart';
 import 'package:pulselink/data/debug_override_strap_data_source.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/ui/debug/debug_override_buttons.dart';
-import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
 import '../helpers/beats_per_minute.dart';
+import '../helpers/english.dart';
 import '../helpers/stub_app_settings.dart';
 import '../helpers/stub_strap_data_source.dart';
 import '../helpers/stub_strap_scanner.dart';
@@ -38,7 +38,7 @@ void main() {
       expect(find.text('PulseLink'), findsOneWidget);
       expect(find.text('Demo'), findsOneWidget);
       expect(find.text('--'), findsOneWidget);
-      expect(find.text(disclaimerText), findsOneWidget);
+      expect(find.text(english.disclaimer), findsOneWidget);
 
       source.emit(
         HeartRateSample.measured(

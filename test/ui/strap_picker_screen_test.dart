@@ -4,9 +4,9 @@ import 'package:pulselink/data/strap_scanner.dart';
 import 'package:pulselink/domain/bluetooth_problem.dart';
 import 'package:pulselink/domain/discovered_strap.dart';
 import 'package:pulselink/ui/picker/strap_picker_screen.dart';
-import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 
 import '../helpers/discovered_strap.dart';
+import '../helpers/english.dart';
 import '../helpers/stub_app_settings.dart';
 import '../helpers/stub_strap_scanner.dart';
 
@@ -31,7 +31,7 @@ void main() {
       expect(scanner.isScanning, isTrue);
       expect(find.text('Find your strap'), findsOneWidget);
       expect(find.text('Looking for heart-rate straps…'), findsOneWidget);
-      expect(find.text(disclaimerText), findsOneWidget);
+      expect(find.text(english.disclaimer), findsOneWidget);
     });
 
     group('tips after finding nothing for a while', () {

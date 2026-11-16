@@ -16,6 +16,9 @@ analyzer:
     - "**/*.freezed.dart"
     # Pigeon platform-channel code; its contracts in pigeons/ are analyzed.
     - "**/*.pigeon.dart"
+    # gen-l10n's strings classes; their source, lib/l10n/app_en.arb, is
+    # checked by gen-l10n itself.
+    - lib/l10n/app_localizations*.dart
     # Its own package, with its own analysis options; CI checks it separately.
     - tool/pulselink_lints/**
 
@@ -58,5 +61,8 @@ plugins:
       # Every written `dynamic`, not just on parameters as the built-in
       # avoid_annotating_with_dynamic does.
       no_dynamic: true
+      # Text shown to the user comes from lib/l10n/app_en.arb, through the
+      # typed AppLocalizations (context.l10n).
+      no_hardcoded_ui_strings: true
       no_ignored_results: true
       use_switch_on_closed_types: true
