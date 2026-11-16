@@ -46,12 +46,12 @@ ignore the lint there.
 Native code (Swift in `ios/`, Kotlin in `android/`) follows the same rule.
 `tool/lint_native.sh` enforces it with SwiftLint (`.swiftlint.yml`) and
 detekt (`android/config/detekt.yml`) on app code, and
-`tool/check_native_lints.sh` proves each rule reports. The Runner target's
-SwiftLint build phase also runs the Swift half on every Xcode build, so
-findings show inline as errors, and every Android build (Android Studio's
-Run, `flutter run`, `flutter build apk`) runs the Kotlin half, so findings
-fail the build. Where a catch-all is truly needed, disable the rule on that
-line with a comment saying why.
+`tool/check_native_lints.sh` proves each rule reports. The Runner and
+PulseLinkWatch targets' SwiftLint build phases also run the Swift half on
+every Xcode build, so findings show inline as errors, and every Android
+build (Android Studio's Run, `flutter run`, `flutter build apk`) runs the
+Kotlin half, so findings fail the build. Where a catch-all is truly needed,
+disable the rule on that line with a comment saying why.
 
 - Swift: no `!` force unwraps, `as!` casts, implicitly unwrapped optionals
   (`Type!`) or `try!`, and no `fatalError`, `precondition` or `assert`. Use
@@ -72,6 +72,18 @@ anything (methods, properties, initializers or subscripts), such as
 protocol's members sit together, apart from the type's own. A conformance
 that adds nothing, such as `Equatable` synthesized for an enum, can stay
 on the type's declaration. No lint checks this, so reviews do.
+
+## SwiftUI previews
+
+Preview code must never ship in a release build. Put every `#Preview`,
+`PreviewProvider` and `PreviewModifier`, and the sample data and helpers
+only previews use, inside `#if DEBUG` ... `#endif`, usually one block at the
+end of the file. Only the Debug build configuration defines `DEBUG`, in the
+Runner and PulseLinkWatch targets alike. `tool/check_swift_previews.py`
+(run by `tool/lint_native.sh` and every Xcode build) reports a preview
+outside `#if DEBUG`, and the pre-merge checks look for preview code in the
+release binaries. Nothing marks a helper as preview-only, so reviews check
+those.
 
 ## Calling Flutter from native code
 

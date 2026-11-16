@@ -533,3 +533,118 @@ of failure states serve both. A regulated team would also:
 - test across Android makers and versions, since Bluetooth stacks differ
   (error 133 is far more common on some phones);
 - record which phones and Android versions each release was checked on.
+
+## Milestone 5: Apple Watch app (2026-11-14 to 2026-11-15)
+
+Built: a native SwiftUI watchOS app inside the iOS project, fed by the phone
+over WatchConnectivity. The watch shows the live bpm with the time it was
+measured, dims it with "No data from strap" once it's 10 seconds old, shows
+why there's no heart rate (an unavailable reading or a connection failure),
+tags demo data, says when the iPhone isn't reachable, and shows the latest
+state as soon as it opens. It never connects to the strap itself. Checked on
+paired simulators and on an iPhone 17 Pro Max with an Apple Watch Series 9.
+363 Dart tests, 69 Swift tests (44 for the iPhone app, 25 for the watch) and
+29 Kotlin tests.
+
+`docs/architecture.md` has diagrams of the phone app, the watch app and
+every message between them.
+
+### The phone-watch bridge
+
+- **Flutter can't build watchOS apps,** so the watch app is plain SwiftUI,
+  and the phone's side of WatchConnectivity is Swift too. Dart only hands a
+  snapshot to Swift through a second Pigeon contract, `pigeons/watch_api.dart`,
+  with `@async` calls like BLE's. The contract has no Kotlin side, and
+  `main()` starts the sync on iOS only. Hand-written over Pigeon, as planned,
+  rather than the `watch_connectivity` package.
+- **Pigeon's sealed classes become open protocols in Swift,** so a Swift
+  `switch` over them needs a `default:`. That one place disables the
+  no-catch-all lint, with a comment saying why; everything past it is the
+  app's own closed enums.
+- **A second contract in one app needs Pigeon options:** a distinct Swift
+  class-name component, so its generated helpers don't clash with BLE's, and
+  no second error class.
+- **One snapshot, four shapes.** The Dart domain type, the Pigeon message,
+  the Swift `HeartRateSnapshot`, and a dictionary on the wire, which is what
+  WatchConnectivity carries. The dictionary is versioned and has a `kind`, so
+  the watch can reject anything it doesn't understand, and watch-to-phone
+  commands can come later. Its code lives in `ios/Shared`, compiled into both
+  apps, so it's written once. Files go there only when both apps use them.
+- **Two ways to send, used together.** `sendMessage` reaches the watch app
+  only while it's open and in range, so live data that can't be delivered is
+  dropped, never queued. `updateApplicationContext` keeps only the newest
+  value and delivers it whenever the system likes, including before the
+  watch app's next launch. The phone sends every change both ways, and the
+  watch keeps whichever has the newest `sentAt`, since they can arrive in
+  either order.
+- **Dart only sends on a change,** so a steady state, such as Bluetooth off,
+  would never reach a watch app installed or opened later. The phone keeps
+  the latest snapshot and sends it again when activation finishes, when the
+  watch app is installed, and when it becomes reachable.
+- **Staleness is never sent.** The watch works it out from the reading's own
+  timestamp, every second, so it's right even when the link drops and
+  nothing arrives to say so.
+
+### Threads and Swift concurrency
+
+- **WatchConnectivity calls its delegate on a background queue,** unlike
+  CoreBluetooth with `queue: nil`. So each callback copies what it needs
+  into `Sendable` values and then hops with `Task { @MainActor in … }`.
+- **`WCSession` isn't `Sendable`,** so the session class looks up
+  `WCSession.default` when it needs it rather than storing it, and its
+  initializer is `nonisolated` so non-isolated code can create it.
+- **On the watch, `@Observable` replaces `ObservableObject`.** SwiftUI
+  redraws when a property it read changes, with no `@Published`, much like
+  a Cubit's state stream driving a `BlocBuilder`.
+
+### Flutter and a watch target
+
+- **Flutter looks for a companion watch app** through a shared scheme whose
+  build settings include `WKCompanionAppBundleIdentifier`. It then leaves
+  out `-sdk`, so `flutter run` on a simulator needs a device id
+  (`-d <id>`).
+- **The watch target needs `SUPPORTED_PLATFORMS`.** Flutter's project-level
+  Release and Profile settings allow only `iphoneos`.
+- **The xcodeproj gem, used to edit the project from scripts,** rewrites a
+  Swift package reference comment and adds a stray `Foundation.framework`
+  from a watchOS SDK path. Both need undoing after every run.
+- **SwiftUI previews ship in release builds** unless they're inside
+  `#if DEBUG`, and the iPhone app's Debug configuration didn't define
+  `DEBUG` at all. Now both apps define it in Debug only, a lint reports any
+  preview outside `#if DEBUG`, and the pre-merge checks look for preview
+  code in the release binaries.
+
+### Testing
+
+- **Two Swift test targets on two simulators:** `RunnerTests` on an iPhone
+  and `PulseLinkWatchTests` on a watch. `tool/test_swift.sh` reads the
+  counts from the result bundles, since xcodebuild's output interleaves.
+  It turns off diagnostics collection, which otherwise spends up to 10
+  minutes after a failure.
+- **What WatchConnectivity decides is tested without it.** The phone's
+  session state is a five-case enum, and what to do with each send is a pure
+  function of it. The watch's screen content is a pure function of the
+  snapshot, reachability and the time.
+- **Running on paired simulators found a bug the tests couldn't:** the sync
+  sent its first snapshot before `runApp`, through a platform channel that
+  didn't exist yet. Unit tests use fakes and never run `main()`.
+  `WidgetsFlutterBinding.ensureInitialized()` now comes first.
+- **Running on a real watch found one simulators can't:** "iPhone not
+  reachable" flashed each time the wrist was raised. WatchConnectivity
+  reports the iPhone unreachable for a moment while the app wakes. The
+  watch now records when the iPhone became unreachable, and shows the
+  banner only after 5 seconds of it.
+- **Still open:** installing a new build of the iPhone app from Xcode can
+  remove the watch app. It's tabled, and noted in `docs/test-plan.md`.
+
+Regulated-app notes: the device that shows a reading judges whether it's
+current, from when it was measured, so a dead link can't leave an old bpm
+looking live. A timestamp ahead of the watch's clock counts as just
+measured, so clock skew can't keep a reading fresh for longer. Demo data is
+never shown as a strap's. Every message is checked before it's shown, and a
+bad one is ignored, not half-shown. The banner's grace period trades
+5 seconds of warning for no false alarms. A regulated team would also:
+- write down the maximum delay between the strap and the watch, and test
+  it;
+- treat clock skew between phone and watch as a hazard with a stated bound;
+- decide, with a clinician, how long "not reachable" may go unannounced.

@@ -5,9 +5,12 @@
 #
 # Run from anywhere: tool/lint_native.sh [swift|kotlin|all]   (default: all)
 # CI and the pre-merge-checks skill run it, and tool/check_native_lints.sh
-# proves each rule reports. The Runner target's SwiftLint build phase runs
-# `swift` on every Xcode build (including `flutter run` and `flutter build
-# ios`), so findings show inline in Xcode and fail the build.
+# proves each rule reports. The Swift half is SwiftLint plus
+# tool/check_swift_previews.py, which keeps SwiftUI previews out of release
+# builds. The Runner and PulseLinkWatch targets each have
+# a SwiftLint build phase that runs `swift` on every Xcode build (including
+# `flutter run` and `flutter build ios`), so findings show inline in Xcode
+# and fail the build.
 #
 # Neither linter is stored in Git; each is downloaded the first time it's
 # needed and cached outside the repo:
@@ -21,6 +24,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 which="${1:-all}"
+
+# The folders .swiftlint.yml includes, for the checks SwiftLint can't do.
+swift_folders=(ios/Runner ios/PulseLinkWatch ios/Shared)
 
 # SwiftLint release, and the SHA-256 GitHub publishes for each download.
 swiftlint_version=0.65.1
@@ -86,6 +92,12 @@ lint_swift() {
   local status=$?
   set -e
   echo "$output" | grep -vE '^Linting |^Loading configuration' || true
+
+  # SwiftLint's regex rules can't tell whether code is inside an #if, so
+  # previews have their own check, on the same folders.
+  echo '==> swiftui_previews_debug_only'
+  python3 tool/check_swift_previews.py "${swift_folders[@]}" || status=1
+
   if (( status != 0 )); then
     return "$status"
   fi

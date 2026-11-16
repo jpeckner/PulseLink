@@ -9,6 +9,7 @@ import 'package:pulselink/blocs/debug_override/debug_override_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/strap_selection.dart';
 import 'package:pulselink/blocs/strap_battery/strap_battery_cubit.dart';
+import 'package:pulselink/blocs/watch_sync/watch_sync.dart';
 import 'package:pulselink/data/app_settings.dart';
 import 'package:pulselink/data/app_settings/platform_app_settings.dart';
 import 'package:pulselink/data/ble/ble_strap_scanner.dart';
@@ -17,6 +18,7 @@ import 'package:pulselink/data/fake_strap_data_source.dart';
 import 'package:pulselink/data/strap_data_source.dart';
 import 'package:pulselink/data/strap_scanner.dart';
 import 'package:pulselink/data/switchable_strap_data_source.dart';
+import 'package:pulselink/data/watch/pigeon_watch_bridge.dart';
 import 'package:pulselink/domain/discovered_strap.dart';
 import 'package:pulselink/ui/debug/debug_override_buttons.dart';
 
@@ -24,6 +26,9 @@ import 'package:pulselink/ui/debug/debug_override_buttons.dart';
 /// widgets through constructors, so a missing dependency is a compile error,
 /// not a runtime lookup failure. These objects live as long as the app.
 void main() {
+  // Before anything below reaches the platform: WatchSync sends its first
+  // snapshot through a platform channel as soon as it starts, before runApp.
+  WidgetsFlutterBinding.ensureInitialized();
   Bloc.observer = const AppBlocObserver();
 
   // Demo mode at launch, until a strap is picked in the strap picker.
@@ -36,6 +41,7 @@ void main() {
     // it starts; a broadcast stream doesn't replay it to later listeners.
     final batteryCubit = StrapBatteryCubit(source: source);
     final cubit = _startedCubit(source);
+    _syncWatch(cubit);
     runApp(
       PulseLinkApp(
         liveHeartRateCubit: cubit,
@@ -54,6 +60,7 @@ void main() {
     // Before starting the source; see the release branch above.
     final batteryCubit = StrapBatteryCubit(source: overrideSource);
     final cubit = _startedCubit(overrideSource);
+    _syncWatch(cubit);
     runApp(
       PulseLinkApp(
         liveHeartRateCubit: cubit,
@@ -78,6 +85,24 @@ ValueChanged<DiscoveredStrap> _selectStrap(
   // state. select() only throws if disposing demo mode fails; that's left
   // for the zone's error handler, and the strap is still connected to.
   return (strap) => unawaited(selection.select(strap));
+}
+
+/// Keeps the platform's watch app, if it has one, showing what [cubit]
+/// shows. `WatchSync` works with any `WatchBridge`, so supporting another
+/// wearable means giving its platform's case a bridge here. Never closed:
+/// like the cubits, it lives as long as the app.
+void _syncWatch(LiveHeartRateCubit cubit) {
+  switch (defaultTargetPlatform) {
+    case TargetPlatform.iOS:
+      WatchSync(heartRate: cubit, bridge: PigeonWatchBridge()).start();
+    case TargetPlatform.android ||
+        TargetPlatform.fuchsia ||
+        TargetPlatform.linux ||
+        TargetPlatform.macOS ||
+        TargetPlatform.windows:
+      // No watch app to sync with yet. Wear OS would go in the Android case.
+      break;
+  }
 }
 
 LiveHeartRateCubit _startedCubit(StrapDataSource source) {

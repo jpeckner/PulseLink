@@ -10,15 +10,16 @@ workout sessions for later review.
 
 Work in progress, built one milestone at a time. See the
 [build plan](<BLE Heart-Rate Monitor Flutter + Apple Watch Build Plan.md>), the
-[learning log](docs/learning-log.md) and the
-[manual test plan](docs/test-plan.md) for checks that need a real phone and
-strap.
+[learning log](docs/learning-log.md), the
+[architecture](docs/architecture.md) diagrams, and the
+[manual test plan](docs/test-plan.md) for checks that need a real phone,
+strap or watch.
 
 - [x] 1. Setup and skeleton
 - [x] 2. Domain and fake data (demo mode)
 - [x] 3. Real BLE on iOS
 - [x] 4. Real BLE on Android
-- [ ] 5. Apple Watch app
+- [x] 5. Apple Watch app
 - [ ] 6. Reliability for iOS
 - [ ] 7. Polish and portfolio (nice-to-have)
 - [ ] 8. Sessions and history (nice-to-have)
@@ -28,8 +29,8 @@ strap.
 Flutter (iOS + Android), Material 3 via `material_ui`, `flutter_bloc` for state,
 `freezed` for immutable models and states, `very_good_analysis` for lints. iOS
 native dependencies use Swift Package Manager only; no CocoaPods. The watchOS
-app (Milestone 5) is native SwiftUI, bridged to Flutter with WatchConnectivity
-and platform channels.
+app is native SwiftUI. The phone talks to it over WatchConnectivity, in Swift,
+which Dart calls through Pigeon.
 
 ```
 lib/
@@ -57,6 +58,13 @@ way; the first scan asks for the Nearby devices permission, and the emulator
 can't reach a real strap. On both platforms, streaming stops soon after the
 app goes to the background; keeping it going comes in Milestone 6.
 
+The iOS project includes an Apple Watch app, so Flutter needs a device ID to
+run on an iOS simulator: `flutter run -d <id>`, with an ID from
+`flutter devices`. The watch app comes with the iPhone app: the iPhone installs
+it on its paired watch, which can take a minute. To run it straight away, or on
+a watch simulator paired with the iPhone simulator, run the `PulseLinkWatch`
+scheme from Xcode. It shows what the phone app shows, including demo mode.
+
 Models and states use `freezed`, which generates `*.freezed.dart` files. They're
 committed, and CI fails if they're out of date. After changing an annotated
 class:
@@ -79,6 +87,14 @@ Checks (the same ones CI runs):
 dart format --set-exit-if-changed lib test
 flutter analyze
 flutter test
+```
+
+The Swift tests run on simulators: `ios/RunnerTests` on an iPhone and
+`ios/PulseLinkWatchTests` on an Apple Watch (macOS only; CI doesn't run them
+until Milestone 7):
+
+```bash
+tool/test_swift.sh
 ```
 
 Lints come from `very_good_analysis`, plus
