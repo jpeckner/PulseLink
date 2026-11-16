@@ -16,10 +16,14 @@ private func snapshot(sentAt seconds: TimeInterval, status: HeartRateStatus = .w
 /// are what the WatchConnectivity callbacks call.
 @MainActor
 struct PhoneConnectionTests {
+  /// Unreachable from launch until activation says otherwise, so the
+  /// banner shows only if activation takes longer than the grace period.
   @Test func startsWithNothingFromThePhone() {
+    let before = Date()
     let connection = PhoneConnection()
     #expect(connection.snapshot == nil)
-    #expect(!connection.isPhoneReachable)
+    let since = connection.phoneUnreachableSince
+    #expect(since.map { $0 >= before && $0 <= Date() } == true)
   }
 
   @Test func showsTheFirstSnapshot() {
@@ -52,11 +56,29 @@ struct PhoneConnectionTests {
     #expect(connection.snapshot == snapshot(sentAt: 10, status: .receiving))
   }
 
-  @Test func followsReachability() {
+  @Test func recordsWhenThePhoneBecameUnreachable() {
     let connection = PhoneConnection()
-    connection.reachabilityDidChange(true)
-    #expect(connection.isPhoneReachable)
-    connection.reachabilityDidChange(false)
-    #expect(!connection.isPhoneReachable)
+    connection.reachabilityDidChange(true, at: Date(timeIntervalSince1970: 10))
+    #expect(connection.phoneUnreachableSince == nil)
+    connection.reachabilityDidChange(false, at: Date(timeIntervalSince1970: 20))
+    #expect(connection.phoneUnreachableSince == Date(timeIntervalSince1970: 20))
+  }
+
+  /// Another "unreachable" while already unreachable keeps the first time,
+  /// so the grace period runs from when it started.
+  @Test func keepsTheFirstUnreachableTime() {
+    let connection = PhoneConnection()
+    connection.reachabilityDidChange(true, at: Date(timeIntervalSince1970: 10))
+    connection.reachabilityDidChange(false, at: Date(timeIntervalSince1970: 20))
+    connection.reachabilityDidChange(false, at: Date(timeIntervalSince1970: 25))
+    #expect(connection.phoneUnreachableSince == Date(timeIntervalSince1970: 20))
+  }
+
+  @Test func clearsTheUnreachableTimeWhenReachableAgain() {
+    let connection = PhoneConnection()
+    connection.reachabilityDidChange(true, at: Date(timeIntervalSince1970: 21))
+    #expect(connection.phoneUnreachableSince == nil)
+    connection.reachabilityDidChange(false, at: Date(timeIntervalSince1970: 30))
+    #expect(connection.phoneUnreachableSince == Date(timeIntervalSince1970: 30))
   }
 }

@@ -20,10 +20,15 @@ final class PhoneConnection: NSObject {
   /// The newest snapshot received, or nil before the first.
   private(set) var snapshot: HeartRateSnapshot?
 
-  /// Whether the iPhone is in range and connected. The phone app being
-  /// closed doesn't make it unreachable; snapshots just stop arriving, and
-  /// the last reading goes stale.
-  private(set) var isPhoneReachable = false
+  /// When the iPhone stopped being reachable, or nil while it's reachable.
+  /// Not a plain flag: WatchConnectivity reports the iPhone unreachable for
+  /// a moment whenever the app wakes, such as on raising the wrist, so
+  /// `WatchHeartRateDisplay` only shows it once it has lasted a while.
+  ///
+  /// Unreachable from launch until activation says otherwise. The phone
+  /// app being closed doesn't make the iPhone unreachable; snapshots just
+  /// stop arriving, and the last reading goes stale.
+  private(set) var phoneUnreachableSince: Date? = Date()
 
   @ObservationIgnored private var hasRequestedActivation = false
 
@@ -55,8 +60,14 @@ final class PhoneConnection: NSObject {
     self.snapshot = snapshot
   }
 
-  func reachabilityDidChange(_ isReachable: Bool) {
-    isPhoneReachable = isReachable
+  /// Records whether the iPhone is reachable, as of `date`. While it stays
+  /// unreachable, the time it first became so is kept.
+  func reachabilityDidChange(_ isReachable: Bool, at date: Date) {
+    if isReachable {
+      phoneUnreachableSince = nil
+    } else if phoneUnreachableSince == nil {
+      phoneUnreachableSince = date
+    }
   }
 
   /// Decodes a message or application context, or logs why it couldn't,
@@ -90,11 +101,12 @@ extension PhoneConnection: WCSessionDelegate {
     let context = session.receivedApplicationContext
     let snapshot = context.isEmpty ? nil : Self.decode(context, from: "application context")
     let isReachable = session.isReachable
+    let changedAt = Date()
     Task { @MainActor in
       if let snapshot {
         self.receive(snapshot)
       }
-      self.reachabilityDidChange(isReachable)
+      self.reachabilityDidChange(isReachable, at: changedAt)
     }
   }
 
@@ -121,8 +133,9 @@ extension PhoneConnection: WCSessionDelegate {
 
   nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
     let isReachable = session.isReachable
+    let changedAt = Date()
     Task { @MainActor in
-      self.reachabilityDidChange(isReachable)
+      self.reachabilityDidChange(isReachable, at: changedAt)
     }
   }
 }

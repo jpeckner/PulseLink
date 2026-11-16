@@ -17,11 +17,11 @@ private func display(
   status: HeartRateStatus,
   reading: HeartRateReading?,
   source: HeartRateSource = .strap,
-  isPhoneReachable: Bool = true
+  phoneUnreachableSince: Date? = nil
 ) -> WatchHeartRateDisplay {
   WatchHeartRateDisplay(
     snapshot: HeartRateSnapshot(sentAt: now, source: source, status: status, latestReading: reading),
-    isPhoneReachable: isPhoneReachable,
+    phoneUnreachableSince: phoneUnreachableSince,
     now: now
   )
 }
@@ -43,7 +43,7 @@ private let allUnavailableReasons: [HeartRateUnavailableReason] = [
 
 struct WatchHeartRateDisplayTests {
   @Test func beforeAnySnapshotAsksForThePhoneApp() {
-    let display = WatchHeartRateDisplay(snapshot: nil, isPhoneReachable: true, now: now)
+    let display = WatchHeartRateDisplay(snapshot: nil, phoneUnreachableSince: nil, now: now)
     #expect(display.readout == .none)
     #expect(display.status == .noSnapshotYet)
     #expect(display.source == nil)
@@ -131,18 +131,34 @@ struct WatchHeartRateDisplayTests {
     #expect(display(status: .waiting, reading: nil, source: source).source == source)
   }
 
-  @Test(arguments: [true, false])
-  func passesOnReachability(isPhoneReachable: Bool) throws {
+  @Test func showsAReachablePhoneAsReachable() {
+    #expect(!display(status: .waiting, reading: nil, phoneUnreachableSince: nil).showsPhoneNotReachable)
+  }
+
+  /// WatchConnectivity reports the iPhone unreachable for a moment whenever
+  /// the app wakes, such as on raising the wrist; that mustn't flash the
+  /// banner.
+  @Test(arguments: [0, 4.999, 5, 60])
+  func showsAnUnreachablePhoneOnlyAfterTheGracePeriod(unreachableFor: TimeInterval) {
+    let display = display(status: .waiting, reading: nil, phoneUnreachableSince: secondsAgo(unreachableFor))
+    #expect(display.showsPhoneNotReachable == (unreachableFor >= WatchHeartRateDisplay.unreachableGrace))
+  }
+
+  @Test func treatsAnUnreachableStartAheadOfTheClockAsJustNow() {
+    let display = display(status: .waiting, reading: nil, phoneUnreachableSince: now.addingTimeInterval(60))
+    #expect(!display.showsPhoneNotReachable)
+  }
+
+  @Test func keepsShowingTheLastStateWhenThePhoneIsUnreachable() throws {
     let reading = HeartRateReading.measured(try bpm(72), measuredAt: secondsAgo(1))
-    let display = display(status: .receiving, reading: reading, isPhoneReachable: isPhoneReachable)
-    #expect(display.isPhoneReachable == isPhoneReachable)
-    // An unreachable phone doesn't hide the last state.
+    let display = display(status: .receiving, reading: reading, phoneUnreachableSince: secondsAgo(30))
+    #expect(display.showsPhoneNotReachable)
     #expect(display.readout == .current(try bpm(72)))
   }
 
-  @Test func passesOnReachabilityBeforeAnySnapshot() {
-    let display = WatchHeartRateDisplay(snapshot: nil, isPhoneReachable: false, now: now)
-    #expect(!display.isPhoneReachable)
+  @Test func showsAnUnreachablePhoneBeforeAnySnapshot() {
+    let display = WatchHeartRateDisplay(snapshot: nil, phoneUnreachableSince: secondsAgo(30), now: now)
+    #expect(display.showsPhoneNotReachable)
     #expect(display.status == .noSnapshotYet)
   }
 }
