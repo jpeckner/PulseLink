@@ -106,6 +106,19 @@ flutter build ipa --profile --export-options-plist=ios/ExportOptions-Profile.pli
 the IPA: "PulseLink - Profile" for the iPhone app, and "PulseLink Watch App -
 Profile" for the watch app. The IPA lands in `build/ios/ipa/`.
 
+The Release build exports the same way, for now also as Ad Hoc, with
+`ios/ExportOptions-Release.plist` and the profiles "PulseLink - Release" and
+"PulseLink Watch App - Release":
+
+```bash
+flutter build ipa --release --export-options-plist=ios/ExportOptions-Release.plist
+```
+
+App Store profiles will replace these later. To install either IPA, install it
+on the iPhone; then install the watch app from the iPhone's Watch app (My
+Watch > Available Apps). The watch can't install the IPA directly. Check the
+end of the output: `flutter build ipa` exits 0 even when the export fails.
+
 Models and states use `freezed`, which generates `*.freezed.dart` files. They're
 committed, and CI fails if they're out of date. After changing an annotated
 class:
