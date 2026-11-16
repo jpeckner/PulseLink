@@ -41,7 +41,7 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             manifestPlaceholders["appName"] = "PulseLink Debug"
-            // An adaptive icon on light grey (src/debug/res).
+            // An adaptive icon on grey (src/debug/res).
             manifestPlaceholders["appIcon"] = "@mipmap/ic_launcher_build"
         }
         // The Flutter Gradle plugin creates the profile build type.

@@ -1,7 +1,7 @@
 // Makes the Debug and Profile app icons from the Release one, so the three
 // builds can be told apart when installed side by side (see "Running" in the
 // README): Release keeps its white background, Profile gets green and Debug
-// light grey.
+// grey.
 //
 // Run from the repo root after changing the Release icon:
 //   swift tool/make_build_icons.swift
@@ -341,8 +341,8 @@ func writeIconSet(_ bitmap: Bitmap, folder: String, platform: String) throws {
 
 let source = "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png"
 let builds: [(name: String, background: RGB)] = [
-  // Apple's systemGray3 (light).
-  ("Debug", RGB(hex: 0xC7C7CC)),
+  // Apple's systemGray (light): dark enough to tell from Release's white.
+  ("Debug", RGB(hex: 0x8E8E93)),
   // Apple's systemGreen, in its darker high-contrast (accessible) form.
   ("Profile", RGB(hex: 0x248A3D)),
 ]

@@ -71,7 +71,7 @@ has its own ID, name and icon background:
 
 | Build | iPhone and Android ID | Watch app ID | Name | Icon background |
 | --- | --- | --- | --- | --- |
-| Debug | `com.jpeckner.pulselink.debug` | `com.jpeckner.pulselink.debug.watchkitapp` | PulseLink Debug | Light grey, `#C7C7CC` |
+| Debug | `com.jpeckner.pulselink.debug` | `com.jpeckner.pulselink.debug.watchkitapp` | PulseLink Debug | Grey, `#8E8E93` |
 | Profile | `com.jpeckner.pulselink.profile` | `com.jpeckner.pulselink.profile.watchkitapp` | PulseLink Profile | Green, `#248A3D` |
 | Release | `com.jpeckner.pulselink` | `com.jpeckner.pulselink.watchkitapp` | PulseLink | White |
 
@@ -94,6 +94,17 @@ Release icon, or a colour in the script, regenerate them:
 ```bash
 swift tool/make_build_icons.swift
 ```
+
+To export the Profile build as an Ad Hoc IPA, for the devices registered in
+its distribution profiles:
+
+```bash
+flutter build ipa --profile --export-options-plist=ios/ExportOptions-Profile.plist
+```
+
+`ios/ExportOptions-Profile.plist` names a distribution profile for each app in
+the IPA: "PulseLink - Profile" for the iPhone app, and "PulseLink Watch App -
+Profile" for the watch app. The IPA lands in `build/ios/ipa/`.
 
 Models and states use `freezed`, which generates `*.freezed.dart` files. They're
 committed, and CI fails if they're out of date. After changing an annotated
