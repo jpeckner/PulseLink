@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- Release's launcher icon. Lint checks the debug variant, whose
+         manifest uses its own icon (ic_launcher_build; see appIcon in
+         build.gradle.kts), so to lint this one looks unused. -->
+    <issue id="UnusedResources">
+        <ignore path="src/main/res/mipmap-*/ic_launcher.png" />
+    </issue>
+</lint>

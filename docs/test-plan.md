@@ -144,7 +144,9 @@ the check says so.
 - Run the phone app from Xcode or `flutter run`. The watch app comes with
   it: the iPhone installs it on the watch, which can take a minute. If it
   doesn't appear, install it from the Watch app on the iPhone (My Watch >
-  PulseLink), or run the `PulseLinkWatch` scheme from Xcode.
+  PulseLink Debug, for a debug build), or run the `PulseLinkWatch` scheme
+  from Xcode. Each build's watch app talks only to the phone app of the
+  same build (debug, profile or release).
 - Demo mode is enough for every check except the last section.
 
 ### Live data

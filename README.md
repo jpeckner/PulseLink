@@ -65,6 +65,38 @@ it on its paired watch, which can take a minute. To run it straight away, or on
 a watch simulator paired with the iPhone simulator, run the `PulseLinkWatch`
 scheme from Xcode. It shows what the phone app shows, including demo mode.
 
+Debug, profile and release builds install side by side, on iOS, Android and
+the watch, so a release build can stay on the phone while you develop. Each
+has its own ID, name and icon background:
+
+| Build | iPhone and Android ID | Watch app ID | Name | Icon background |
+| --- | --- | --- | --- | --- |
+| Debug | `com.jpeckner.pulselink.debug` | `com.jpeckner.pulselink.debug.watchkitapp` | PulseLink Debug | Grey, `#8E8E93` |
+| Profile | `com.jpeckner.pulselink.profile` | `com.jpeckner.pulselink.profile.watchkitapp` | PulseLink Profile | Green, `#248A3D` |
+| Release | `com.jpeckner.pulselink` | `com.jpeckner.pulselink.watchkitapp` | PulseLink | White |
+
+- **iOS:** `PULSELINK_BUNDLE_ID`, `PULSELINK_DISPLAY_NAME` and
+  `PULSELINK_APP_ICON` (`AppIcon`, `AppIcon-Profile` or `AppIcon-Debug`), set
+  once per configuration at the project level in `Runner.xcodeproj`. Every target
+  builds its own from them. Apple requires the watch app's ID to start with
+  the iPhone app's, and its companion ID matches the iPhone app's, so each
+  watch app talks only to the phone app of the same build. Xcode's automatic
+  signing registers each ID with your team the first time you build that
+  configuration for a device.
+- **Android:** `applicationIdSuffix`, and `appName` and `appIcon` manifest
+  placeholders, per build type in `android/app/build.gradle.kts`. Debug and
+  Profile use an adaptive icon, `ic_launcher_build`, whose background colour
+  is in `android/app/src/debug/res` and `android/app/src/profile/res`.
+
+The Debug and Profile icons are made from the Release one. After changing the
+Release icon, or a colour in the script, regenerate them:
+
+```bash
+swift tool/make_build_icons.swift
+```
+
+To build the Profile or Release app as an IPA, see "iOS Ad Hoc builds" below.
+
 Models and states use `freezed`, which generates `*.freezed.dart` files. They're
 committed, and CI fails if they're out of date. After changing an annotated
 class:
@@ -153,6 +185,51 @@ can be built from another branch's plugin and silently lack newer rules. The
 script spots this and rebuilds it by touching the plugin's files. If an
 editor shows a rule missing, touch `tool/pulselink_lints/lib/main.dart` and
 restart the analysis server.
+
+## iOS Ad Hoc builds
+
+The Profile and Release builds can be exported as Ad Hoc IPAs, signed for the
+devices registered in their distribution profiles. Release uses Ad Hoc for now;
+App Store profiles will replace these later.
+
+Profile:
+
+```bash
+flutter build ipa --profile --export-options-plist=ios/ExportOptions-Profile.plist
+```
+
+Release:
+
+```bash
+flutter build ipa --release --export-options-plist=ios/ExportOptions-Release.plist
+```
+
+Each writes `build/ios/ipa/pulselink.ipa`, so the second build replaces the
+first; copy or rename the IPA before building the other.
+
+| Build | Export options | iPhone app profile | Watch app profile |
+| --- | --- | --- | --- |
+| Profile | `ios/ExportOptions-Profile.plist` | PulseLink - Profile | PulseLink Watch App - Profile |
+| Release | `ios/ExportOptions-Release.plist` | PulseLink | PulseLink Watch App |
+
+Before building, this Mac needs:
+
+- the "iPhone Distribution: Justin Peckner (ER3Y6PM2YR)" certificate, with
+  its private key, in the keychain;
+- the profiles above, downloaded (for example from Xcode's Settings >
+  Accounts > Download Manual Profiles). A profile's name is as shown in the
+  Apple Developer account; if one changes, update the export options file.
+
+Every device must be registered in the matching profile: the iPhone in the
+iPhone app's profile, and the paired Apple Watch in the watch app's.
+
+`flutter build ipa` exits 0 even when the export fails, so check the end of
+its output for "Built IPA"; an error there, such as a missing certificate or
+profile, means no IPA was made.
+
+To install, install the IPA on the iPhone, then install the watch app from the
+iPhone's Watch app (My Watch > Available Apps). The watch can't install the IPA
+directly: it reports that the app isn't made for it.
 
 ## Text and translations
 
