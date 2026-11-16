@@ -167,6 +167,45 @@ void main() {
       });
     });
 
+    test('sends no strap as not simulated, then a strap once one is '
+        'picked', () {
+      return _atNow(() async {
+        final heartRate = _FakeHeartRate(const LiveHeartRateState.noStrap());
+        final sync = syncOf(heartRate)..start();
+        heartRate
+          ..emit(const LiveHeartRateState.waiting(isSimulated: false))
+          ..emit(
+            LiveHeartRateState.reading(
+              sample: _measured,
+              isStale: false,
+              isSimulated: false,
+            ),
+          );
+        await _settle();
+
+        final expected = [
+          _snapshot(
+            status: const WatchHeartRateStatus.noStrap(),
+            latestReading: null,
+            isSimulated: false,
+          ),
+          _snapshot(
+            status: const WatchHeartRateStatus.waiting(),
+            latestReading: null,
+            isSimulated: false,
+          ),
+          _snapshot(
+            status: const WatchHeartRateStatus.receiving(),
+            latestReading: _measured,
+            isSimulated: false,
+          ),
+        ];
+        expect(bridge.liveSnapshots, expected);
+        expect(bridge.contexts, expected);
+        await sync.close();
+      });
+    });
+
     test('keeps the last reading while waiting again', () {
       return _atNow(() async {
         final heartRate = _FakeHeartRate(

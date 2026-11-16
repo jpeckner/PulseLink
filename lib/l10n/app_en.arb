@@ -40,6 +40,19 @@
     }
   },
 
+  "noStrapTitle": "No strap connected",
+  "@noStrapTitle": {
+    "description": "Shown at launch, before a heart-rate strap has been picked."
+  },
+  "noStrapDetail": "Find your heart-rate strap to see your heart rate.",
+  "@noStrapDetail": {
+    "description": "Under 'No strap connected': what to do next."
+  },
+  "findStrapButton": "Find strap",
+  "@findStrapButton": {
+    "description": "Button under 'No strap connected' that opens the strap picker."
+  },
+
   "waitingForData": "Waiting for heart-rate data…",
   "@waitingForData": {
     "description": "Shown under the empty readout until the first heart-rate reading arrives."

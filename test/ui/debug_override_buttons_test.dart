@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/blocs/debug_override/debug_override_cubit.dart';
+import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/data/debug_override_strap_data_source.dart';
 import 'package:pulselink/ui/debug/debug_override_buttons.dart';
 
@@ -13,25 +14,59 @@ void main() {
   group('DebugOverrideButtons', () {
     late DebugOverrideStrapDataSource source;
     late DebugOverrideCubit cubit;
+    late int toggles;
 
     setUp(() {
       source = DebugOverrideStrapDataSource(StubStrapDataSource());
       cubit = DebugOverrideCubit(source: source);
+      toggles = 0;
     });
 
     tearDown(() => cubit.close());
 
-    Future<void> pumpButtons(WidgetTester tester) => tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: Padding(
-            // Same padding as the live screen.
-            padding: const EdgeInsets.all(24),
-            child: DebugOverrideButtons(cubit: cubit),
+    /// [isDemo] is whether the live heart rate's data is simulated.
+    Future<void> pumpButtons(WidgetTester tester, {bool isDemo = false}) {
+      final heartRate = LiveHeartRateCubit(
+        source: StubStrapDataSource(isSimulated: isDemo),
+      );
+      addTearDown(heartRate.close);
+      return tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Padding(
+              // Same padding as the live screen.
+              padding: const EdgeInsets.all(24),
+              child: DebugOverrideButtons(
+                cubit: cubit,
+                heartRate: heartRate,
+                onToggleDemoData: () => toggles++,
+              ),
+            ),
           ),
         ),
-      ),
-    );
+      );
+    }
+
+    testWidgets('the first button says which data is shown, and toggles '
+        'it', (tester) async {
+      cubit.toggleVisibility();
+      await pumpButtons(tester);
+      final buttons = find.byType(OutlinedButton);
+      expect(buttons, findsNWidgets(3));
+      expect(
+        find.descendant(
+          of: buttons.first,
+          matching: find.text('Data: Real strap'),
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Data: Real strap'));
+      expect(toggles, 1);
+
+      await pumpButtons(tester, isDemo: true);
+      expect(find.text('Data: Demo'), findsOneWidget);
+    });
 
     testWidgets('are hidden until revealed', (tester) async {
       await pumpButtons(tester);
@@ -101,7 +136,7 @@ void main() {
     testWidgets('disappear when hidden again', (tester) async {
       cubit.toggleVisibility();
       await pumpButtons(tester);
-      expect(find.byType(OutlinedButton), findsNWidgets(2));
+      expect(find.byType(OutlinedButton), findsNWidgets(3));
 
       cubit.toggleVisibility();
       await tester.pump();

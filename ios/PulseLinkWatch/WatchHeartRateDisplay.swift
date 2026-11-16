@@ -50,9 +50,10 @@ struct WatchHeartRateDisplay: Equatable {
     switch snapshot.status {
     case .receiving:
       isCurrent = !isStale
-    case .waiting, .failed:
+    case .noStrap, .waiting, .failed:
       // The phone has had no reading since it started waiting or failed,
-      // so the last one isn't current however recent it is.
+      // or has no strap at all, so the last one isn't current however
+      // recent it is.
       isCurrent = false
     }
 
@@ -64,6 +65,8 @@ struct WatchHeartRateDisplay: Equatable {
     }
 
     switch snapshot.status {
+    case .noStrap:
+      status = .noStrap
     case .waiting:
       status = .waiting(lastReadingAt: reading?.measuredAt)
     case .failed(let failure):
@@ -109,6 +112,9 @@ enum WatchReadout: Equatable {
 enum WatchStatus: Equatable {
   /// No snapshot has ever arrived from the phone.
   case noSnapshotYet
+
+  /// No strap has been picked on the phone.
+  case noStrap
 
   /// The phone is starting up or connecting to the strap.
   case waiting(lastReadingAt: Date?)

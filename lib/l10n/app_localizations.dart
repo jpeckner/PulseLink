@@ -136,6 +136,24 @@ abstract class AppLocalizations {
   /// **'Strap battery {percent} percent, low'**
   String batteryLowLabel(int percent);
 
+  /// Shown at launch, before a heart-rate strap has been picked.
+  ///
+  /// In en, this message translates to:
+  /// **'No strap connected'**
+  String get noStrapTitle;
+
+  /// Under 'No strap connected': what to do next.
+  ///
+  /// In en, this message translates to:
+  /// **'Find your heart-rate strap to see your heart rate.'**
+  String get noStrapDetail;
+
+  /// Button under 'No strap connected' that opens the strap picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Find strap'**
+  String get findStrapButton;
+
   /// Shown under the empty readout until the first heart-rate reading arrives.
   ///
   /// In en, this message translates to:

@@ -100,7 +100,11 @@ void main() {
           strapScanner: StubStrapScanner(),
           appSettings: StubAppSettings(),
           onStrapSelected: (_) {},
-          debugControls: DebugOverrideButtons(cubit: overrideCubit),
+          debugControls: DebugOverrideButtons(
+            cubit: overrideCubit,
+            heartRate: cubit,
+            onToggleDemoData: () {},
+          ),
           onTitleLongPress: overrideCubit.toggleVisibility,
         ),
       );

@@ -10,6 +10,10 @@ import 'package:pulselink/domain/strap_connection_failure.dart';
 
 /// Simulated heart rate for demo mode, screenshots and tests.
 ///
+/// Debug-only: only debug and profile builds can switch to it, and release
+/// builds never contain it, which the pre-merge release-binary check proves.
+/// Release builds show heart rate from a real strap only.
+///
 /// Emits one sample per [interval]. The bpm drifts smoothly toward a target
 /// that changes every so often, like effort changing during a workout, with a
 /// little beat-to-beat noise, always between [minBeatsPerMinute] and

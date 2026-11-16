@@ -139,7 +139,8 @@ struct HeartRateSnapshotFromPigeonTests {
   }
 
   @Test
-  func convertsWaitingAndReceiving() {
+  func convertsNoStrapWaitingAndReceiving() {
+    #expect(HeartRateSnapshot(pigeonSnapshot(status: WatchNoStrap()))?.status == .noStrap)
     #expect(HeartRateSnapshot(pigeonSnapshot(status: WatchWaiting()))?.status == .waiting)
     #expect(HeartRateSnapshot(pigeonSnapshot(status: WatchReceiving()))?.status == .receiving)
   }

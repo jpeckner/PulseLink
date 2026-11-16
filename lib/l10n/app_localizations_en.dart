@@ -38,6 +38,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get noStrapTitle => 'No strap connected';
+
+  @override
+  String get noStrapDetail =>
+      'Find your heart-rate strap to see your heart rate.';
+
+  @override
+  String get findStrapButton => 'Find strap';
+
+  @override
   String get waitingForData => 'Waiting for heart-rate data…';
 
   @override

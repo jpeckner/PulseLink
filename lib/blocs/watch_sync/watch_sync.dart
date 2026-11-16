@@ -89,6 +89,8 @@ class WatchSync {
 
     final WatchHeartRateStatus status;
     switch (state) {
+      case LiveHeartRateNoStrap():
+        status = const WatchHeartRateStatus.noStrap();
       case LiveHeartRateWaiting():
         status = const WatchHeartRateStatus.waiting();
       case LiveHeartRateReading(:final sample):

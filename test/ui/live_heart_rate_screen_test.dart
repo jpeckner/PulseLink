@@ -97,6 +97,44 @@ void main() {
       expect(find.text(english.disclaimer), findsOneWidget);
     });
 
+    group('no strap', () {
+      Future<void> pumpNoStrap(WidgetTester tester) {
+        when(() => cubit.state).thenReturn(const LiveHeartRateState.noStrap());
+        return tester.pumpWidget(
+          MaterialApp(
+            home: LiveHeartRateScreen(
+              cubit: cubit,
+              batteryCubit: battery,
+              appSettings: settings,
+              buildStrapPicker: (_) => const Text('strap picker'),
+              onStrapSelected: _noSelection,
+            ),
+          ),
+        );
+      }
+
+      testWidgets('asks for a strap, with no reading and no Demo badge', (
+        tester,
+      ) async {
+        await pumpNoStrap(tester);
+        expect(find.text(english.noStrapTitle), findsOneWidget);
+        expect(find.text(english.noStrapDetail), findsOneWidget);
+        expect(find.text('--'), findsNothing);
+        expect(find.text(english.demoBadge), findsNothing);
+      });
+
+      testWidgets('its Find strap button opens the strap picker', (
+        tester,
+      ) async {
+        await pumpNoStrap(tester);
+        await tester.tap(
+          find.widgetWithText(FilledButton, english.findStrapButton),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('strap picker'), findsOneWidget);
+      });
+    });
+
     group('waiting', () {
       testWidgets('shows no number and says it is waiting', (tester) async {
         await pumpScreen(

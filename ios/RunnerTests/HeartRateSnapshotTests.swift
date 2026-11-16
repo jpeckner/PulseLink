@@ -97,7 +97,8 @@ struct HeartRateSnapshotEncodingTests {
   }
 
   @Test(arguments: [
-    HeartRateStatus.waiting,
+    HeartRateStatus.noStrap,
+    .waiting,
     .receiving,
     .failed(.bluetooth(.off)),
     .failed(.bluetooth(.unavailable)),

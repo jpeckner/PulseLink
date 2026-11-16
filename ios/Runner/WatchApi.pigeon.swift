@@ -331,6 +331,38 @@ struct WatchFailed: WatchHeartRateStatus, Hashable, CustomStringConvertible {
   }
 }
 
+/// No strap has been picked on the phone.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct WatchNoStrap: WatchHeartRateStatus, Hashable, CustomStringConvertible {
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> WatchNoStrap? {
+
+    return WatchNoStrap(
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+    ]
+  }
+  static func == (lhs: WatchNoStrap, rhs: WatchNoStrap) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return true
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("WatchNoStrap")
+  }
+
+  public var description: String {
+    return "WatchNoStrap()"
+  }
+}
+
 /// One heart-rate sample, stamped with when it was measured.
 ///
 /// Generated class from Pigeon that represents data sent in messages.
@@ -515,10 +547,12 @@ private class WatchPigeonCodecReader: FlutterStandardReader {
     case 135:
       return WatchFailed.fromList(self.readValue() as! [Any?])
     case 136:
-      return WatchMeasuredReading.fromList(self.readValue() as! [Any?])
+      return WatchNoStrap.fromList(self.readValue() as! [Any?])
     case 137:
-      return WatchUnavailableReading.fromList(self.readValue() as! [Any?])
+      return WatchMeasuredReading.fromList(self.readValue() as! [Any?])
     case 138:
+      return WatchUnavailableReading.fromList(self.readValue() as! [Any?])
+    case 139:
       return WatchHeartRateSnapshot.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
@@ -549,14 +583,17 @@ private class WatchPigeonCodecWriter: FlutterStandardWriter {
     } else if let value = value as? WatchFailed {
       super.writeByte(135)
       super.writeValue(value.toList())
-    } else if let value = value as? WatchMeasuredReading {
+    } else if let value = value as? WatchNoStrap {
       super.writeByte(136)
       super.writeValue(value.toList())
-    } else if let value = value as? WatchUnavailableReading {
+    } else if let value = value as? WatchMeasuredReading {
       super.writeByte(137)
       super.writeValue(value.toList())
-    } else if let value = value as? WatchHeartRateSnapshot {
+    } else if let value = value as? WatchUnavailableReading {
       super.writeByte(138)
+      super.writeValue(value.toList())
+    } else if let value = value as? WatchHeartRateSnapshot {
+      super.writeByte(139)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)

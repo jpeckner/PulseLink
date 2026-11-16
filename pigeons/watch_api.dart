@@ -72,6 +72,9 @@ class WatchFailed extends WatchHeartRateStatus {
   final WatchStrapFailure failure;
 }
 
+/// No strap has been picked on the phone.
+class WatchNoStrap extends WatchHeartRateStatus;
+
 /// Why a sample has no trustworthy heart rate.
 enum WatchUnavailableReason {
   /// The strap reports no skin contact.

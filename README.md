@@ -50,9 +50,13 @@ flutter pub get
 flutter run
 ```
 
-The app starts in **demo mode**: `FakeStrapDataSource` simulates a strap, and
-the screen shows a "Demo" badge. On an iPhone, tap **Find strap** to pick a real
-strap; that needs a physical phone, since BLE doesn't work in the iOS Simulator.
+The app starts with **no strap**: tap **Find strap** to pick one. On an
+iPhone, that needs a physical phone, since BLE doesn't work in the iOS
+Simulator. Every build starts on real data. Debug and profile builds can
+switch to demo data from the debug override (see "Debug tools"), where
+`FakeStrapDataSource` simulates a strap and the screen shows a "Demo" badge.
+Release builds only ever show heart rate from a real strap: demo data and the
+other debug tooling live in debug-only code, which they don't contain.
 On Android (12 or later, with Bluetooth LE), **Find strap** works the same
 way; the first scan asks for the Nearby devices permission, and the emulator
 can't reach a real strap. On both platforms, streaming stops soon after the
@@ -63,7 +67,7 @@ run on an iOS simulator: `flutter run -d <id>`, with an ID from
 `flutter devices`. The watch app comes with the iPhone app: the iPhone installs
 it on its paired watch, which can take a minute. To run it straight away, or on
 a watch simulator paired with the iPhone simulator, run the `PulseLinkWatch`
-scheme from Xcode. It shows what the phone app shows, including demo mode.
+scheme from Xcode. It shows what the phone app shows, including demo data.
 
 Debug, profile and release builds install side by side, on iOS, Android and
 the watch, so a release build can stay on the phone while you develop. Each
@@ -291,15 +295,19 @@ doesn't use App Intents, and it's harmless.
 
 ## Debug tools
 
-Debug and profile builds (never release builds) include a reading override
-for exercising the app's warning states, with demo data or a real strap:
+Debug and profile builds (never release builds) include a debug override,
+for switching to demo data and exercising the app's warning states, with demo
+data or a real strap:
 
-1. Long-press the **PulseLink** title. Two buttons appear above the
-   disclaimer. They start out matching what the strap reports, so revealing
-   them doesn't change anything on screen.
-2. **Skin-contact detection: supported / not supported** switches between a
+1. Long-press the **PulseLink** title. Three buttons appear above the
+   disclaimer. They start out matching what's on screen, so revealing them
+   doesn't change anything.
+2. **Data: Real strap / Demo** switches between real data and demo data. The
+   app always starts on real data. Switching to demo data drops any strap;
+   switching back shows "No strap connected", and **Find strap** picks one.
+3. **Skin-contact detection: supported / not supported** switches between a
    strap that can detect skin contact and one that can't.
-3. **Override: …** cycles through the conditions that kind of strap can be in:
+4. **Override: …** cycles through the conditions that kind of strap can be in:
    - Supported: **None → No data (stale) → No skin contact → Zero bpm →
      Implausible bpm**
    - Not supported: **None → No data (stale) → Zero bpm → Implausible bpm**
@@ -308,10 +316,12 @@ for exercising the app's warning states, with demo data or a real strap:
 
    No data (stale) drops samples, so "No data from strap" appears after the
    real 10-second threshold.
-4. Long-press the title again to hide the buttons and turn the override off.
+5. Long-press the title again to hide the buttons and turn the reading
+   override off. Demo data, if on, stays on until switched back.
 
-Release builds don't contain this code: it's created only in the
-non-release branch of `main()`, and because `kReleaseMode` is a compile-time
+Release builds don't contain this code: only `debugApp`
+(`lib/app/debug/debug_app.dart`) creates it, `main()` uses `debugApp` only in
+its non-release branch, and because `kReleaseMode` is a compile-time
 constant, the release compiler removes that branch.
 
 ## Commit messages

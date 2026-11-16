@@ -127,6 +127,17 @@ Before committing changes to `lib/` that add async calls, cleanup code, catch
 blocks or data-layer implementations, run the `error-handling-review` project
 skill (`.claude/skills/error-handling-review/`) and resolve its findings.
 
+## Release builds show real data only
+
+Release builds never show simulated or debug data: heart rate comes only from
+a real strap the user picks. Code that makes fake data or debug tooling, such
+as the demo source and the debug override (with its demo-data toggle), goes in
+debug-only files: named `debug_*.dart`, or in a `debug/` folder. Only
+`debugApp`, which `main()` uses when not in release mode, may reach it, so
+release builds don't contain it, and the pre-merge release-binary check
+proves that. On the watch, preview data stays inside `#if DEBUG` (see
+"SwiftUI previews").
+
 ## User-facing text
 
 User-facing text goes in `lib/l10n/app_en.arb`, never in a string literal in

@@ -56,13 +56,14 @@ extension StrapDataSourceStartResultPatterns on StrapDataSourceStartResult {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( StrapDataSourceStarted value)?  started,TResult Function( StrapDataSourceStartCancelled value)?  cancelled,TResult Function( StrapDataSourceStartFailed value)?  failed,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( StrapDataSourceStarted value)?  started,TResult Function( StrapDataSourceStartCancelled value)?  cancelled,TResult Function( StrapDataSourceStartFailed value)?  failed,TResult Function( StrapDataSourceNoStrap value)?  noStrap,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case StrapDataSourceStarted() when started != null:
 return started(_that);case StrapDataSourceStartCancelled() when cancelled != null:
 return cancelled(_that);case StrapDataSourceStartFailed() when failed != null:
-return failed(_that);case _:
+return failed(_that);case StrapDataSourceNoStrap() when noStrap != null:
+return noStrap(_that);case _:
   return orElse();
 
 }
@@ -80,13 +81,14 @@ return failed(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( StrapDataSourceStarted value)  started,required TResult Function( StrapDataSourceStartCancelled value)  cancelled,required TResult Function( StrapDataSourceStartFailed value)  failed,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( StrapDataSourceStarted value)  started,required TResult Function( StrapDataSourceStartCancelled value)  cancelled,required TResult Function( StrapDataSourceStartFailed value)  failed,required TResult Function( StrapDataSourceNoStrap value)  noStrap,}){
 final _that = this;
 switch (_that) {
 case StrapDataSourceStarted():
 return started(_that);case StrapDataSourceStartCancelled():
 return cancelled(_that);case StrapDataSourceStartFailed():
-return failed(_that);}
+return failed(_that);case StrapDataSourceNoStrap():
+return noStrap(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -100,13 +102,14 @@ return failed(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( StrapDataSourceStarted value)?  started,TResult? Function( StrapDataSourceStartCancelled value)?  cancelled,TResult? Function( StrapDataSourceStartFailed value)?  failed,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( StrapDataSourceStarted value)?  started,TResult? Function( StrapDataSourceStartCancelled value)?  cancelled,TResult? Function( StrapDataSourceStartFailed value)?  failed,TResult? Function( StrapDataSourceNoStrap value)?  noStrap,}){
 final _that = this;
 switch (_that) {
 case StrapDataSourceStarted() when started != null:
 return started(_that);case StrapDataSourceStartCancelled() when cancelled != null:
 return cancelled(_that);case StrapDataSourceStartFailed() when failed != null:
-return failed(_that);case _:
+return failed(_that);case StrapDataSourceNoStrap() when noStrap != null:
+return noStrap(_that);case _:
   return null;
 
 }
@@ -123,12 +126,13 @@ return failed(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  started,TResult Function()?  cancelled,TResult Function( StrapConnectionFailure failure)?  failed,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  started,TResult Function()?  cancelled,TResult Function( StrapConnectionFailure failure)?  failed,TResult Function()?  noStrap,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case StrapDataSourceStarted() when started != null:
 return started();case StrapDataSourceStartCancelled() when cancelled != null:
 return cancelled();case StrapDataSourceStartFailed() when failed != null:
-return failed(_that.failure);case _:
+return failed(_that.failure);case StrapDataSourceNoStrap() when noStrap != null:
+return noStrap();case _:
   return orElse();
 
 }
@@ -146,12 +150,13 @@ return failed(_that.failure);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  started,required TResult Function()  cancelled,required TResult Function( StrapConnectionFailure failure)  failed,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  started,required TResult Function()  cancelled,required TResult Function( StrapConnectionFailure failure)  failed,required TResult Function()  noStrap,}) {final _that = this;
 switch (_that) {
 case StrapDataSourceStarted():
 return started();case StrapDataSourceStartCancelled():
 return cancelled();case StrapDataSourceStartFailed():
-return failed(_that.failure);}
+return failed(_that.failure);case StrapDataSourceNoStrap():
+return noStrap();}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -165,12 +170,13 @@ return failed(_that.failure);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  started,TResult? Function()?  cancelled,TResult? Function( StrapConnectionFailure failure)?  failed,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  started,TResult? Function()?  cancelled,TResult? Function( StrapConnectionFailure failure)?  failed,TResult? Function()?  noStrap,}) {final _that = this;
 switch (_that) {
 case StrapDataSourceStarted() when started != null:
 return started();case StrapDataSourceStartCancelled() when cancelled != null:
 return cancelled();case StrapDataSourceStartFailed() when failed != null:
-return failed(_that.failure);case _:
+return failed(_that.failure);case StrapDataSourceNoStrap() when noStrap != null:
+return noStrap();case _:
   return null;
 
 }
@@ -318,5 +324,37 @@ $StrapConnectionFailureCopyWith<$Res> get failure {
   });
 }
 }
+
+/// @nodoc
+
+
+class StrapDataSourceNoStrap implements StrapDataSourceStartResult {
+  const StrapDataSourceNoStrap();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StrapDataSourceNoStrap);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+    return 'StrapDataSourceStartResult.noStrap()';
+}
+
+
+}
+
+
+
 
 // dart format on

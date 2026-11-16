@@ -96,6 +96,10 @@ class LiveHeartRateScreen extends StatelessWidget {
                     children: [
                       Center(
                         child: switch (state) {
+                          LiveHeartRateNoStrap() => _NoStrapView(
+                            // Not awaited, as for the app bar's button.
+                            onFindStrap: () => unawaited(_findStrap(context)),
+                          ),
                           LiveHeartRateWaiting() => const _WaitingView(),
                           LiveHeartRateReading(:final sample, :final isStale) =>
                             _ReadingView(sample: sample, isStale: isStale),
@@ -137,6 +141,47 @@ class LiveHeartRateScreen extends StatelessWidget {
     if (strap case final picked?) {
       onStrapSelected(picked);
     }
+  }
+}
+
+/// No strap picked yet: asks for one.
+class _NoStrapView extends StatelessWidget {
+  const new({required this.onFindStrap});
+
+  final VoidCallback onFindStrap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.monitor_heart_outlined,
+          size: 48,
+          color: theme.colorScheme.primary,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          l10n.noStrapTitle,
+          style: theme.textTheme.titleLarge,
+          textAlign: .center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          l10n.noStrapDetail,
+          style: theme.textTheme.bodyLarge,
+          textAlign: .center,
+        ),
+        const SizedBox(height: 24),
+        FilledButton.icon(
+          onPressed: onFindStrap,
+          icon: const Icon(Icons.bluetooth_searching),
+          label: Text(l10n.findStrapButton),
+        ),
+      ],
+    );
   }
 }
 
