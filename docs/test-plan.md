@@ -4,7 +4,8 @@ Checks that need a real phone and strap: BLE doesn't work in the iOS
 Simulator or the Android emulator, and these cover what unit and widget tests
 can't. Run them on a debug build (`flutter run` on a connected iPhone or
 Android phone) before merging an epic into `develop`, and note each run in
-the log at the end.
+the log at the end. The Apple Watch checks need an iPhone and its paired
+watch, but no strap: demo mode drives them.
 
 Each milestone adds its own section. Milestone 6 will add walking out of
 range and back, toggling Bluetooth while connected, backgrounding the app
@@ -134,8 +135,64 @@ the check says so.
 
 - [ ] **On a real strap:** as on iOS.
 
+## Milestone 5: Apple Watch app
+
+### Setup
+
+- An iPhone and its paired Apple Watch, with Developer Mode on in the
+  watch's Settings > Privacy & Security.
+- Run the phone app from Xcode or `flutter run`. The watch app comes with
+  it: the iPhone installs it on the watch, which can take a minute. If it
+  doesn't appear, install it from the Watch app on the iPhone (My Watch >
+  PulseLink), or run the `PulseLinkWatch` scheme from Xcode.
+- Demo mode is enough for every check except the last section.
+
+### Live data
+
+- [ ] **Live:** open the watch app with the phone app showing demo data.
+  The watch shows "Demo", the same bpm as the phone, and "Updated" with
+  the time, changing about once a second.
+- [ ] **Stale:** close the phone app. About 10 seconds after the last
+  reading, the bpm dims and the watch says "No data from strap" and "Last
+  reading" with its time.
+- [ ] **Latest state on launch:** with the phone app still closed, close and
+  reopen the watch app. It shows the same stale reading straight away, not
+  "Open PulseLink on your iPhone".
+- [ ] **Phone app back:** open the phone app again. The watch shows
+  "Waiting for heart-rate data…", then live data within a few seconds.
+
+### Reachability
+
+- [ ] **No flash:** lower your wrist, wait for the screen to dim, and raise
+  it, a few times. "iPhone not reachable" doesn't appear, even briefly.
+- [ ] **iPhone out of reach:** turn on Airplane Mode on the iPhone. About 5
+  seconds later, the watch shows "iPhone not reachable" over the last state,
+  and the reading goes stale. Turn Airplane Mode off: the banner goes and
+  live data returns.
+
+### What the phone shows, on the watch
+
+- [ ] **Debug override:** on the phone, long-press the title and step
+  through the overrides. Within a second or two, the watch shows the match:
+  "No skin contact", "Strap connected, no heart rate yet" (0 bpm), "Strap
+  reading out of range", or a stale reading for no data. **None** brings
+  back the live bpm.
+- [ ] **With a strap:** pick a strap on the phone. The watch's "Demo" tag
+  goes, and it shows the strap's bpm. Take the strap's battery out: the
+  watch shows "Strap disconnected" with the last reading dimmed.
+
+### Known issue
+
+Installing a new build of the iPhone app from Xcode can remove the watch
+app from the watch. Not yet explained: the builds embed the watch app
+correctly, signed, with matching versions. Tabled for now. When it happens,
+note whether it comes back by itself, and whether the Watch app on the
+iPhone shows PulseLink with an Install button.
+
 ## Run log
 
 | Date | Build (commit) | Phone and OS | Strap | Result |
 | --- | --- | --- | --- | --- |
 | 2026-11-15 | 68e2e19 (Milestone 4 epic plus the shelved background branch) | Samsung Galaxy A36 5G, Android 16 | COOSPO Armband Heart Rate Monitor | Pass: scanning, connecting, live bpm, battery and background streaming, checked before this checklist was written |
+| 2026-11-15 | 6b4f5e5 (Milestone 5 epic) | iPhone 17 Pro Max, iOS 27.0.1, with Apple Watch Series 9, watchOS 27.0.1 | None (demo mode) | Pass, except that "iPhone not reachable" flashed each time the wrist was raised; checked before this checklist was written |
+| 2026-11-15 | 4877cf4 (the reachability fix) | iPhone 17 Pro Max, iOS 27.0.1, with Apple Watch Series 9, watchOS 27.0.1 | None (demo mode) | Pass: no flash on raising the wrist |
