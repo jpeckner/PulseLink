@@ -104,7 +104,9 @@ Lints come from `very_good_analysis`, plus
 A few more built-in lints bring it closer to Swift's compile-time checks:
 `unsafe_variance`, `close_sinks`, `unreachable_from_main`,
 `avoid_implementing_value_types` and `prefer_void_to_null`.
-`analysis_options.yaml` says why each is on.
+`analysis_options.yaml` says why each is on, and
+[docs/swift-vs-dart-safety.md](docs/swift-vs-dart-safety.md) lists each place
+Swift is safer than Dart and how the project makes up for it.
 
 `flutter analyze` also runs the project's own lint rules from
 `tool/pulselink_lints`, an analyzer plugin enabled in `analysis_options.yaml`
