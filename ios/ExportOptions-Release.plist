@@ -27,9 +27,9 @@
 	<key>provisioningProfiles</key>
 	<dict>
 		<key>com.jpeckner.pulselink</key>
-		<string>PulseLink - Release</string>
+		<string>PulseLink</string>
 		<key>com.jpeckner.pulselink.watchkitapp</key>
-		<string>PulseLink Watch App - Release</string>
+		<string>PulseLink Watch App</string>
 	</dict>
 </dict>
 </plist>

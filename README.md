@@ -95,29 +95,7 @@ Release icon, or a colour in the script, regenerate them:
 swift tool/make_build_icons.swift
 ```
 
-To export the Profile build as an Ad Hoc IPA, for the devices registered in
-its distribution profiles:
-
-```bash
-flutter build ipa --profile --export-options-plist=ios/ExportOptions-Profile.plist
-```
-
-`ios/ExportOptions-Profile.plist` names a distribution profile for each app in
-the IPA: "PulseLink - Profile" for the iPhone app, and "PulseLink Watch App -
-Profile" for the watch app. The IPA lands in `build/ios/ipa/`.
-
-The Release build exports the same way, for now also as Ad Hoc, with
-`ios/ExportOptions-Release.plist` and the profiles "PulseLink - Release" and
-"PulseLink Watch App - Release":
-
-```bash
-flutter build ipa --release --export-options-plist=ios/ExportOptions-Release.plist
-```
-
-App Store profiles will replace these later. To install either IPA, install it
-on the iPhone; then install the watch app from the iPhone's Watch app (My
-Watch > Available Apps). The watch can't install the IPA directly. Check the
-end of the output: `flutter build ipa` exits 0 even when the export fails.
+To build the Profile or Release app as an IPA, see "iOS Ad Hoc builds" below.
 
 Models and states use `freezed`, which generates `*.freezed.dart` files. They're
 committed, and CI fails if they're out of date. After changing an annotated
@@ -207,6 +185,51 @@ can be built from another branch's plugin and silently lack newer rules. The
 script spots this and rebuilds it by touching the plugin's files. If an
 editor shows a rule missing, touch `tool/pulselink_lints/lib/main.dart` and
 restart the analysis server.
+
+## iOS Ad Hoc builds
+
+The Profile and Release builds can be exported as Ad Hoc IPAs, signed for the
+devices registered in their distribution profiles. Release uses Ad Hoc for now;
+App Store profiles will replace these later.
+
+Profile:
+
+```bash
+flutter build ipa --profile --export-options-plist=ios/ExportOptions-Profile.plist
+```
+
+Release:
+
+```bash
+flutter build ipa --release --export-options-plist=ios/ExportOptions-Release.plist
+```
+
+Each writes `build/ios/ipa/pulselink.ipa`, so the second build replaces the
+first; copy or rename the IPA before building the other.
+
+| Build | Export options | iPhone app profile | Watch app profile |
+| --- | --- | --- | --- |
+| Profile | `ios/ExportOptions-Profile.plist` | PulseLink - Profile | PulseLink Watch App - Profile |
+| Release | `ios/ExportOptions-Release.plist` | PulseLink | PulseLink Watch App |
+
+Before building, this Mac needs:
+
+- the "iPhone Distribution: Justin Peckner (ER3Y6PM2YR)" certificate, with
+  its private key, in the keychain;
+- the profiles above, downloaded (for example from Xcode's Settings >
+  Accounts > Download Manual Profiles). A profile's name is as shown in the
+  Apple Developer account; if one changes, update the export options file.
+
+Every device must be registered in the matching profile: the iPhone in the
+iPhone app's profile, and the paired Apple Watch in the watch app's.
+
+`flutter build ipa` exits 0 even when the export fails, so check the end of
+its output for "Built IPA"; an error there, such as a missing certificate or
+profile, means no IPA was made.
+
+To install, install the IPA on the iPhone, then install the watch app from the
+iPhone's Watch app (My Watch > Available Apps). The watch can't install the IPA
+directly: it reports that the app isn't made for it.
 
 ## Text and translations
 
