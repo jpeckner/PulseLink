@@ -10,12 +10,12 @@ import 'package:pulselink/data/debug/fake_strap_data_source.dart';
 import 'package:pulselink/data/debug_override_strap_data_source.dart';
 import 'package:pulselink/data/switchable_strap_data_source.dart';
 import 'package:pulselink/ui/debug/debug_override_buttons.dart';
-import 'package:pulselink/ui/debug/demo_data_button.dart';
 
 /// The debug and profile app: the release app (see `releaseApp`), plus
-/// debug tooling. It also starts with no strap, and adds a button to switch
-/// to demo data instead of picking one, and the debug override, which
-/// fakes strap conditions on top of either.
+/// debug tooling. It also starts with no strap, on real data. Long-pressing
+/// the title shows the debug override buttons: the first switches between
+/// demo data and real data, and the others fake strap conditions on top of
+/// either.
 ///
 /// Debug-only: main() uses it only when not in release mode, so release
 /// builds contain neither it nor anything only it uses.
@@ -40,11 +40,17 @@ Widget debugApp(AppPlatform platform) {
     appSettings: platform.appSettings,
     // Not awaited; see releaseApp.
     onStrapSelected: (strap) => unawaited(selection.select(strap)),
-    debugControls: DebugOverrideButtons(cubit: overrideCubit),
-    onTitleLongPress: overrideCubit.toggleVisibility,
-    // Not awaited, as for picking a strap.
-    noStrapDebugAction: DemoDataButton(
-      onPressed: () => unawaited(selection.use(FakeStrapDataSource())),
+    debugControls: DebugOverrideButtons(
+      cubit: overrideCubit,
+      heartRate: cubit,
+      // Not awaited, as for picking a strap. Real data means no strap until
+      // one is picked, as at launch.
+      onToggleDemoData: () => unawaited(
+        source.isSimulated
+            ? selection.clear()
+            : selection.use(FakeStrapDataSource()),
+      ),
     ),
+    onTitleLongPress: overrideCubit.toggleVisibility,
   );
 }

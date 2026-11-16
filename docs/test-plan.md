@@ -5,8 +5,8 @@ Simulator or the Android emulator, and these cover what unit and widget tests
 can't. Run them on a debug build (`flutter run` on a connected iPhone or
 Android phone) before merging an epic into `develop`, and note each run in
 the log at the end. The Apple Watch checks need an iPhone and its paired
-watch, but no strap: demo data (Use demo data, in a debug build) drives
-them.
+watch, but no strap: demo data (from the debug override, in a debug build)
+drives them.
 
 Each milestone adds its own section. Milestone 6 will add walking out of
 range and back, toggling Bluetooth while connected, backgrounding the app
@@ -27,10 +27,12 @@ and reopening it.
 
 ### Launch and demo data
 
-- [ ] **Launch:** the app opens on "No strap connected", with a **Find
-  strap** button and, in a debug build, **Use demo data** under it.
-- [ ] **Demo data:** tap **Use demo data**. The screen shows a "Demo" badge,
-  a moving bpm, the update time, and an 80% battery in the app bar.
+- [ ] **Launch:** the app opens on real data: "No strap connected", with a
+  **Find strap** button.
+- [ ] **Demo data:** long-press the title, then tap **Data: Real strap**,
+  the first of three buttons. The screen shows a "Demo" badge, a moving bpm,
+  the update time, and an 80% battery in the app bar, and the button reads
+  **Data: Demo**. Tap it again: back to "No strap connected".
 
 ### Finding a strap
 
@@ -153,8 +155,8 @@ the check says so.
   PulseLink Debug, for a debug build), or run the `PulseLinkWatch` scheme
   from Xcode. Each build's watch app talks only to the phone app of the
   same build (debug, profile or release).
-- Demo data is enough for every check except the last section: tap **Use
-  demo data** on the phone first.
+- Demo data is enough for every check except the last section: switch to
+  it on the phone first (long-press the title, then **Data: Real strap**).
 
 ### Live data
 
@@ -205,9 +207,9 @@ Release builds never show simulated or debug data. Install a Release build
 Android) and check:
 
 - [ ] **No demo data:** the app opens on "No strap connected", with a
-  **Find strap** button and no **Use demo data** button.
+  **Find strap** button.
 - [ ] **No debug override:** long-pressing the title shows no override
-  buttons.
+  buttons, so there's no way to switch to demo data.
 - [ ] **Watch:** with the iPhone app open, the watch shows "No strap
   connected" and "Pick one in PulseLink on your iPhone", with no "Demo" tag.
 - [ ] **A real strap:** pick a strap. A live bpm arrives, on the phone and

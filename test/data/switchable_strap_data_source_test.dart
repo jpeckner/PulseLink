@@ -246,6 +246,34 @@ void main() {
       await expectLater(source.samples, emitsDone);
     });
 
+    test('clearing goes back to no source, disposing the current one, and '
+        'stops passing it on', () async {
+      final demo = StubStrapDataSource(isSimulated: true);
+      final samples = <HeartRateSample>[];
+      final levels = <BatteryLevel?>[];
+      source.samples.listen(samples.add);
+      source.batteryLevel.listen(levels.add);
+      await source.switchTo(demo);
+      expect(source.isSimulated, isTrue);
+
+      await source.clear();
+      expect(demo.isDisposed, isTrue);
+      expect(demo.hasListener, isFalse);
+      expect(source.isSimulated, isFalse);
+      expect(await source.start(), const StrapDataSourceStartResult.noStrap());
+      expect(samples, isEmpty);
+      expect(levels.last, isNull);
+    });
+
+    test('clearing after dispose does nothing', () async {
+      await source.dispose();
+      await source.clear();
+      expect(
+        await source.start(),
+        const StrapDataSourceStartResult.cancelled(),
+      );
+    });
+
     test('disposing after a switch disposes the source', () async {
       final strap = StubStrapDataSource();
       await source.switchTo(strap);

@@ -82,6 +82,22 @@ class SwitchableStrapDataSource implements StrapDataSource {
       await next.dispose();
       return;
     }
+    await _replace(next);
+  }
+
+  /// Goes back to no source, as at launch, and disposes the current one:
+  /// [start] then reports [StrapDataSourceNoStrap] until [switchTo] gives it
+  /// another. Does nothing after [dispose].
+  Future<void> clear() async {
+    if (_isDisposed) {
+      return;
+    }
+    await _replace(null);
+  }
+
+  /// Makes [next] current, or none if it's null, and disposes the previous
+  /// source.
+  Future<void> _replace(StrapDataSource? next) async {
     final previous = _current;
     // Cancelled and replaced before awaiting, so nothing from the previous
     // source is passed on after this call.
@@ -91,9 +107,9 @@ class SwitchableStrapDataSource implements StrapDataSource {
       ?_forwardingBattery?.cancel(),
     ];
     _current = next;
-    _forwarding = next.samples.listen(_samples.add);
-    _forwardingLost = next.connectionLost.listen(_connectionLost.add);
-    _forwardingBattery = next.batteryLevel.listen(_batteryLevel.add);
+    _forwarding = next?.samples.listen(_samples.add);
+    _forwardingLost = next?.connectionLost.listen(_connectionLost.add);
+    _forwardingBattery = next?.batteryLevel.listen(_batteryLevel.add);
     // The previous source's level no longer applies.
     _batteryLevel.add(null);
     try {

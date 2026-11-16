@@ -1,7 +1,8 @@
 # PulseLink architecture
 
 How the phone app, the Apple Watch app and the link between them fit
-together, as of Milestone 5. Update it when a milestone changes a component
+together, as of Milestone 5, plus the no-strap start and debug-only demo
+data that came after it. Update it when a milestone changes a component
 or a message; Milestone 6 will add the connection state machine, and
 Milestone 8 the watch's start and stop commands.
 
@@ -20,13 +21,13 @@ fake.
 
 ```mermaid
 flowchart TB
-  subgraph ROOT["Composition root · lib/main.dart"]
-    main["main()<br/>initializes the Flutter binding,<br/>builds every object below and<br/>passes it in through constructors"]
+  subgraph ROOT["Composition root · lib/main.dart, lib/app/composition.dart"]
+    main["main() + releaseApp / debugApp<br/>initializes the Flutter binding,<br/>builds every object below and<br/>passes it in through constructors"]
   end
 
   subgraph UI["Widgets · lib/app, lib/ui"]
     app["PulseLinkApp<br/>MaterialApp"]
-    live["LiveHeartRateScreen<br/>bpm readout · Updated or stale<br/>skin-contact chip · battery · Demo badge"]
+    live["LiveHeartRateScreen<br/>No strap connected · Find strap<br/>bpm readout · Updated or stale<br/>skin-contact chip · battery · Demo badge"]
     problem["ProblemView<br/>why there's no heart rate,<br/>Try again · Open Settings"]
     disclaimer["DisclaimerBanner<br/>not a medical device"]
     picker["StrapPickerScreen<br/>owns a StrapPickerCubit"]
@@ -36,12 +37,12 @@ flowchart TB
     lhr["LiveHeartRateCubit<br/>noStrap · waiting · reading with isStale · connectionFailed<br/>stale 10 s after the sample's timestamp"]
     battery["StrapBatteryCubit<br/>BatteryLevel or unknown"]
     pickerCubit["StrapPickerCubit<br/>scanning with straps found · failed"]
-    selection["StrapSelection<br/>switches to the picked strap,<br/>restarts the live cubit"]
+    selection["StrapSelection<br/>switches to the picked strap,<br/>or back to no strap,<br/>restarts the live cubit"]
     sync["WatchSync<br/>iOS only · not a Cubit<br/>sends each change to the watch"]
   end
 
   subgraph DATA["Data · lib/data, behind interfaces"]
-    switchable["SwitchableStrapDataSource<br/>StrapDataSource: owns the current source"]
+    switchable["SwitchableStrapDataSource<br/>StrapDataSource: owns the current source,<br/>none at launch"]
     ble["BleStrapDataSource<br/>StrapDataSource: a real strap<br/>HeartRateMeasurementParser reads 0x2A37"]
     scanner["BleStrapScanner<br/>StrapScanner"]
     settings["PlatformAppSettings<br/>AppSettings"]
@@ -83,12 +84,13 @@ flowchart TB
   settingsApi --> native
   watchApi --> native
 
-  fake["FakeStrapDataSource<br/>debug and profile builds: demo data,<br/>after tapping Use demo data"]:::swap
+  fake["FakeStrapDataSource<br/>debug and profile builds: demo data,<br/>from the override's data toggle"]:::swap
   override["DebugOverrideStrapDataSource<br/>debug and profile builds: wraps the<br/>switchable source to fake readings"]:::swap
-  overrideUi["DebugOverrideCubit + DebugOverrideButtons<br/>debug and profile builds: long-press the title"]:::swap
+  overrideUi["DebugOverrideCubit + DebugOverrideButtons<br/>debug and profile builds: long-press the title<br/>data toggle · skin contact · condition"]:::swap
   fake -. "swap-in" .-> switchable
   override -. "wraps" .-> switchable
   overrideUi -. "drives" .-> override
+  overrideUi -. "data toggle: demo data or no strap" .-> selection
   overrideUi -. "shown on" .-> live
 
   classDef swap stroke:#c77d12,stroke-width:2px,stroke-dasharray:6 4
@@ -101,7 +103,7 @@ flowchart TB
 | Widgets | `StrapPickerScreen` | Lists straps while scanning. Its `BlocProvider` creates the picker cubit and closes it with the screen. |
 | State | `LiveHeartRateCubit` | Turns the source's samples, failures and connection drops into screen state. A timer marks a reading stale 10 seconds after its timestamp. |
 | State | `StrapBatteryCubit` | The strap's battery level, kept apart so a battery update doesn't redraw the readout. |
-| State | `StrapSelection` | Switches the switchable source to the picked strap (or, in debug and profile builds, to demo data), then restarts the live cubit. |
+| State | `StrapSelection` | Switches the switchable source to the picked strap, back to no strap (`clear`), or, in debug and profile builds, to demo data, then restarts the live cubit. |
 | State | `WatchSync` | Sends a snapshot of the live state to the watch at start and on each change (section 3). |
 | Data | `SwitchableStrapDataSource` | Owns whichever `StrapDataSource` is current, so the cubits never change source themselves. Starts with none, reporting no strap until one is picked. |
 | Data | `BleStrapDataSource` | The strap through `ble_api`. Parses raw Heart Rate Measurement bytes in exactly one place. Expected failures come back as typed results, never exceptions. |
@@ -113,7 +115,7 @@ flowchart TB
 | --- | --- | --- |
 | `StrapDataSource` (current source) | none at launch, then `BleStrapDataSource` | `FakeStrapDataSource`, demo data in debug and profile builds only (`lib/data/debug/`). Tests: `StubStrapDataSource`, `FailingStrapDataSource`. |
 | `StrapDataSource` (what the cubits see) | `SwitchableStrapDataSource` | `DebugOverrideStrapDataSource` wraps it in debug and profile builds, to fake skin contact, a bpm of 0, an implausible bpm or no data on demand. |
-| Debug controls | none in release | `DebugOverrideCubit` and `DebugOverrideButtons`, shown by long-pressing the title, and `DemoDataButton` under Find strap. `kReleaseMode` leaves them, and demo data, out of release builds, and the pre-merge checks look for them in the binaries. |
+| Debug controls | none in release | `DebugOverrideCubit` and `DebugOverrideButtons`, shown by long-pressing the title; the first button switches between demo data and real data. `kReleaseMode` leaves them, and demo data, out of release builds, and the pre-merge checks look for them in the binaries. |
 | `StrapScanner` | `BleStrapScanner` | Tests: `StubStrapScanner`. |
 | `AppSettings` | `PlatformAppSettings` | Tests: `StubAppSettings`. |
 | `WatchBridge` | `PigeonWatchBridge` | Tests: `FakeWatchBridge`, which records snapshots and can fail before or after returning a future. |

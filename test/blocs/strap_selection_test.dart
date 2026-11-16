@@ -61,6 +61,12 @@ void main() {
       expect(cubit.state, const LiveHeartRateState.waiting(isSimulated: true));
     });
 
+    test('clear goes back to no strap, disposing the current source', () async {
+      await selection.clear();
+      expect(demo.isDisposed, isTrue);
+      expect(cubit.state, const LiveHeartRateState.noStrap());
+    });
+
     test('still switches and starts if disposing demo mode fails, and '
         'reports the failure', () async {
       final failure = Exception('dispose failed');

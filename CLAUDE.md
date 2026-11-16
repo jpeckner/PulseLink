@@ -131,7 +131,7 @@ skill (`.claude/skills/error-handling-review/`) and resolve its findings.
 
 Release builds never show simulated or debug data: heart rate comes only from
 a real strap the user picks. Code that makes fake data or debug tooling, such
-as the demo source, the demo button and the debug override, goes in
+as the demo source and the debug override (with its demo-data toggle), goes in
 debug-only files: named `debug_*.dart`, or in a `debug/` folder. Only
 `debugApp`, which `main()` uses when not in release mode, may reach it, so
 release builds don't contain it, and the pre-merge release-binary check

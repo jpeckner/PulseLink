@@ -98,7 +98,7 @@ void main() {
     });
 
     group('no strap', () {
-      Future<void> pumpNoStrap(WidgetTester tester, {Widget? debugAction}) {
+      Future<void> pumpNoStrap(WidgetTester tester) {
         when(() => cubit.state).thenReturn(const LiveHeartRateState.noStrap());
         return tester.pumpWidget(
           MaterialApp(
@@ -108,7 +108,6 @@ void main() {
               appSettings: settings,
               buildStrapPicker: (_) => const Text('strap picker'),
               onStrapSelected: _noSelection,
-              noStrapDebugAction: debugAction,
             ),
           ),
         );
@@ -133,16 +132,6 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(find.text('strap picker'), findsOneWidget);
-      });
-
-      testWidgets('shows a debug action only when one is given', (
-        tester,
-      ) async {
-        await pumpNoStrap(tester);
-        expect(find.text('debug action'), findsNothing);
-
-        await pumpNoStrap(tester, debugAction: const Text('debug action'));
-        expect(find.text('debug action'), findsOneWidget);
       });
     });
 

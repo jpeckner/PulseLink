@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/app/composition.dart';
 import 'package:pulselink/app/debug/debug_app.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
@@ -61,27 +62,75 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('starts with no strap, offering demo data', (tester) async {
+    /// Shows the debug override buttons, by long-pressing the title.
+    Future<void> showOverride(WidgetTester tester) async {
+      await tester.longPress(find.text(english.appTitle));
+      await tester.pump();
+    }
+
+    testWidgets('starts on real data, with no strap and no demo data', (
+      tester,
+    ) async {
       await pumpDebugApp(tester);
 
       expect(find.text(english.noStrapTitle), findsOneWidget);
-      expect(find.text('Use demo data'), findsOneWidget);
       expect(find.text(english.demoBadge), findsNothing);
+      expect(find.text('Use demo data'), findsNothing);
       expect(watch.contexts.last.status, const WatchHeartRateStatus.noStrap());
+      expect(watch.contexts.last.isSimulated, isFalse);
     });
 
-    testWidgets('demo data shows simulated readings, until a strap is '
-        'picked in its place', (tester) async {
+    testWidgets('long-pressing the title shows the three override buttons, '
+        'the data toggle first', (tester) async {
       await pumpDebugApp(tester);
+      await showOverride(tester);
 
-      await tester.tap(find.text('Use demo data'));
+      final buttons = find.byType(OutlinedButton);
+      expect(buttons, findsNWidgets(3));
+      expect(
+        find.descendant(
+          of: buttons.first,
+          matching: find.text('Data: Real strap'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Skin-contact detection'), findsOneWidget);
+      expect(find.textContaining('Override:'), findsOneWidget);
+    });
+
+    testWidgets('the data toggle switches to demo data, and back to no '
+        'strap', (tester) async {
+      await pumpDebugApp(tester);
+      await showOverride(tester);
+
+      await tester.tap(find.text('Data: Real strap'));
       await tester.pump();
       // The demo source sends a reading a second.
       await tester.pump(const Duration(seconds: 1));
       expect(find.text(english.demoBadge), findsOneWidget);
       expect(find.text(english.noStrapTitle), findsNothing);
       expect(find.text(english.beatsPerMinuteUnit), findsOneWidget);
+      expect(find.text('Data: Demo'), findsOneWidget);
       expect(watch.contexts.last.isSimulated, isTrue);
+
+      // Back to real data: no strap, as at launch. Disposing the demo
+      // source stops its timer.
+      await tester.tap(find.text('Data: Demo'));
+      await settleSwitch(tester);
+      expect(find.text(english.noStrapTitle), findsOneWidget);
+      expect(find.text(english.demoBadge), findsNothing);
+      expect(find.text('Data: Real strap'), findsOneWidget);
+      expect(watch.contexts.last.status, const WatchHeartRateStatus.noStrap());
+      expect(watch.contexts.last.isSimulated, isFalse);
+    });
+
+    testWidgets('picking a strap replaces demo data', (tester) async {
+      await pumpDebugApp(tester);
+      await showOverride(tester);
+      await tester.tap(find.text('Data: Real strap'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text(english.demoBadge), findsOneWidget);
 
       // Picking a strap disposes the demo source, which stops its timer.
       await pickStrap(tester);
@@ -99,20 +148,11 @@ void main() {
       );
       await settleSwitch(tester);
       expect(find.text('72'), findsOneWidget);
+      expect(find.text('Data: Real strap'), findsOneWidget);
       expect(watch.contexts.last.isSimulated, isFalse);
 
       // Lets the reading go stale, so no timer outlives the test.
       await tester.pump(const Duration(seconds: 11));
-    });
-
-    testWidgets('long-pressing the title shows the debug override', (
-      tester,
-    ) async {
-      await pumpDebugApp(tester);
-
-      await tester.longPress(find.text(english.appTitle));
-      await tester.pump();
-      expect(find.textContaining('Override'), findsOneWidget);
     });
   });
 }
