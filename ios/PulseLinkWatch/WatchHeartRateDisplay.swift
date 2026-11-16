@@ -1,7 +1,7 @@
 import Foundation
 
-/// What the watch screen shows, worked out from the latest snapshot, whether
-/// the iPhone is reachable, and the time. Plain values, so tests can check
+/// What the watch screen shows, worked out from the latest snapshot, when
+/// the iPhone stopped being reachable, and the time. Plain values, so tests can check
 /// every case without SwiftUI or WatchConnectivity; `HeartRateScreen` turns
 /// them into text.
 struct WatchHeartRateDisplay: Equatable {
@@ -9,6 +9,11 @@ struct WatchHeartRateDisplay: Equatable {
   /// the current heart rate. The same threshold as the phone's
   /// `LiveHeartRateCubit`.
   static let staleAfter: TimeInterval = 10
+
+  /// How long the iPhone must stay unreachable before the screen says so.
+  /// WatchConnectivity reports it unreachable for a moment whenever the app
+  /// wakes, such as on raising the wrist, and the banner would flash.
+  static let unreachableGrace: TimeInterval = 5
 
   /// The big number.
   let readout: WatchReadout
@@ -20,11 +25,17 @@ struct WatchHeartRateDisplay: Equatable {
   /// snapshot.
   let source: HeartRateSource?
 
-  /// False shows "iPhone not reachable" over the rest.
-  let isPhoneReachable: Bool
+  /// True shows "iPhone not reachable" over the rest: the iPhone has been
+  /// unreachable for at least `unreachableGrace`.
+  let showsPhoneNotReachable: Bool
 
-  init(snapshot: HeartRateSnapshot?, isPhoneReachable: Bool, now: Date) {
-    self.isPhoneReachable = isPhoneReachable
+  /// `phoneUnreachableSince` is when the iPhone stopped being reachable, or
+  /// nil while it's reachable.
+  init(snapshot: HeartRateSnapshot?, phoneUnreachableSince: Date?, now: Date) {
+    showsPhoneNotReachable = phoneUnreachableSince.map {
+      // A start ahead of `now`, if the clock was set back, counts as 0.
+      max(now.timeIntervalSince($0), 0) >= Self.unreachableGrace
+    } ?? false
     guard let snapshot else {
       readout = .none
       status = .noSnapshotYet

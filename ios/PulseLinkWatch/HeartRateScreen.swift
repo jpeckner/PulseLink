@@ -8,7 +8,7 @@ struct HeartRateScreen: View {
   var body: some View {
     ScrollView {
       VStack(spacing: 6) {
-        if !display.isPhoneReachable {
+        if display.showsPhoneNotReachable {
           Label("iPhone not reachable", systemImage: "iphone.slash")
             .font(.footnote)
             .foregroundStyle(.orange)
@@ -196,11 +196,11 @@ private func previewDisplay(
   status: HeartRateStatus,
   reading: HeartRateReading?,
   source: HeartRateSource = .strap,
-  isPhoneReachable: Bool = true
+  phoneUnreachableSince: Date? = nil
 ) -> WatchHeartRateDisplay {
   WatchHeartRateDisplay(
     snapshot: HeartRateSnapshot(sentAt: previewNow, source: source, status: status, latestReading: reading),
-    isPhoneReachable: isPhoneReachable,
+    phoneUnreachableSince: phoneUnreachableSince,
     now: previewNow
   )
 }
@@ -243,12 +243,12 @@ private func previewMeasured(_ value: Int, secondsAgo: TimeInterval) -> HeartRat
     display: previewDisplay(
       status: .receiving,
       reading: previewMeasured(72, secondsAgo: 40),
-      isPhoneReachable: false
+      phoneUnreachableSince: previewNow.addingTimeInterval(-30)
     )
   )
 }
 
 #Preview("Never heard from the phone") {
-  HeartRateScreen(display: WatchHeartRateDisplay(snapshot: nil, isPhoneReachable: true, now: previewNow))
+  HeartRateScreen(display: WatchHeartRateDisplay(snapshot: nil, phoneUnreachableSince: nil, now: previewNow))
 }
 #endif
