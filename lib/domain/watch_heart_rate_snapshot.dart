@@ -7,6 +7,9 @@ part 'watch_heart_rate_snapshot.freezed.dart';
 /// How getting heart-rate data is going on the phone, as the watch shows it.
 @freezed
 sealed class WatchHeartRateStatus with _$WatchHeartRateStatus {
+  /// No strap has been picked on the phone.
+  const factory noStrap() = WatchHeartRateNoStrap;
+
   /// Starting up or connecting; no reading since then.
   const factory waiting() = WatchHeartRateWaiting;
 

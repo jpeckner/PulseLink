@@ -135,7 +135,11 @@ class BleStrapDataSource implements StrapDataSource {
       case StrapDataSourceStarted():
         _isStarted = true;
         pending.complete(result);
-      case StrapDataSourceStartCancelled() || StrapDataSourceStartFailed():
+      // A strap source always has a strap, so it never says noStrap; it's
+      // handled with the other ways of not connecting all the same.
+      case StrapDataSourceStartCancelled() ||
+          StrapDataSourceStartFailed() ||
+          StrapDataSourceNoStrap():
         // Not connected, so nothing to listen for until the next start.
         final cancelling = _subscription?.cancel();
         _subscription = null;

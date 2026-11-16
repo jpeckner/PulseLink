@@ -7,6 +7,10 @@ part 'live_heart_rate_state.freezed.dart';
 /// What the live heart-rate screen shows.
 @freezed
 sealed class LiveHeartRateState with _$LiveHeartRateState {
+  /// No strap has been picked, so there's no heart rate to show. Every build
+  /// starts here; the screen asks for a strap.
+  const factory noStrap() = LiveHeartRateNoStrap;
+
   /// No sample has arrived yet.
   const factory waiting({required bool isSimulated}) = LiveHeartRateWaiting;
 
@@ -24,4 +28,15 @@ sealed class LiveHeartRateState with _$LiveHeartRateState {
     required StrapConnectionFailure failure,
     required bool isSimulated,
   }) = LiveHeartRateConnectionFailed;
+
+  const new _();
+
+  /// Whether the heart rate comes from demo data rather than a strap. Never
+  /// with no strap picked.
+  bool get isSimulated => switch (this) {
+    LiveHeartRateNoStrap() => false,
+    LiveHeartRateWaiting(:final isSimulated) ||
+    LiveHeartRateReading(:final isSimulated) ||
+    LiveHeartRateConnectionFailed(:final isSimulated) => isSimulated,
+  };
 }

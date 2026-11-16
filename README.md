@@ -50,9 +50,12 @@ flutter pub get
 flutter run
 ```
 
-The app starts in **demo mode**: `FakeStrapDataSource` simulates a strap, and
-the screen shows a "Demo" badge. On an iPhone, tap **Find strap** to pick a real
-strap; that needs a physical phone, since BLE doesn't work in the iOS Simulator.
+The app starts with **no strap**: tap **Find strap** to pick one. On an
+iPhone, that needs a physical phone, since BLE doesn't work in the iOS
+Simulator. Debug and profile builds also offer **Use demo data**, where
+`FakeStrapDataSource` simulates a strap and the screen shows a "Demo" badge.
+Release builds only ever show heart rate from a real strap: demo data and the
+other debug tooling live in debug-only code, which they don't contain.
 On Android (12 or later, with Bluetooth LE), **Find strap** works the same
 way; the first scan asks for the Nearby devices permission, and the emulator
 can't reach a real strap. On both platforms, streaming stops soon after the
@@ -63,7 +66,7 @@ run on an iOS simulator: `flutter run -d <id>`, with an ID from
 `flutter devices`. The watch app comes with the iPhone app: the iPhone installs
 it on its paired watch, which can take a minute. To run it straight away, or on
 a watch simulator paired with the iPhone simulator, run the `PulseLinkWatch`
-scheme from Xcode. It shows what the phone app shows, including demo mode.
+scheme from Xcode. It shows what the phone app shows, including demo data.
 
 Debug, profile and release builds install side by side, on iOS, Android and
 the watch, so a release build can stay on the phone while you develop. Each

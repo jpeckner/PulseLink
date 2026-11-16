@@ -20,10 +20,15 @@ sealed class StrapDataSourceStartResult with _$StrapDataSourceStartResult {
   /// being off.
   const factory failed(StrapConnectionFailure failure) =
       StrapDataSourceStartFailed;
+
+  /// There's nothing to start: no strap has been picked yet. Nothing went
+  /// wrong; the screen asks for a strap.
+  const factory noStrap() = StrapDataSourceNoStrap;
 }
 
 /// Where heart-rate samples come from: a BLE strap, or a simulator for demo
-/// mode and tests. Everything above the data layer depends only on this.
+/// mode (debug and profile builds only) and tests. Everything above the data
+/// layer depends only on this.
 abstract interface class StrapDataSource {
   /// True when samples are simulated, so the UI can label them as such.
   bool get isSimulated;

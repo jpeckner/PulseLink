@@ -33,7 +33,7 @@ flowchart TB
   end
 
   subgraph STATE["State · lib/blocs"]
-    lhr["LiveHeartRateCubit<br/>waiting · reading with isStale · connectionFailed<br/>stale 10 s after the sample's timestamp"]
+    lhr["LiveHeartRateCubit<br/>noStrap · waiting · reading with isStale · connectionFailed<br/>stale 10 s after the sample's timestamp"]
     battery["StrapBatteryCubit<br/>BatteryLevel or unknown"]
     pickerCubit["StrapPickerCubit<br/>scanning with straps found · failed"]
     selection["StrapSelection<br/>switches to the picked strap,<br/>restarts the live cubit"]
@@ -83,7 +83,7 @@ flowchart TB
   settingsApi --> native
   watchApi --> native
 
-  fake["FakeStrapDataSource<br/>demo mode: the current source at launch,<br/>until a strap is picked"]:::swap
+  fake["FakeStrapDataSource<br/>debug and profile builds: demo data,<br/>after tapping Use demo data"]:::swap
   override["DebugOverrideStrapDataSource<br/>debug and profile builds: wraps the<br/>switchable source to fake readings"]:::swap
   overrideUi["DebugOverrideCubit + DebugOverrideButtons<br/>debug and profile builds: long-press the title"]:::swap
   fake -. "swap-in" .-> switchable
@@ -96,14 +96,14 @@ flowchart TB
 
 | Layer | Component | What it does |
 | --- | --- | --- |
-| Root | `main()` | Builds the object graph once. Release builds take the release branch; debug and profile builds add the debug override. Starts `WatchSync` on iOS only, through an exhaustive switch on the platform. |
+| Root | `main()` | Gathers the platform's pieces (`AppPlatform`), then builds the app once: `releaseApp` in release builds, or `debugApp` in debug and profile builds, which adds demo data and the debug override. Gives `WatchSync` a bridge on iOS only, through an exhaustive switch on the platform. |
 | Widgets | `LiveHeartRateScreen` | Shows the cubits' state. Holds no logic beyond choosing what to draw. |
 | Widgets | `StrapPickerScreen` | Lists straps while scanning. Its `BlocProvider` creates the picker cubit and closes it with the screen. |
 | State | `LiveHeartRateCubit` | Turns the source's samples, failures and connection drops into screen state. A timer marks a reading stale 10 seconds after its timestamp. |
 | State | `StrapBatteryCubit` | The strap's battery level, kept apart so a battery update doesn't redraw the readout. |
-| State | `StrapSelection` | Switches the switchable source from demo data to the picked strap, then restarts the live cubit. |
+| State | `StrapSelection` | Switches the switchable source to the picked strap (or, in debug and profile builds, to demo data), then restarts the live cubit. |
 | State | `WatchSync` | Sends a snapshot of the live state to the watch at start and on each change (section 3). |
-| Data | `SwitchableStrapDataSource` | Owns whichever `StrapDataSource` is current, so the cubits never change source themselves. |
+| Data | `SwitchableStrapDataSource` | Owns whichever `StrapDataSource` is current, so the cubits never change source themselves. Starts with none, reporting no strap until one is picked. |
 | Data | `BleStrapDataSource` | The strap through `ble_api`. Parses raw Heart Rate Measurement bytes in exactly one place. Expected failures come back as typed results, never exceptions. |
 | Data | `PigeonWatchBridge` | The watch through `watch_api`. Turns platform errors into a `WatchDeliveryResult`. |
 
@@ -111,9 +111,9 @@ flowchart TB
 
 | Interface or slot | Live | Swap-ins |
 | --- | --- | --- |
-| `StrapDataSource` (current source) | `BleStrapDataSource` | `FakeStrapDataSource`, demo mode at launch. Tests: `StubStrapDataSource`, `FailingStrapDataSource`. |
+| `StrapDataSource` (current source) | none at launch, then `BleStrapDataSource` | `FakeStrapDataSource`, demo data in debug and profile builds only (`lib/data/debug/`). Tests: `StubStrapDataSource`, `FailingStrapDataSource`. |
 | `StrapDataSource` (what the cubits see) | `SwitchableStrapDataSource` | `DebugOverrideStrapDataSource` wraps it in debug and profile builds, to fake skin contact, a bpm of 0, an implausible bpm or no data on demand. |
-| Debug controls | none in release | `DebugOverrideCubit` and `DebugOverrideButtons`, shown by long-pressing the title. `kReleaseMode` leaves them out of release builds, and the pre-merge checks look for them in the binaries. |
+| Debug controls | none in release | `DebugOverrideCubit` and `DebugOverrideButtons`, shown by long-pressing the title, and `DemoDataButton` under Find strap. `kReleaseMode` leaves them, and demo data, out of release builds, and the pre-merge checks look for them in the binaries. |
 | `StrapScanner` | `BleStrapScanner` | Tests: `StubStrapScanner`. |
 | `AppSettings` | `PlatformAppSettings` | Tests: `StubAppSettings`. |
 | `WatchBridge` | `PigeonWatchBridge` | Tests: `FakeWatchBridge`, which records snapshots and can fail before or after returning a future. |
@@ -239,6 +239,7 @@ What the watch shows for each case, worked out by `WatchHeartRateDisplay`:
 | receiving | measured, 10 s old or more | bpm, dimmed | No data from strap · Last reading … |
 | receiving | unavailable, under 10 s old | `--` | No skin contact / Strap connected, no heart rate yet / Strap reading out of range |
 | receiving | unavailable, 10 s old or more | `--` | No data from strap · Last reading … |
+| noStrap | none | `--` | No strap connected · Pick one in PulseLink on your iPhone |
 | waiting | any or none | last bpm dimmed, or `--` | Waiting for heart-rate data… |
 | failed | any or none | last bpm dimmed, or `--` | the phone's title: Bluetooth is off, Can't reach the strap, Strap disconnected… |
 
@@ -350,7 +351,7 @@ shown.
 | Format | | | | `version`: 1, `kind`: `"heartRateSnapshot"` |
 | Sent | `sentAt: DateTime` | `sentAtMillis: int` | `sentAt: Date` | `sentAt`: seconds since 1970, a Double |
 | Source | `isSimulated: bool` | `source: WatchHeartRateSource` (demo, strap) | `source: HeartRateSource` | `source`: `"demo"` or `"strap"` |
-| Status | `WatchHeartRateStatus`: waiting, receiving, failed with a `StrapConnectionFailure` | `WatchWaiting`, `WatchReceiving`, `WatchFailed(WatchStrapFailure)` | `HeartRateStatus`: `.waiting`, `.receiving`, `.failed(StrapConnectionFailure)` | `status`: `"waiting"`, `"receiving"` or `"failed"`, plus `failure` when failed |
+| Status | `WatchHeartRateStatus`: noStrap, waiting, receiving, failed with a `StrapConnectionFailure` | `WatchNoStrap`, `WatchWaiting`, `WatchReceiving`, `WatchFailed(WatchStrapFailure)` | `HeartRateStatus`: `.noStrap`, `.waiting`, `.receiving`, `.failed(StrapConnectionFailure)` | `status`: `"noStrap"`, `"waiting"`, `"receiving"` or `"failed"`, plus `failure` when failed |
 | Latest reading | `HeartRateSample?`: measured with bpm, timestamp, skin contact and RR intervals, or unavailable with a reason | `WatchMeasuredReading(beatsPerMinute, measuredAtMillis)` or `WatchUnavailableReading(reason, measuredAtMillis)`; skin contact and RR intervals stay on the phone | `HeartRateReading?`: `.measured(BeatsPerMinute, measuredAt:)` or `.unavailable(reason, measuredAt:)` | `latestReading`: absent before the first, otherwise `kind`, `bpm` or `reason`, and `measuredAt` |
 
 Staleness isn't sent at any stage. The watch works it out from
@@ -367,7 +368,7 @@ context:
   "kind": "heartRateSnapshot",
   "sentAt": 1794000000.0,           // seconds since 1970, by the phone's clock
   "source": "strap",                // or "demo"
-  "status": "failed",               // or "waiting", "receiving"
+  "status": "failed",               // or "noStrap", "waiting", "receiving"
   "failure": "connectionLost",      // only when status is "failed"
   "latestReading": [                // absent before the first reading
     "kind": "measured",             // or "unavailable"
@@ -380,7 +381,7 @@ context:
 
 | Key | Values |
 | --- | --- |
-| `status` | `waiting`: starting up or connecting · `receiving`: readings are arriving · `failed`: see `failure` |
+| `status` | `noStrap`: no strap picked on the phone · `waiting`: starting up or connecting · `receiving`: readings are arriving · `failed`: see `failure` |
 | `failure` | `bluetoothOff` · `bluetoothUnavailable` · `bluetoothPermissionDenied` · `strapUnreachable` · `notAHeartRateStrap` · `connectionLost` |
 | `latestReading.kind` | `measured` · `unavailable` |
 | `latestReading.reason` | `noSkinContact` · `zeroBeatsPerMinute` · `implausibleBeatsPerMinute` |

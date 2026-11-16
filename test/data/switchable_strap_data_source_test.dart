@@ -204,6 +204,55 @@ void main() {
       );
     });
   });
+
+  group('SwitchableStrapDataSource.empty', () {
+    late SwitchableStrapDataSource source;
+
+    setUp(() => source = SwitchableStrapDataSource.empty());
+
+    tearDown(() => source.dispose());
+
+    test('reports no strap until a source is switched to, and is not '
+        'simulated', () async {
+      expect(source.isSimulated, isFalse);
+      expect(await source.start(), const StrapDataSourceStartResult.noStrap());
+    });
+
+    test('stopping with no source does nothing', () async {
+      await source.stop();
+      expect(await source.start(), const StrapDataSourceStartResult.noStrap());
+    });
+
+    test('switching to a source passes it on, and starts it from then '
+        'on', () async {
+      final strap = StubStrapDataSource();
+      final samples = <HeartRateSample>[];
+      source.samples.listen(samples.add);
+
+      await source.switchTo(strap);
+      expect(await source.start(), const StrapDataSourceStartResult.started());
+      expect(strap.startCount, 1);
+      strap.emit(_sample(64));
+      await _delivered();
+      expect(samples.map(_beatsPerMinute), [64]);
+    });
+
+    test('disposing with no source closes its streams', () async {
+      await source.dispose();
+      expect(
+        await source.start(),
+        const StrapDataSourceStartResult.cancelled(),
+      );
+      await expectLater(source.samples, emitsDone);
+    });
+
+    test('disposing after a switch disposes the source', () async {
+      final strap = StubStrapDataSource();
+      await source.switchTo(strap);
+      await source.dispose();
+      expect(strap.isDisposed, isTrue);
+    });
+  });
 }
 
 int? _beatsPerMinute(HeartRateSample sample) => switch (sample) {

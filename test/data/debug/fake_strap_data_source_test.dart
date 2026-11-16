@@ -4,7 +4,7 @@ import 'dart:math';
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pulselink/data/fake_strap_data_source.dart';
+import 'package:pulselink/data/debug/fake_strap_data_source.dart';
 import 'package:pulselink/data/strap_data_source.dart';
 import 'package:pulselink/domain/battery_level.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';

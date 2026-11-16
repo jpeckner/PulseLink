@@ -56,10 +56,11 @@ extension WatchHeartRateStatusPatterns on WatchHeartRateStatus {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( WatchHeartRateWaiting value)?  waiting,TResult Function( WatchHeartRateReceiving value)?  receiving,TResult Function( WatchHeartRateFailed value)?  failed,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( WatchHeartRateNoStrap value)?  noStrap,TResult Function( WatchHeartRateWaiting value)?  waiting,TResult Function( WatchHeartRateReceiving value)?  receiving,TResult Function( WatchHeartRateFailed value)?  failed,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case WatchHeartRateWaiting() when waiting != null:
+case WatchHeartRateNoStrap() when noStrap != null:
+return noStrap(_that);case WatchHeartRateWaiting() when waiting != null:
 return waiting(_that);case WatchHeartRateReceiving() when receiving != null:
 return receiving(_that);case WatchHeartRateFailed() when failed != null:
 return failed(_that);case _:
@@ -80,10 +81,11 @@ return failed(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( WatchHeartRateWaiting value)  waiting,required TResult Function( WatchHeartRateReceiving value)  receiving,required TResult Function( WatchHeartRateFailed value)  failed,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( WatchHeartRateNoStrap value)  noStrap,required TResult Function( WatchHeartRateWaiting value)  waiting,required TResult Function( WatchHeartRateReceiving value)  receiving,required TResult Function( WatchHeartRateFailed value)  failed,}){
 final _that = this;
 switch (_that) {
-case WatchHeartRateWaiting():
+case WatchHeartRateNoStrap():
+return noStrap(_that);case WatchHeartRateWaiting():
 return waiting(_that);case WatchHeartRateReceiving():
 return receiving(_that);case WatchHeartRateFailed():
 return failed(_that);}
@@ -100,10 +102,11 @@ return failed(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( WatchHeartRateWaiting value)?  waiting,TResult? Function( WatchHeartRateReceiving value)?  receiving,TResult? Function( WatchHeartRateFailed value)?  failed,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( WatchHeartRateNoStrap value)?  noStrap,TResult? Function( WatchHeartRateWaiting value)?  waiting,TResult? Function( WatchHeartRateReceiving value)?  receiving,TResult? Function( WatchHeartRateFailed value)?  failed,}){
 final _that = this;
 switch (_that) {
-case WatchHeartRateWaiting() when waiting != null:
+case WatchHeartRateNoStrap() when noStrap != null:
+return noStrap(_that);case WatchHeartRateWaiting() when waiting != null:
 return waiting(_that);case WatchHeartRateReceiving() when receiving != null:
 return receiving(_that);case WatchHeartRateFailed() when failed != null:
 return failed(_that);case _:
@@ -123,9 +126,10 @@ return failed(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  waiting,TResult Function()?  receiving,TResult Function( StrapConnectionFailure failure)?  failed,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  noStrap,TResult Function()?  waiting,TResult Function()?  receiving,TResult Function( StrapConnectionFailure failure)?  failed,required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case WatchHeartRateWaiting() when waiting != null:
+case WatchHeartRateNoStrap() when noStrap != null:
+return noStrap();case WatchHeartRateWaiting() when waiting != null:
 return waiting();case WatchHeartRateReceiving() when receiving != null:
 return receiving();case WatchHeartRateFailed() when failed != null:
 return failed(_that.failure);case _:
@@ -146,9 +150,10 @@ return failed(_that.failure);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  waiting,required TResult Function()  receiving,required TResult Function( StrapConnectionFailure failure)  failed,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  noStrap,required TResult Function()  waiting,required TResult Function()  receiving,required TResult Function( StrapConnectionFailure failure)  failed,}) {final _that = this;
 switch (_that) {
-case WatchHeartRateWaiting():
+case WatchHeartRateNoStrap():
+return noStrap();case WatchHeartRateWaiting():
 return waiting();case WatchHeartRateReceiving():
 return receiving();case WatchHeartRateFailed():
 return failed(_that.failure);}
@@ -165,9 +170,10 @@ return failed(_that.failure);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  waiting,TResult? Function()?  receiving,TResult? Function( StrapConnectionFailure failure)?  failed,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  noStrap,TResult? Function()?  waiting,TResult? Function()?  receiving,TResult? Function( StrapConnectionFailure failure)?  failed,}) {final _that = this;
 switch (_that) {
-case WatchHeartRateWaiting() when waiting != null:
+case WatchHeartRateNoStrap() when noStrap != null:
+return noStrap();case WatchHeartRateWaiting() when waiting != null:
 return waiting();case WatchHeartRateReceiving() when receiving != null:
 return receiving();case WatchHeartRateFailed() when failed != null:
 return failed(_that.failure);case _:
@@ -177,6 +183,38 @@ return failed(_that.failure);case _:
 }
 
 }
+
+/// @nodoc
+
+
+class WatchHeartRateNoStrap implements WatchHeartRateStatus {
+  const WatchHeartRateNoStrap();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is WatchHeartRateNoStrap);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+    return 'WatchHeartRateStatus.noStrap()';
+}
+
+
+}
+
+
+
 
 /// @nodoc
 

@@ -19,6 +19,7 @@ class PulseLinkApp extends StatelessWidget {
     required this.onStrapSelected,
     this.debugControls,
     this.onTitleLongPress,
+    this.noStrapDebugAction,
     super.key,
   });
 
@@ -41,6 +42,10 @@ class PulseLinkApp extends StatelessWidget {
   final Widget? debugControls;
   final VoidCallback? onTitleLongPress;
 
+  /// Shown under the live screen's Find strap button while no strap is
+  /// picked. Only supplied in non-release builds.
+  final Widget? noStrapDebugAction;
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -58,6 +63,7 @@ class PulseLinkApp extends StatelessWidget {
         onStrapSelected: onStrapSelected,
         debugControls: debugControls,
         onTitleLongPress: onTitleLongPress,
+        noStrapDebugAction: noStrapDebugAction,
       ),
     );
   }

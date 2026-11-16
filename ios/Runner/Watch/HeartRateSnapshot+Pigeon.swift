@@ -12,6 +12,8 @@ extension HeartRateSnapshot {
     // Pigeon's sealed classes become plain protocols in Swift, which any
     // type could conform to, so this switch can't list every case.
     switch pigeon.status {
+    case is WatchNoStrap:
+      status = .noStrap
     case is WatchWaiting:
       status = .waiting
     case is WatchReceiving:

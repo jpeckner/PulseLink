@@ -94,7 +94,13 @@ void main() {
           expect(sentFor(call).source, pigeon.WatchHeartRateSource.strap);
         });
 
-        test('sends waiting and receiving', () async {
+        test('sends no strap, waiting and receiving', () async {
+          expect(
+            await call.on(bridge, _snapshot(status: const .noStrap())),
+            WatchDeliveryResult.sent,
+          );
+          expect(sentFor(call).status, isA<pigeon.WatchNoStrap>());
+
           expect(
             await call.on(bridge, _snapshot(status: const .waiting())),
             WatchDeliveryResult.sent,

@@ -86,6 +86,7 @@ class PigeonWatchBridge implements WatchBridge {
         ? pigeon.WatchHeartRateSource.demo
         : pigeon.WatchHeartRateSource.strap,
     status: switch (snapshot.status) {
+      WatchHeartRateNoStrap() => pigeon.WatchNoStrap(),
       WatchHeartRateWaiting() => pigeon.WatchWaiting(),
       WatchHeartRateReceiving() => pigeon.WatchReceiving(),
       WatchHeartRateFailed(:final failure) => pigeon.WatchFailed(

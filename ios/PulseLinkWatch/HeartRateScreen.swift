@@ -99,6 +99,12 @@ private struct StatusLines: View {
       Text("Open PulseLink on your iPhone")
         .font(.footnote)
         .foregroundStyle(.secondary)
+    case .noStrap:
+      Text("No strap connected")
+        .font(.footnote)
+      Text("Pick one in PulseLink on your iPhone")
+        .font(.footnote)
+        .foregroundStyle(.secondary)
     case .waiting(let lastReadingAt):
       Text("Waiting for heart-rate data…")
         .font(.footnote)
@@ -207,6 +213,10 @@ private func previewDisplay(
 
 private func previewMeasured(_ value: Int, secondsAgo: TimeInterval) -> HeartRateReading? {
   BeatsPerMinute(value).map { .measured($0, measuredAt: previewNow.addingTimeInterval(-secondsAgo)) }
+}
+
+#Preview("No strap") {
+  HeartRateScreen(display: previewDisplay(status: .noStrap, reading: nil))
 }
 
 #Preview("Live") {

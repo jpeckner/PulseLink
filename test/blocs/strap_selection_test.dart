@@ -50,6 +50,17 @@ void main() {
       expect(cubit.state, const LiveHeartRateState.waiting(isSimulated: false));
     });
 
+    test('use switches to the source it is given and starts it, as for '
+        'demo data', () async {
+      final other = StubStrapDataSource(isSimulated: true);
+      addTearDown(other.dispose);
+      await selection.use(other);
+      expect(created, isEmpty);
+      expect(demo.isDisposed, isTrue);
+      expect(other.startCount, 1);
+      expect(cubit.state, const LiveHeartRateState.waiting(isSimulated: true));
+    });
+
     test('still switches and starts if disposing demo mode fails, and '
         'reports the failure', () async {
       final failure = Exception('dispose failed');

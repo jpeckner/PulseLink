@@ -25,6 +25,7 @@ class LiveHeartRateScreen extends StatelessWidget {
     required this.onStrapSelected,
     this.debugControls,
     this.onTitleLongPress,
+    this.noStrapDebugAction,
     super.key,
   });
 
@@ -50,6 +51,10 @@ class LiveHeartRateScreen extends StatelessWidget {
   /// Called when the title is long-pressed. Only supplied in non-release
   /// builds.
   final VoidCallback? onTitleLongPress;
+
+  /// Shown under the Find strap button while no strap is picked, such as a
+  /// button that switches to demo data. Only supplied in non-release builds.
+  final Widget? noStrapDebugAction;
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +101,11 @@ class LiveHeartRateScreen extends StatelessWidget {
                     children: [
                       Center(
                         child: switch (state) {
+                          LiveHeartRateNoStrap() => _NoStrapView(
+                            // Not awaited, as for the app bar's button.
+                            onFindStrap: () => unawaited(_findStrap(context)),
+                            debugAction: noStrapDebugAction,
+                          ),
                           LiveHeartRateWaiting() => const _WaitingView(),
                           LiveHeartRateReading(:final sample, :final isStale) =>
                             _ReadingView(sample: sample, isStale: isStale),
@@ -137,6 +147,52 @@ class LiveHeartRateScreen extends StatelessWidget {
     if (strap case final picked?) {
       onStrapSelected(picked);
     }
+  }
+}
+
+/// No strap picked yet: asks for one.
+class _NoStrapView extends StatelessWidget {
+  const new({required this.onFindStrap, required this.debugAction});
+
+  final VoidCallback onFindStrap;
+  final Widget? debugAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.monitor_heart_outlined,
+          size: 48,
+          color: theme.colorScheme.primary,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          l10n.noStrapTitle,
+          style: theme.textTheme.titleLarge,
+          textAlign: .center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          l10n.noStrapDetail,
+          style: theme.textTheme.bodyLarge,
+          textAlign: .center,
+        ),
+        const SizedBox(height: 24),
+        FilledButton.icon(
+          onPressed: onFindStrap,
+          icon: const Icon(Icons.bluetooth_searching),
+          label: Text(l10n.findStrapButton),
+        ),
+        if (debugAction case final action?) ...[
+          const SizedBox(height: 12),
+          action,
+        ],
+      ],
+    );
   }
 }
 

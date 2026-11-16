@@ -114,6 +114,13 @@ struct WatchHeartRateDisplayTests {
     #expect(display.status == .waiting(lastReadingAt: measuredAt))
   }
 
+  @Test func showsNoStrapWithNoNumber() {
+    let display = display(status: .noStrap, reading: nil)
+    #expect(display.readout == .none)
+    #expect(display.status == .noStrap)
+    #expect(display.source == .strap)
+  }
+
   @Test func showsWaitingBeforeAnyReading() {
     let display = display(status: .waiting, reading: nil)
     #expect(display.readout == .none)
