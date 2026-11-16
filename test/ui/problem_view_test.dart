@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/domain/bluetooth_problem.dart';
 import 'package:pulselink/ui/widgets/problem_view.dart';
 
+import '../helpers/english.dart';
 import '../helpers/stub_app_settings.dart';
 
 const _couldNotOpen =
@@ -22,7 +23,7 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: ProblemView(
-            message: bluetoothProblemMessage(problem),
+            message: bluetoothProblemMessage(english, problem),
             appSettings: settings,
             onTryAgain: onTryAgain,
           ),
@@ -37,7 +38,7 @@ void main() {
           BluetoothProblem.off || BluetoothProblem.unavailable => false,
         };
         expect(
-          bluetoothProblemMessage(problem).isFixedInSettings,
+          bluetoothProblemMessage(english, problem).isFixedInSettings,
           isFixedInSettings,
           reason: problem.name,
         );

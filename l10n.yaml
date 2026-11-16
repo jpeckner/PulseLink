@@ -1,0 +1,14 @@
+# Flutter's gen-l10n: turns lib/l10n/app_en.arb into the typed
+# AppLocalizations class, one getter or method per string, so a missing or
+# misspelled string is a compile error. Regenerate with `flutter gen-l10n`
+# (tool/regenerate.sh does it; `flutter run` and `flutter build` do too).
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+# Every string needs a description, for whoever translates it later.
+required-resource-attributes: true
+# AppLocalizations.of returns null outside a MaterialApp; lib/l10n/l10n.dart
+# falls back to English there rather than asserting.
+nullable-getter: true
+format: true

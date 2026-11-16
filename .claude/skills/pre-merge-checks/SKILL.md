@@ -63,7 +63,7 @@ It cleans `build/`, gets packages, runs `build_runner` and `tool/pigeon.sh` and,
 Then:
 
 1. Run `git status --porcelain` and sort what changed:
-   - **Generated output:** `*.freezed.dart`, `*.g.dart`, `pubspec.lock`, `tool/pulselink_lints/pubspec.lock`, and Pigeon's `*.pigeon.dart`, `*.pigeon.swift` and `*.pigeon.kt` (the last two live under `ios/` and `android/`, but they're generated, so the next bullet doesn't apply to them). This is out of date on the branch.
+   - **Generated output:** `*.freezed.dart`, `*.g.dart`, `pubspec.lock`, `tool/pulselink_lints/pubspec.lock`, gen-l10n's `lib/l10n/app_localizations*.dart`, and Pigeon's `*.pigeon.dart`, `*.pigeon.swift` and `*.pigeon.kt` (the last two live under `ios/` and `android/`, but they're generated, so the next bullet doesn't apply to them). This is out of date on the branch.
    - **Anything under `ios/` or `android/`.** Flutter's tool rewrites these files after an upgrade, or when plugins change. Stop, show `git diff --stat`, and ask the user whether to commit them. Native project changes need a human look.
    - **Anything else.** It's unexpected, so stop and report it.
 2. Look for generated files left behind by a deleted or renamed source. `build_runner` doesn't remove them:
@@ -150,7 +150,7 @@ If it lists files, run `dart format lib test`, stage those files, and commit: `s
 flutter analyze --fatal-infos --fatal-warnings > "$LOGS/analyze.log" 2>&1
 ```
 
-This covers the very_good_analysis lints and, when the branch has it, the `pulselink_lints` plugin (`keep_pigeon_imports_local`, `no_assertions`, `no_catch_all_cases`, `no_dynamic`, `no_ignored_results`, `use_switch_on_closed_types`). `develop` passes CI, so any issue comes from the branch or from a Flutter upgrade, and fails the check. Fix only issues caused by this run's own commits, e.g. an import left unused by step 4. Report the rest with file, line and rule.
+This covers the very_good_analysis lints and, when the branch has it, the `pulselink_lints` plugin (`keep_pigeon_imports_local`, `no_assertions`, `no_catch_all_cases`, `no_dynamic`, `no_hardcoded_ui_strings`, `no_ignored_results`, `use_switch_on_closed_types`). `develop` passes CI, so any issue comes from the branch or from a Flutter upgrade, and fails the check. Fix only issues caused by this run's own commits, e.g. an import left unused by step 4. Report the rest with file, line and rule.
 
 A clean analyze doesn't prove the plugin ran: if it fails to load, analyze reports "No issues found!" anyway. If the branch has `tool/check_lint_plugin.sh`, run it; it analyzes a file that breaks each enabled rule and fails unless every rule reports. A failure here fails the analyze check. If it says it rebuilt the plugin's cached copy and then passed, the first analyze ran with a stale copy, so run analyze again and use that result.
 
