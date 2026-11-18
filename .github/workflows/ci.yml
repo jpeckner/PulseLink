@@ -15,7 +15,11 @@ env:
 jobs:
   analyze-and-test:
     name: Analyze and test
-    runs-on: ubuntu-latest
+    # Pinned rather than ubuntu-latest: SwiftLint's Linux build (see
+    # tool/lint_native.sh) links against libxml2.so.2, and Ubuntu 25.10 and
+    # later ship only libxml2.so.16, so it can't start there. Move on once a
+    # SwiftLint release runs on the newer Ubuntu.
+    runs-on: ubuntu-24.04
     # Room for Gradle's first detekt run, which downloads its dependencies.
     timeout-minutes: 25
     steps:
