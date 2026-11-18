@@ -83,12 +83,29 @@ swiftlint_binary() {
     return 1
   fi
   chmod +x "$binary"
+
+  # On Linux, SwiftLint links against system libraries, libxml2.so.2 among
+  # them, which newer distributions may not have: Ubuntu 25.10 and later
+  # ship only libxml2.so.16. Name what's missing, rather than leave it to the
+  # loader's error, so CI says what to fix.
+  if [[ "$(uname -s)" == Linux ]] && command -v ldd > /dev/null; then
+    local missing
+    missing=$(ldd "$binary" 2> /dev/null | awk '/not found/ { print $1 }' | xargs)
+    if [[ -n "$missing" ]]; then
+      echo "SwiftLint $swiftlint_version can't run here: missing $missing." \
+        'Use a Linux with libxml2.so.2, such as Ubuntu 24.04 (CI pins it' \
+        'in .github/workflows/ci.yml).' >&2
+      return 1
+    fi
+  fi
   echo "$binary"
 }
 
 lint_swift() {
   local swiftlint output
-  swiftlint=$(swiftlint_binary)
+  # Explicit return: set -e doesn't stop a function called as
+  # `lint_swift || status=1`, as the `all` case below does.
+  swiftlint=$(swiftlint_binary) || return 1
   echo "==> SwiftLint $swiftlint_version"
   # Findings go to stdout; the "Done linting" summary goes to stderr.
   set +e
