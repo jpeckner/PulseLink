@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/l10n/app_localizations.dart';
 import 'package:pulselink/l10n/app_localizations_en.dart';

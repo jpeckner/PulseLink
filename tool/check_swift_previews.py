@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Justin Peckner
+# SPDX-License-Identifier: MIT
+# See the LICENSE file in the project root for the full license text.
+
 """Checks that every SwiftUI preview is compiled into debug builds only.
 
 Usage: check_swift_previews.py <folder or .swift file> [...]

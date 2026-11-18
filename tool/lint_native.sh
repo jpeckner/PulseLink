@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Justin Peckner
+# SPDX-License-Identifier: MIT
+# See the LICENSE file in the project root for the full license text.
+
 # Lints the hand-written Swift and Kotlin against CLAUDE.md's native-code
 # rules, and runs the Kotlin unit tests. Fails on any finding or failing
 # test, and if a linter or the tests don't run.

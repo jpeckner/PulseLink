@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 // Makes the Debug and Profile app icons from the Release one, so the three
 // builds can be told apart when installed side by side (see "Running" in the
 // README): Release keeps its white background, Profile gets green and Debug

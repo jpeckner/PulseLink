@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import 'package:meta/meta.dart';
 
 /// A heart rate in beats per minute that's plausible for a person: from 1 to

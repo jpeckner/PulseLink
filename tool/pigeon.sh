@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Justin Peckner
+# SPDX-License-Identifier: MIT
+# See the LICENSE file in the project root for the full license text.
+
 # Generates the Dart, Swift and Kotlin platform-channel code from each Pigeon
 # contract in pigeons/, then formats the Dart output so it passes
 # `dart format --set-exit-if-changed` like the rest of lib/.
