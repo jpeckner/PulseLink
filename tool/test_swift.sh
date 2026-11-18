@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Justin Peckner
+# SPDX-License-Identifier: MIT
+# See the LICENSE file in the project root for the full license text.
+
 # Runs the Swift tests: ios/RunnerTests on an iPhone simulator, then
 # ios/PulseLinkWatchTests on an Apple Watch simulator. Fails if a test fails,
 # and if either target ran no tests.

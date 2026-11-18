@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 package com.jpeckner.pulselink
 
 /** Runs an action after a delay. [GattQueue]'s timeouts use it, and tests replace it. */

@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Justin Peckner
+# SPDX-License-Identifier: MIT
+# See the LICENSE file in the project root for the full license text.
+
 """List pubspec.yaml dependencies that nothing seems to use, or are in the wrong section.
 
 Usage: check_dependencies.py [package root, default .]

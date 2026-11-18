@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 // The contract between Dart and the iPhone's WatchConnectivity code, which
 // passes the live heart rate on to the Apple Watch app. Pigeon generates the
 // Dart and Swift sides from this file. Regenerate with tool/regenerate.sh.

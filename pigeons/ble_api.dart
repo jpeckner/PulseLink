@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 // The contract between Dart and the native BLE code. Pigeon generates the
 // Dart, Swift and Kotlin sides from this file, so a message can't be sent
 // with the wrong shape on either side. Regenerate with tool/regenerate.sh.

@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import 'package:pulselink/data/app_settings.dart';
 
 /// An [AppSettings] that records how often it was opened, and opens or not

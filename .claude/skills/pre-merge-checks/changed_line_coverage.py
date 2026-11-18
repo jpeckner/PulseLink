@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Justin Peckner
+# SPDX-License-Identifier: MIT
+# See the LICENSE file in the project root for the full license text.
+
 """Report which lines the branch added or changed in lib/ that no test runs.
 
 Usage: changed_line_coverage.py [lcov file, default coverage/lcov.info] [base-ref, default develop]

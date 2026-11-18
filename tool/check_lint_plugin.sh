@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Justin Peckner
+# SPDX-License-Identifier: MIT
+# See the LICENSE file in the project root for the full license text.
+
 # Proves the pulselink_lints analyzer plugin is running, and that every rule
 # enabled in analysis_options.yaml reports.
 #

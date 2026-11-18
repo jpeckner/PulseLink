@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Justin Peckner
+# SPDX-License-Identifier: MIT
+# See the LICENSE file in the project root for the full license text.
+
 # Cleans every build output and cache, then regenerates everything:
 # packages, freezed code, localized strings, Pigeon platform-channel code and
 # (on macOS) the iOS project config.
