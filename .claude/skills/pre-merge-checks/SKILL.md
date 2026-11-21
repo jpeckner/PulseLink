@@ -29,7 +29,7 @@ Anything given is a note from the user, and notes override this skill's defaults
 
 ## 1. Preconditions
 
-1. `git branch --show-current` must not be `develop` or `master`. If it is, stop and say so. Note `git rev-parse HEAD` as the starting HEAD for the report; `git reset --hard <starting HEAD>` undoes everything this run does.
+1. `git branch --show-current` must not be `develop` or `main`. If it is, stop and say so. Note `git rev-parse HEAD` as the starting HEAD for the report; `git reset --hard <starting HEAD>` undoes everything this run does.
 2. `git status --porcelain` must print nothing. If anything is modified or untracked, stop and ask the user. The skill's commits would otherwise pick up their unfinished work, or its fixes would get mixed in with it.
 3. Note whether the branch has the lint plugin: `git ls-files --error-unmatch tool/pulselink_lints/pubspec.yaml`. Steps 3 and 5 use it only if it's there.
 
