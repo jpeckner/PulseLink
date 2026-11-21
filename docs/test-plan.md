@@ -214,6 +214,14 @@ Android) and check:
   connected" and "Pick one in PulseLink on your iPhone", with no "Demo" tag.
 - [ ] **A real strap:** pick a strap. A live bpm arrives, on the phone and
   the watch, as in a debug build.
+- [ ] **Icon:** the red heart on white, on the phone and the watch, while a
+  debug build installed alongside has it on grey.
+- [ ] **iPhone icon appearances:** long-press the Home Screen and choose
+  Edit > Customize. The icon follows Dark (near-black, with the trace cut
+  out of the heart), Clear and Tinted.
+- [ ] **Android themed icon:** with themed icons on (in the launcher's
+  wallpaper and style settings), the icon turns into a tinted heart with the
+  trace cut out.
 
 ## Run log
 

@@ -2,24 +2,26 @@
 // SPDX-License-Identifier: MIT
 // See the LICENSE file in the project root for the full license text.
 
-// Makes the Debug and Profile app icons from the Release one, so the three
-// builds can be told apart when installed side by side (see "Running" in the
-// README): Release keeps its white background, Profile gets green and Debug
-// grey.
+// Draws PulseLink's app icon, a red heart with a white ECG trace, and writes
+// every icon the apps use from it. Each build has its own background, so the
+// three can be told apart when installed side by side (see "Running" in the
+// README): Release white, Profile green and Debug grey.
 //
-// Run from the repo root after changing the Release icon:
+// Run from the repo root after changing the design or a colour below:
 //   swift tool/make_build_icons.swift
 //
-// It reads the Release iPhone icon (the logo on white) and writes:
+// It writes:
+//   - ios/Runner/AppIcon.icon/: the Release iPhone icon, an Icon Composer
+//     document with a white background, the heart and the trace as layers,
+//     so iOS can draw its Dark, Clear and Tinted appearances from them.
 //   - ios/Runner/Assets.xcassets/AppIcon-{Debug,Profile}.appiconset/
-//   - ios/PulseLinkWatch/Assets.xcassets/AppIcon-{Debug,Profile}.appiconset/
-//   - android/app/src/main/res/mipmap-*/ic_launcher_foreground.png: the logo
-//     alone, for Debug's and Profile's adaptive icons, whose background
-//     colours are in android/app/src/{debug,profile}/res/values/.
-//
-// The background is replaced by flood-filling the white from the edges.
-// Anti-aliased edge pixels are a blend of the logo and white; each is
-// re-blended with the new colour, so no white fringe is left.
+//   - ios/PulseLinkWatch/Assets.xcassets/AppIcon{,-Debug,-Profile}.appiconset/
+//   - android/app/src/main/res/mipmap-*/ic_launcher_foreground.png: the heart
+//     and trace alone, for every build's adaptive icon. Release's background
+//     is in src/main/res/mipmap-anydpi/ic_launcher.xml; Debug's and
+//     Profile's are in src/{debug,profile}/res/values/.
+//   - android/app/src/main/res/mipmap-*/ic_launcher_monochrome.png: the heart
+//     with the trace cut out, for Release's themed icon.
 
 import CoreGraphics
 import Foundation
@@ -27,153 +29,205 @@ import ImageIO
 import UniformTypeIdentifiers
 
 struct RGB {
-  var red: Double
-  var green: Double
-  var blue: Double
+  /// Each from 0 to 255.
+  var red: Int
+  var green: Int
+  var blue: Int
 
-  static let white = RGB(red: 255, green: 255, blue: 255)
-
-  init(red: Double, green: Double, blue: Double) {
-    self.red = red
-    self.green = green
-    self.blue = blue
+  init(hex: Int) {
+    red = (hex >> 16) & 0xFF
+    green = (hex >> 8) & 0xFF
+    blue = hex & 0xFF
   }
 
-  init(hex: UInt32) {
-    self.init(
-      red: Double((hex >> 16) & 0xFF),
-      green: Double((hex >> 8) & 0xFF),
-      blue: Double(hex & 0xFF)
+  var cgColor: CGColor {
+    CGColor(
+      srgbRed: CGFloat(red) / 255,
+      green: CGFloat(green) / 255,
+      blue: CGFloat(blue) / 255,
+      alpha: 1
     )
   }
 
-  static func + (lhs: RGB, rhs: RGB) -> RGB {
-    RGB(red: lhs.red + rhs.red, green: lhs.green + rhs.green, blue: lhs.blue + rhs.blue)
-  }
+  /// As SVG writes it, such as `#E5394B`.
+  var svg: String { String(format: "#%02X%02X%02X", red, green, blue) }
 
-  static func - (lhs: RGB, rhs: RGB) -> RGB {
-    RGB(red: lhs.red - rhs.red, green: lhs.green - rhs.green, blue: lhs.blue - rhs.blue)
-  }
-
-  static func * (lhs: RGB, rhs: Double) -> RGB {
-    RGB(red: lhs.red * rhs, green: lhs.green * rhs, blue: lhs.blue * rhs)
-  }
-
-  func dot(_ other: RGB) -> Double {
-    red * other.red + green * other.green + blue * other.blue
+  /// As Icon Composer's icon.json writes it.
+  var iconComposer: String {
+    String(
+      format: "srgb:%.5f,%.5f,%.5f,1.00000",
+      Double(red) / 255,
+      Double(green) / 255,
+      Double(blue) / 255
+    )
   }
 }
 
-/// An image as straight (not premultiplied) RGBA bytes.
-struct Bitmap {
-  let width: Int
-  let height: Int
-  var pixels: [UInt8]
+enum Palette {
+  static let heart = RGB(hex: 0xE5394B)
+  static let trace = RGB(hex: 0xFFFFFF)
+  /// The Release icon's background in Dark mode, with the trace drawn in it
+  /// too, so the trace looks cut out of the heart: Apple's systemGray6
+  /// (dark).
+  static let darkBackground = RGB(hex: 0x1C1C1E)
+}
 
-  init(width: Int, height: Int) {
-    self.width = width
-    self.height = height
-    pixels = [UInt8](repeating: 0, count: width * height * 4)
+/// The icon's design, on a canvas of `Design.canvas` points square with y
+/// pointing down, as in SVG.
+enum Design {
+  static let canvas = 1024.0
+
+  enum Segment {
+    case move(CGPoint)
+    case curve(CGPoint, CGPoint, to: CGPoint)
+    case close
   }
 
-  func rgb(_ x: Int, _ y: Int) -> RGB {
-    let index = (y * width + x) * 4
-    return RGB(
-      red: Double(pixels[index]),
-      green: Double(pixels[index + 1]),
-      blue: Double(pixels[index + 2])
+  static let heart: [Segment] = [
+    .move(CGPoint(x: 512, y: 852)),
+    .curve(CGPoint(x: 512, y: 852), CGPoint(x: 160, y: 640), to: CGPoint(x: 160, y: 400)),
+    .curve(CGPoint(x: 160, y: 268), CGPoint(x: 262, y: 176), to: CGPoint(x: 380, y: 176)),
+    .curve(CGPoint(x: 446, y: 176), CGPoint(x: 488, y: 210), to: CGPoint(x: 512, y: 252)),
+    .curve(CGPoint(x: 536, y: 210), CGPoint(x: 578, y: 176), to: CGPoint(x: 644, y: 176)),
+    .curve(CGPoint(x: 762, y: 176), CGPoint(x: 864, y: 268), to: CGPoint(x: 864, y: 400)),
+    .curve(CGPoint(x: 864, y: 640), CGPoint(x: 512, y: 852), to: CGPoint(x: 512, y: 852)),
+    .close,
+  ]
+
+  /// The ECG trace: a line through these points, with round caps and joins.
+  static let trace: [CGPoint] = [
+    CGPoint(x: 232, y: 480),
+    CGPoint(x: 384, y: 480),
+    CGPoint(x: 432, y: 410),
+    CGPoint(x: 484, y: 580),
+    CGPoint(x: 548, y: 296),
+    CGPoint(x: 604, y: 540),
+    CGPoint(x: 640, y: 480),
+    CGPoint(x: 792, y: 480),
+  ]
+  static let traceWidth = 50.0
+
+  static var heartPath: CGPath {
+    let path = CGMutablePath()
+    for segment in heart {
+      switch segment {
+      case .move(let point):
+        path.move(to: point)
+      case .curve(let control1, let control2, let end):
+        path.addCurve(to: end, control1: control1, control2: control2)
+      case .close:
+        path.closeSubpath()
+      }
+    }
+    return path
+  }
+
+  static var tracePath: CGPath {
+    let path = CGMutablePath()
+    path.addLines(between: trace)
+    return path
+  }
+
+  static var heartSVG: String {
+    func format(_ point: CGPoint) -> String { "\(Int(point.x)) \(Int(point.y))" }
+    let data = heart.map { segment in
+      switch segment {
+      case .move(let point):
+        "M\(format(point))"
+      case .curve(let control1, let control2, let end):
+        "C\(format(control1)) \(format(control2)) \(format(end))"
+      case .close:
+        "Z"
+      }
+    }
+    return svg(
+      #"<path fill="\#(Palette.heart.svg)" d="\#(data.joined(separator: " "))"/>"#
     )
   }
 
-  mutating func set(_ x: Int, _ y: Int, _ color: RGB, alpha: Double = 1) {
-    let index = (y * width + x) * 4
-    func byte(_ value: Double) -> UInt8 { UInt8(max(0, min(255, value.rounded()))) }
-    pixels[index] = byte(color.red)
-    pixels[index + 1] = byte(color.green)
-    pixels[index + 2] = byte(color.blue)
-    pixels[index + 3] = byte(alpha * 255)
+  static var traceSVG: String {
+    let points = trace.map { "\(Int($0.x)),\(Int($0.y))" }.joined(separator: " ")
+    return svg(
+      #"<polyline fill="none" stroke="\#(Palette.trace.svg)" stroke-width="\#(Int(traceWidth))" "#
+        + #"stroke-linecap="round" stroke-linejoin="round" points="\#(points)"/>"#
+    )
   }
+
+  private static func svg(_ body: String) -> String {
+    let side = Int(canvas)
+    return #"<svg xmlns="http://www.w3.org/2000/svg" width="\#(side)" height="\#(side)" "#
+      + #"viewBox="0 0 \#(side) \#(side)">\#(body)</svg>"# + "\n"
+  }
+}
+
+/// What to draw.
+enum Style {
+  /// The heart and trace on [background], or on transparent with none. An
+  /// icon with a background is opaque, as Apple requires.
+  case colour(background: RGB?)
+
+  /// The heart in white with the trace cut out, on transparent: Android's
+  /// themed icon, which keeps only the alpha.
+  case monochrome
 }
 
 enum IconError: Error {
-  case unreadable(String)
   case unwritable(String)
 }
 
-func load(_ path: String) throws -> Bitmap {
-  guard
-    let source = CGImageSourceCreateWithURL(URL(fileURLWithPath: path) as CFURL, nil),
-    let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
-  else {
-    throw IconError.unreadable(path)
-  }
-  var bitmap = Bitmap(width: image.width, height: image.height)
-  // The source is opaque, so premultiplied and straight are the same.
-  let drawn = bitmap.pixels.withUnsafeMutableBytes { bytes -> Bool in
-    guard
-      let context = CGContext(
-        data: bytes.baseAddress,
-        width: image.width,
-        height: image.height,
-        bitsPerComponent: 8,
-        bytesPerRow: image.width * 4,
-        space: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(),
-        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-      )
-    else {
-      return false
+/// Draws [style] into a PNG of [size] pixels square, with the design's
+/// canvas scaled into the middle [fraction] of it.
+func writePNG(_ style: Style, to path: String, size: Int, fraction: Double = 1) throws {
+  let isOpaque =
+    switch style {
+    case .colour(let background): background != nil
+    case .monochrome: false
     }
-    context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
-    return true
-  }
-  guard drawn else {
-    throw IconError.unreadable(path)
-  }
-  return bitmap
-}
-
-/// Writes [bitmap] as a PNG of [size] pixels square, with the bitmap scaled
-/// into the middle [fraction] of it.
-func save(_ bitmap: Bitmap, to path: String, size: Int, fraction: Double = 1) throws {
-  let space = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
-  var premultiplied = bitmap.pixels
-  for index in stride(from: 0, to: premultiplied.count, by: 4) {
-    let alpha = Double(premultiplied[index + 3]) / 255
-    for channel in 0..<3 {
-      premultiplied[index + channel] = UInt8((Double(premultiplied[index + channel]) * alpha).rounded())
-    }
-  }
-  let image = premultiplied.withUnsafeMutableBytes { bytes -> CGImage? in
-    CGContext(
-      data: bytes.baseAddress,
-      width: bitmap.width,
-      height: bitmap.height,
-      bitsPerComponent: 8,
-      bytesPerRow: bitmap.width * 4,
-      space: space,
-      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-    )?.makeImage()
-  }
   guard
-    let image,
     let context = CGContext(
       data: nil,
       width: size,
       height: size,
       bitsPerComponent: 8,
       bytesPerRow: 0,
-      space: space,
-      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+      space: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(),
+      bitmapInfo: isOpaque
+        ? CGImageAlphaInfo.noneSkipLast.rawValue
+        : CGImageAlphaInfo.premultipliedLast.rawValue
     )
   else {
     throw IconError.unwritable(path)
   }
-  context.interpolationQuality = .high
   let side = Double(size) * fraction
   let inset = (Double(size) - side) / 2
-  context.draw(image, in: CGRect(x: inset, y: inset, width: side, height: side))
+  // Core Graphics' y points up; flip it to the design's.
+  context.translateBy(x: inset, y: Double(size) - inset)
+  context.scaleBy(x: side / Design.canvas, y: -side / Design.canvas)
+
+  switch style {
+  case .colour(let background):
+    if let background {
+      context.setFillColor(background.cgColor)
+      context.fill(CGRect(x: 0, y: 0, width: Design.canvas, height: Design.canvas))
+    }
+    context.setFillColor(Palette.heart.cgColor)
+    context.addPath(Design.heartPath)
+    context.fillPath()
+    context.setStrokeColor(Palette.trace.cgColor)
+  case .monochrome:
+    context.setFillColor(CGColor(gray: 1, alpha: 1))
+    context.addPath(Design.heartPath)
+    context.fillPath()
+    context.setBlendMode(.clear)
+  }
+  context.setLineWidth(Design.traceWidth)
+  context.setLineCap(.round)
+  context.setLineJoin(.round)
+  context.addPath(Design.tracePath)
+  context.strokePath()
+
   guard
-    let scaled = context.makeImage(),
+    let image = context.makeImage(),
     let destination = CGImageDestinationCreateWithURL(
       URL(fileURLWithPath: path) as CFURL,
       UTType.png.identifier as CFString,
@@ -183,147 +237,23 @@ func save(_ bitmap: Bitmap, to path: String, size: Int, fraction: Double = 1) th
   else {
     throw IconError.unwritable(path)
   }
-  CGImageDestinationAddImage(destination, scaled, nil)
+  CGImageDestinationAddImage(destination, image, nil)
   guard CGImageDestinationFinalize(destination) else {
     throw IconError.unwritable(path)
   }
 }
 
-/// How each pixel of the logo-on-white icon relates to the background.
-struct Analysis {
-  /// True for the white background, found by flood fill from the edges.
-  var isBackground: [Bool]
-
-  /// For each pixel, how much of it is logo (1) rather than white (0), and
-  /// the logo colour it's blended from.
-  var coverage: [Double]
-  var logoColor: [RGB]
+func write(_ text: String, to path: String) throws {
+  try text.write(toFile: path, atomically: true, encoding: .utf8)
 }
 
-func analyze(_ bitmap: Bitmap) -> Analysis {
-  let width = bitmap.width
-  let height = bitmap.height
-  let count = width * height
-  func isWhite(_ x: Int, _ y: Int) -> Bool {
-    let color = bitmap.rgb(x, y)
-    return min(color.red, color.green, color.blue) >= 250
-  }
-
-  var isBackground = [Bool](repeating: false, count: count)
-  var stack: [(Int, Int)] = []
-  for x in 0..<width {
-    stack.append((x, 0))
-    stack.append((x, height - 1))
-  }
-  for y in 0..<height {
-    stack.append((0, y))
-    stack.append((width - 1, y))
-  }
-  while let (x, y) = stack.popLast() {
-    let index = y * width + x
-    if isBackground[index] || !isWhite(x, y) {
-      continue
-    }
-    isBackground[index] = true
-    if x > 0 { stack.append((x - 1, y)) }
-    if x < width - 1 { stack.append((x + 1, y)) }
-    if y > 0 { stack.append((x, y - 1)) }
-    if y < height - 1 { stack.append((x, y + 1)) }
-  }
-
-  // Logo pixels within `band` of the background are edge pixels, blended
-  // with white; the rest are solid logo.
-  let band = 3
-  var isEdge = [Bool](repeating: false, count: count)
-  for y in 0..<height {
-    for x in 0..<width where !isBackground[y * width + x] {
-      search: for dy in -band...band {
-        for dx in -band...band {
-          let nx = x + dx
-          let ny = y + dy
-          if nx >= 0, ny >= 0, nx < width, ny < height, isBackground[ny * width + nx] {
-            isEdge[y * width + x] = true
-            break search
-          }
-        }
-      }
-    }
-  }
-
-  var coverage = [Double](repeating: 0, count: count)
-  var logoColor = [RGB](repeating: .white, count: count)
-  let reach = band + 2
-  for y in 0..<height {
-    for x in 0..<width {
-      let index = y * width + x
-      if isBackground[index] {
-        continue
-      }
-      let pixel = bitmap.rgb(x, y)
-      guard isEdge[index] else {
-        coverage[index] = 1
-        logoColor[index] = pixel
-        continue
-      }
-      // The logo colour nearby: the average of the solid pixels around it.
-      // At a sharp corner the nearest solid pixels are further away, so the
-      // search widens until it finds some.
-      var sum = RGB(red: 0, green: 0, blue: 0)
-      var found = 0.0
-      var radius = reach
-      while found == 0, radius <= 8 * reach {
-        for dy in -radius...radius {
-          for dx in -radius...radius {
-            let nx = x + dx
-            let ny = y + dy
-            let neighbour = ny * width + nx
-            if nx >= 0, ny >= 0, nx < width, ny < height, !isBackground[neighbour],
-              !isEdge[neighbour]
-            {
-              sum = sum + bitmap.rgb(nx, ny)
-              found += 1
-            }
-          }
-        }
-        radius *= 2
-      }
-      let logo = found > 0 ? sum * (1 / found) : pixel
-      let span = logo - .white
-      let length = span.dot(span)
-      let amount = length > 1 ? (pixel - .white).dot(span) / length : 1
-      coverage[index] = max(0, min(1, amount))
-      logoColor[index] = logo
-    }
-  }
-  return Analysis(isBackground: isBackground, coverage: coverage, logoColor: logoColor)
-}
-
-/// The icon with its white background replaced by [background]; or, with no
-/// background, the logo alone on transparent.
-func recolor(_ bitmap: Bitmap, _ analysis: Analysis, background: RGB?) -> Bitmap {
-  var result = Bitmap(width: bitmap.width, height: bitmap.height)
-  for y in 0..<bitmap.height {
-    for x in 0..<bitmap.width {
-      let index = y * bitmap.width + x
-      let amount = analysis.isBackground[index] ? 0 : analysis.coverage[index]
-      let pixel = bitmap.rgb(x, y)
-      if let background {
-        // pixel = amount * logo + (1 - amount) * white, so swapping the white
-        // for the background keeps the logo's share of the blend.
-        result.set(x, y, pixel + (background - .white) * (1 - amount))
-      } else {
-        let color = amount >= 1 ? pixel : analysis.logoColor[index]
-        result.set(x, y, color, alpha: amount)
-      }
-    }
-  }
-  return result
-}
-
-func writeIconSet(_ bitmap: Bitmap, folder: String, platform: String) throws {
+/// An asset catalog app icon of one 1024-pixel image, from which Xcode makes
+/// the other sizes.
+func writeIconSet(background: RGB, folder: String, platform: String) throws {
   try FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
-  try save(bitmap, to: "\(folder)/AppIcon.png", size: 1024)
-  let contents = """
+  try writePNG(.colour(background: background), to: "\(folder)/AppIcon.png", size: 1024)
+  try write(
+    """
     {
       "images" : [
         {
@@ -339,47 +269,132 @@ func writeIconSet(_ bitmap: Bitmap, folder: String, platform: String) throws {
       }
     }
 
-    """
-  try contents.write(toFile: "\(folder)/Contents.json", atomically: true, encoding: .utf8)
+    """,
+    to: "\(folder)/Contents.json"
+  )
 }
 
-let source = "ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png"
-let builds: [(name: String, background: RGB)] = [
-  // Apple's systemGray (light): dark enough to tell from Release's white.
-  ("Debug", RGB(hex: 0x8E8E93)),
-  // Apple's systemGreen, in its darker high-contrast (accessible) form.
-  ("Profile", RGB(hex: 0x248A3D)),
-]
+/// An Icon Composer document: a white background with the heart and the
+/// trace as layers. In Dark mode the background turns near-black and the
+/// trace takes its colour. iOS makes the Clear and Tinted appearances from
+/// the layers.
+func writeIconComposerDocument(folder: String) throws {
+  let assets = "\(folder)/Assets"
+  try FileManager.default.createDirectory(atPath: assets, withIntermediateDirectories: true)
+  try write(Design.heartSVG, to: "\(assets)/heart.svg")
+  try write(Design.traceSVG, to: "\(assets)/trace.svg")
+  // Layers are listed top first.
+  try write(
+    """
+    {
+      "fill-specializations" : [
+        {
+          "value" : {
+            "solid" : "\(RGB(hex: 0xFFFFFF).iconComposer)"
+          }
+        },
+        {
+          "appearance" : "dark",
+          "value" : {
+            "solid" : "\(Palette.darkBackground.iconComposer)"
+          }
+        }
+      ],
+      "groups" : [
+        {
+          "layers" : [
+            {
+              "fill-specializations" : [
+                {
+                  "appearance" : "dark",
+                  "value" : {
+                    "solid" : "\(Palette.darkBackground.iconComposer)"
+                  }
+                }
+              ],
+              "image-name" : "trace.svg",
+              "name" : "trace"
+            },
+            {
+              "image-name" : "heart.svg",
+              "name" : "heart"
+            }
+          ]
+        }
+      ],
+      "supported-platforms" : {
+        "squares" : [
+          "iOS"
+        ]
+      }
+    }
+
+    """,
+    to: "\(folder)/icon.json"
+  )
+}
+
+enum Build: CaseIterable {
+  case debug
+  case profile
+  case release
+
+  /// The asset catalog icon's name: the build's `PULSELINK_APP_ICON` in
+  /// Runner.xcodeproj.
+  var iconName: String {
+    switch self {
+    case .debug: "AppIcon-Debug"
+    case .profile: "AppIcon-Profile"
+    case .release: "AppIcon"
+    }
+  }
+
+  var background: RGB {
+    switch self {
+    // Apple's systemGray (light): dark enough to tell from Release's white.
+    case .debug: RGB(hex: 0x8E8E93)
+    // Apple's systemGreen, in its darker high-contrast (accessible) form.
+    case .profile: RGB(hex: 0x248A3D)
+    case .release: RGB(hex: 0xFFFFFF)
+    }
+  }
+}
 
 do {
-  let icon = try load(source)
-  let analysis = analyze(icon)
-  for build in builds {
-    let recolored = recolor(icon, analysis, background: build.background)
+  for build in Build.allCases {
+    switch build {
+    case .debug, .profile:
+      try writeIconSet(
+        background: build.background,
+        folder: "ios/Runner/Assets.xcassets/\(build.iconName).appiconset",
+        platform: "ios"
+      )
+    case .release:
+      try writeIconComposerDocument(folder: "ios/Runner/\(build.iconName).icon")
+    }
+    // The watch keeps one icon per build, without Icon Composer's appearances.
     try writeIconSet(
-      recolored,
-      folder: "ios/Runner/Assets.xcassets/AppIcon-\(build.name).appiconset",
-      platform: "ios"
-    )
-    try writeIconSet(
-      recolored,
-      folder: "ios/PulseLinkWatch/Assets.xcassets/AppIcon-\(build.name).appiconset",
+      background: build.background,
+      folder: "ios/PulseLinkWatch/Assets.xcassets/\(build.iconName).appiconset",
       platform: "watchos"
     )
   }
-  // An adaptive icon's foreground is 108dp square, of which launchers show
-  // about the middle 72dp, so the whole Release icon goes in that middle.
-  let logo = recolor(icon, analysis, background: nil)
+  // An adaptive icon's layers are 108dp square, of which launchers show
+  // about the middle 72dp, so the design's whole canvas goes in that middle.
   let densities = [("mdpi", 1.0), ("hdpi", 1.5), ("xhdpi", 2.0), ("xxhdpi", 3.0), ("xxxhdpi", 4.0)]
   for (density, scale) in densities {
-    try save(
-      logo,
-      to: "android/app/src/main/res/mipmap-\(density)/ic_launcher_foreground.png",
-      size: Int(108 * scale),
-      fraction: 72.0 / 108.0
+    let folder = "android/app/src/main/res/mipmap-\(density)"
+    let size = Int(108 * scale)
+    let fraction = 72.0 / 108.0
+    try writePNG(
+      .colour(background: nil),
+      to: "\(folder)/ic_launcher_foreground.png",
+      size: size,
+      fraction: fraction
     )
+    try writePNG(.monochrome, to: "\(folder)/ic_launcher_monochrome.png", size: size, fraction: fraction)
   }
-  print("Wrote the Debug and Profile icons.")
+  print("Wrote the app icons.")
 } catch {
   FileHandle.standardError.write(Data("Couldn't make the icons: \(error)\n".utf8))
   exit(1)
