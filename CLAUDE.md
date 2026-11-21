@@ -120,7 +120,10 @@ what throws, so this rule and the tests are the check.
   always finishes, and the error still reaches the caller.
 - Catch specific types (`on SomeException`) and never swallow an error
   silently. When an exception is left uncaught on purpose, add a short comment
-  saying why and what handles it.
+  saying why and what handles it. Anything nothing catches reaches
+  `UncaughtErrorReporter` (`lib/app/uncaught_error_reporter.dart`), which
+  `main()` installs first and which logs it; it's a last resort for bugs,
+  not a way to handle expected failures.
 - Every cleanup path gets a test with a dependency that fails.
 
 Before committing changes to `lib/` that add async calls, cleanup code, catch

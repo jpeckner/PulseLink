@@ -8,6 +8,7 @@ import 'package:flutter/widgets.dart';
 import 'package:pulselink/app/app_bloc_observer.dart';
 import 'package:pulselink/app/composition.dart';
 import 'package:pulselink/app/debug/debug_app.dart';
+import 'package:pulselink/app/uncaught_error_reporter.dart';
 import 'package:pulselink/data/app_settings/platform_app_settings.dart';
 import 'package:pulselink/data/ble/ble_strap_scanner.dart';
 import 'package:pulselink/data/watch/pigeon_watch_bridge.dart';
@@ -19,6 +20,9 @@ import 'package:pulselink/data/watch_bridge.dart';
 /// constructors, so a missing one is a compile error, not a runtime lookup
 /// failure.
 void main() {
+  // First, so errors that nothing else catches, from anything below, are
+  // logged rather than only printed.
+  const UncaughtErrorReporter().install();
   // Before anything below reaches the platform: WatchSync sends its first
   // snapshot through a platform channel as soon as it starts, before runApp.
   WidgetsFlutterBinding.ensureInitialized();

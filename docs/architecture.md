@@ -98,7 +98,7 @@ flowchart TB
 
 | Layer | Component | What it does |
 | --- | --- | --- |
-| Root | `main()` | Gathers the platform's pieces (`AppPlatform`), then builds the app once: `releaseApp` in release builds, or `debugApp` in debug and profile builds, which adds demo data and the debug override. Gives `WatchSync` a bridge on iOS only, through an exhaustive switch on the platform. |
+| Root | `main()` | Installs `UncaughtErrorReporter` first, which logs any error nothing else caught (a bug, never an expected failure), while keeping Flutter's own handling. Then gathers the platform's pieces (`AppPlatform`), then builds the app once: `releaseApp` in release builds, or `debugApp` in debug and profile builds, which adds demo data and the debug override. Gives `WatchSync` a bridge on iOS only, through an exhaustive switch on the platform. |
 | Widgets | `LiveHeartRateScreen` | Shows the cubits' state. Holds no logic beyond choosing what to draw. |
 | Widgets | `StrapPickerScreen` | Lists straps while scanning. Its `BlocProvider` creates the picker cubit and closes it with the screen. |
 | State | `LiveHeartRateCubit` | Turns the source's samples, failures and connection drops into screen state. A timer marks a reading stale 10 seconds after its timestamp. |
