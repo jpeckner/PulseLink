@@ -92,8 +92,19 @@ has its own ID, name and icon background:
   Profile use an adaptive icon, `ic_launcher_build`, whose background colour
   is in `android/app/src/debug/res` and `android/app/src/profile/res`.
 
-The Debug and Profile icons are made from the Release one. After changing the
-Release icon, or a colour in the script, regenerate them:
+The icon is a red heart with a white ECG trace. Release has more than one
+version of it:
+
+- **iPhone:** an Icon Composer document, `ios/Runner/AppIcon.icon`, so iOS 26
+  can show it in Dark, Clear and Tinted as well as Default. Xcode makes the
+  icons for older iOS versions from it. Debug and Profile use plain asset
+  catalog icons, so they look the same in every appearance.
+- **Android:** an adaptive icon with a monochrome layer, which launchers tint
+  for themed icons. Debug and Profile have none.
+- **Watch:** one icon per build.
+
+`tool/make_build_icons.swift` draws the design and writes every icon, so
+change the design or a colour there, then regenerate them:
 
 ```bash
 swift tool/make_build_icons.swift

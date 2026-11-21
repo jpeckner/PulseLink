@@ -1,0 +1,42 @@
+{
+  "fill-specializations" : [
+    {
+      "value" : {
+        "solid" : "srgb:1.00000,1.00000,1.00000,1.00000"
+      }
+    },
+    {
+      "appearance" : "dark",
+      "value" : {
+        "solid" : "srgb:0.10980,0.10980,0.11765,1.00000"
+      }
+    }
+  ],
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : {
+                "solid" : "srgb:0.10980,0.10980,0.11765,1.00000"
+              }
+            }
+          ],
+          "image-name" : "trace.svg",
+          "name" : "trace"
+        },
+        {
+          "image-name" : "heart.svg",
+          "name" : "heart"
+        }
+      ]
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : [
+      "iOS"
+    ]
+  }
+}
