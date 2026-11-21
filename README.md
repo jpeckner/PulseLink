@@ -43,7 +43,9 @@ lib/
 
 ## Running
 
-Requires Flutter 3.50.0 (stable).
+Requires Flutter 3.50.0 (stable). `pubspec.yaml` pins it
+(`environment.flutter`): `flutter pub get` fails on any other version, and CI
+installs that one. To upgrade Flutter, change it there.
 
 ```bash
 flutter pub get

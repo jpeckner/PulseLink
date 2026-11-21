@@ -163,7 +163,7 @@ flutter test --coverage --test-randomize-ordering-seed random > "$LOGS/test.log"
 grep -E "Shuffling test order|\[E\]|Some tests failed|All tests passed" "$LOGS/test.log"
 ```
 
-CI runs tests in a fixed order. Shuffling also catches tests that depend on each other's order. Note the seed from the "Shuffling test order with --test-randomize-ordering-seed=N" line.
+CI shuffles the order too, with a new seed each run, so shuffling here catches tests that depend on each other's order before CI does. Note the seed from the "Shuffling test order with --test-randomize-ordering-seed=N" line.
 
 For each failing test file:
 1. Rerun it once with the same seed: `flutter test <file> --test-randomize-ordering-seed <N>`.
@@ -180,7 +180,7 @@ If a failure was caused by this run's commits, fix it, then commit the fix. Othe
 If the branch has `tool/pulselink_lints`, run its own checks, as CI does:
 
 ```bash
-(cd tool/pulselink_lints && dart format --output=none --set-exit-if-changed lib test && dart analyze --fatal-infos --fatal-warnings && dart test)
+(cd tool/pulselink_lints && dart format --output=none --set-exit-if-changed lib test && dart analyze --fatal-infos --fatal-warnings && dart test --test-randomize-ordering-seed random)
 ```
 
 If the branch changed `.claude/skills/pre-merge-checks/find_unused_code/`, run `dart test` there too.
