@@ -129,6 +129,14 @@ Each Pigeon contract has a generated handler that native code implements.
 On both platforms everything that talks to Dart runs on the main thread,
 the only thread Flutter accepts messages on.
 
+Errors that shouldn't happen, such as a call off the main thread or a
+permission revoked after it was checked, go to an `ErrorTracker`, the native
+counterpart of Dart's `TrackerService`. `AppDelegate` creates the iPhone
+app's (`OSLogTracker`, unified log) and `MainActivity` Android's
+(`LogcatTracker`), and each passes it to everything below that reports
+errors. It works on any thread, so it doesn't send to Dart. Expected
+failures go back to Dart as typed results instead.
+
 ```mermaid
 flowchart LR
   channels["Pigeon channels<br/>ble_api · app_settings_api · watch_api"]
@@ -192,7 +200,8 @@ flowchart LR
 There's no native swap-in in the app itself. Swift Testing and JUnit tests
 exercise the pure decision types (`ScanAction`, `ConnectAction`,
 `WatchSessionState` and the delivery actions, `GattQueue`, `ScanThrottle`)
-without a phone.
+without a phone, and Swift tests pass `RecordingErrorTracker` to check what's
+reported, such as by `isOnMainThread` off the main thread.
 
 ## 3. Watch app
 
@@ -257,7 +266,8 @@ old.
 | Swap point | Live | Swap-in |
 | --- | --- | --- |
 | Data on `HeartRateScreen` | `WatchHeartRateDisplay` from `PhoneConnection` | `#Preview` sample displays, inside `#if DEBUG`; lint and binary checks keep them out of release builds |
-| `PhoneConnection`'s input | `WCSession` delegate callbacks | Tests call `receive(_:)` and `reachabilityDidChange(_:at:)` directly |
+| `PhoneConnection`'s input | `WCSession` delegate callbacks | Tests call `receive(_:)`, `reachabilityDidChange(_:at:)` and `decode(_:from:)` directly |
+| `PhoneConnection`'s error tracker | `OSLogTracker`, created by `PulseLinkWatchApp` | Tests: `RecordingErrorTracker`, which records each error |
 | Time | `TimelineView`'s date | Tests pass a fixed `now` to `WatchHeartRateDisplay` |
 
 ## 4. Phone to watch
