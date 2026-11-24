@@ -4,9 +4,6 @@
 
 import Observation
 import WatchConnectivity
-import os
-
-private let phoneLog = Logger(subsystem: "com.jpeckner.pulselink.watchkitapp", category: "Phone")
 
 /// The watch's side of WatchConnectivity: receives the iPhone app's
 /// heart-rate snapshots, and tracks whether the iPhone is reachable.
@@ -36,10 +33,16 @@ final class PhoneConnection: NSObject {
 
   @ObservationIgnored private var hasRequestedActivation = false
 
+  /// Where snapshots the watch can't read, and a failed activation, are
+  /// reported. Called from WatchConnectivity's background queue too, so
+  /// it's `Sendable`.
+  @ObservationIgnored private let tracker: any ErrorTracker
+
   /// `nonisolated` so the app can create one as a property's initial
   /// value. It only sets up the properties above, which needs no particular
   /// thread.
-  nonisolated override init() {
+  nonisolated init(tracker: any ErrorTracker) {
+    self.tracker = tracker
     super.init()
   }
 
@@ -74,15 +77,15 @@ final class PhoneConnection: NSObject {
     }
   }
 
-  /// Decodes a message or application context, or logs why it couldn't,
-  /// such as one from a newer phone app. Then the last good snapshot stays
-  /// on screen.
-  nonisolated private static func decode(
+  /// Decodes a message or application context, or reports why it
+  /// couldn't, such as one from a newer phone app. Then the last good
+  /// snapshot stays on screen.
+  nonisolated func decode(
     _ dictionary: [String: Any],
     from channel: StaticString
   ) -> HeartRateSnapshot? {
     guard let snapshot = HeartRateSnapshot(dictionary: dictionary) else {
-      phoneLog.error("Ignored a \(channel, privacy: .public) the watch can't read")
+      tracker.logError("Ignored a \(channel) the watch can't read", category: "Phone", error: nil)
       return nil
     }
     return snapshot
@@ -99,11 +102,11 @@ extension PhoneConnection: WCSessionDelegate {
     error: Error?
   ) {
     if let error {
-      phoneLog.error("WatchConnectivity didn't activate: \(String(describing: error), privacy: .public)")
+      tracker.logError("WatchConnectivity didn't activate", category: "Phone", error: error)
     }
     // Empty until the phone has set a context, such as on first launch.
     let context = session.receivedApplicationContext
-    let snapshot = context.isEmpty ? nil : Self.decode(context, from: "application context")
+    let snapshot = context.isEmpty ? nil : decode(context, from: "application context")
     let isReachable = session.isReachable
     let changedAt = Date()
     Task { @MainActor in
@@ -118,7 +121,7 @@ extension PhoneConnection: WCSessionDelegate {
     _ session: WCSession,
     didReceiveApplicationContext applicationContext: [String: Any]
   ) {
-    guard let snapshot = Self.decode(applicationContext, from: "application context") else {
+    guard let snapshot = decode(applicationContext, from: "application context") else {
       return
     }
     Task { @MainActor in
@@ -127,7 +130,7 @@ extension PhoneConnection: WCSessionDelegate {
   }
 
   nonisolated func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
-    guard let snapshot = Self.decode(message, from: "message") else {
+    guard let snapshot = decode(message, from: "message") else {
       return
     }
     Task { @MainActor in

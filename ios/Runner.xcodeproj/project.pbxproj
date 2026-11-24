@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6E5B0A549DDB9A5462985A78 /* MainThreadCheckTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C40770C7D052C40F98AA8F86 /* MainThreadCheckTests.swift */; };
+		7979812D84AD197882756F94 /* RecordingErrorTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00C7AC31ECCEC1079E25214 /* RecordingErrorTracker.swift */; };
+		88B9B1DF2FAD29D92207E070 /* RecordingErrorTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00C7AC31ECCEC1079E25214 /* RecordingErrorTracker.swift */; };
+		C0C8502EBD2352BF80B0D84B /* ErrorTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90C6151F6A5C6F90822E3C05 /* ErrorTracker.swift */; };
+		F4E8E818C293D21B060CF9F2 /* ErrorTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90C6151F6A5C6F90822E3C05 /* ErrorTracker.swift */; };
 		01F5861EE2CDEE2AE212EADE /* HeartRateSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DA65058955BF72E1A66B39D /* HeartRateSnapshot.swift */; };
 		13F3A837D66844E65EB4DD67 /* WatchDeliveryAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC288B1A5EC6891DA1FF4CA5 /* WatchDeliveryAction.swift */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
@@ -98,6 +103,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C40770C7D052C40F98AA8F86 /* MainThreadCheckTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MainThreadCheckTests.swift; sourceTree = "<group>"; };
+		D00C7AC31ECCEC1079E25214 /* RecordingErrorTracker.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RecordingErrorTracker.swift; sourceTree = "<group>"; };
+		90C6151F6A5C6F90822E3C05 /* ErrorTracker.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ErrorTracker.swift; sourceTree = "<group>"; };
 		08B45B5F653289FF922714D7 /* BeatsPerMinute.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BeatsPerMinute.swift; sourceTree = "<group>"; };
 		09214D17CA0BB94F188019FA /* BleApi.pigeon.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BleApi.pigeon.swift; sourceTree = "<group>"; };
 		0DA65058955BF72E1A66B39D /* HeartRateSnapshot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HeartRateSnapshot.swift; sourceTree = "<group>"; };
@@ -173,11 +181,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		8CE3B771B4D2B42380BAF05C /* SharedTests */ = {
+			isa = PBXGroup;
+			children = (
+				D00C7AC31ECCEC1079E25214 /* RecordingErrorTracker.swift */,
+			);
+			path = SharedTests;
+			sourceTree = "<group>";
+		};
 		0DBC2944FEF7B9702C03758C /* Shared */ = {
 			isa = PBXGroup;
 			children = (
 				08B45B5F653289FF922714D7 /* BeatsPerMinute.swift */,
 				0DA65058955BF72E1A66B39D /* HeartRateSnapshot.swift */,
+				90C6151F6A5C6F90822E3C05 /* ErrorTracker.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -208,6 +225,7 @@
 				331C807B294A618700263BE5 /* RunnerTests.swift */,
 				F5B1FF10782EEEB116481ABB /* HeartRateSnapshotTests.swift */,
 				C1CCD16FD46408C037FC2FBC /* WatchBridgeTests.swift */,
+				C40770C7D052C40F98AA8F86 /* MainThreadCheckTests.swift */,
 			);
 			path = RunnerTests;
 			sourceTree = "<group>";
@@ -244,6 +262,7 @@
 				0DBC2944FEF7B9702C03758C /* Shared */,
 				EB4EA48A3FB6DBBE7B57C11F /* Frameworks */,
 				4223FB659A38AA528308504C /* PulseLinkWatchTests */,
+				8CE3B771B4D2B42380BAF05C /* SharedTests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -569,6 +588,8 @@
 				331C808B294A63AB00263BE5 /* RunnerTests.swift in Sources */,
 				99A8324873D9D928B11E03E4 /* HeartRateSnapshotTests.swift in Sources */,
 				63460FAF140977239B920478 /* WatchBridgeTests.swift in Sources */,
+				88B9B1DF2FAD29D92207E070 /* RecordingErrorTracker.swift in Sources */,
+				6E5B0A549DDB9A5462985A78 /* MainThreadCheckTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -583,6 +604,7 @@
 				F8DFE18051CE05D225635E4C /* PhoneConnection.swift in Sources */,
 				5B3CDA6B91D2C020AA40EE8F /* WatchHeartRateDisplay.swift in Sources */,
 				BC92B2A5BE9544E32A3770C5 /* HeartRateScreen.swift in Sources */,
+				C0C8502EBD2352BF80B0D84B /* ErrorTracker.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -610,6 +632,7 @@
 				E88C0C9FC02811329BF7B10B /* PhoneWatchSession.swift in Sources */,
 				13F3A837D66844E65EB4DD67 /* WatchDeliveryAction.swift in Sources */,
 				792983159FCD87F1C1BF0519 /* HeartRateSnapshot+Pigeon.swift in Sources */,
+				F4E8E818C293D21B060CF9F2 /* ErrorTracker.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -619,6 +642,7 @@
 			files = (
 				835F83D4297A0CC5EFF2A61A /* WatchHeartRateDisplayTests.swift in Sources */,
 				B12F6825EB3D786BC02B3805 /* PhoneConnectionTests.swift in Sources */,
+				7979812D84AD197882756F94 /* RecordingErrorTracker.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -56,6 +56,8 @@ var probeImplicitlyUnwrapped: Int!
 
 func probeNoAssertions() { fatalError("probe") }
 
+func probeNoErrorLevelLogging(_ logger: Logger) { logger.error("probe") }
+
 func probeNoCatchAllCases(_ probe: NativeLintProbe) -> Int {
   switch probe {
   case .a:

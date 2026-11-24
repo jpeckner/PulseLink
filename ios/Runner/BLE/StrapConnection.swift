@@ -60,10 +60,14 @@ final class StrapConnection: NSObject {
     let continuation: CheckedContinuation<StrapConnectOutcome, Never>
   }
 
+  /// Where a call that arrives off the main thread is reported.
+  private let tracker: any ErrorTracker
+
   /// `nonisolated` so `BleStrapLink`, which has no actor isolation, can
   /// create one. It only sets up the properties above, which needs no
   /// particular thread.
-  nonisolated override init() {
+  nonisolated init(tracker: any ErrorTracker) {
+    self.tracker = tracker
     super.init()
   }
 
@@ -132,7 +136,7 @@ final class StrapConnection: NSObject {
 /// here. See `StrapConnection` for why each method checks the thread first.
 extension StrapConnection: CBCentralManagerDelegate {
   nonisolated func centralManagerDidUpdateState(_ central: CBCentralManager) {
-    guard isOnMainThread() else {
+    guard isOnMainThread(reportingTo: tracker) else {
       return
     }
     MainActor.assumeIsolated {
@@ -144,7 +148,7 @@ extension StrapConnection: CBCentralManagerDelegate {
     _ central: CBCentralManager,
     didConnect peripheral: CBPeripheral
   ) {
-    guard isOnMainThread() else {
+    guard isOnMainThread(reportingTo: tracker) else {
       return
     }
     let id = peripheral.identifier
@@ -158,7 +162,7 @@ extension StrapConnection: CBCentralManagerDelegate {
     didFailToConnect peripheral: CBPeripheral,
     error: (any Error)?
   ) {
-    guard isOnMainThread() else {
+    guard isOnMainThread(reportingTo: tracker) else {
       return
     }
     let id = peripheral.identifier
@@ -174,7 +178,7 @@ extension StrapConnection: CBCentralManagerDelegate {
     didDisconnectPeripheral peripheral: CBPeripheral,
     error: (any Error)?
   ) {
-    guard isOnMainThread() else {
+    guard isOnMainThread(reportingTo: tracker) else {
       return
     }
     let id = peripheral.identifier
@@ -191,7 +195,7 @@ extension StrapConnection: CBPeripheralDelegate {
     _ peripheral: CBPeripheral,
     didDiscoverServices error: (any Error)?
   ) {
-    guard isOnMainThread() else {
+    guard isOnMainThread(reportingTo: tracker) else {
       return
     }
     let id = peripheral.identifier
@@ -206,7 +210,7 @@ extension StrapConnection: CBPeripheralDelegate {
     didDiscoverCharacteristicsFor service: CBService,
     error: (any Error)?
   ) {
-    guard isOnMainThread() else {
+    guard isOnMainThread(reportingTo: tracker) else {
       return
     }
     let id = peripheral.identifier
@@ -222,7 +226,7 @@ extension StrapConnection: CBPeripheralDelegate {
     didUpdateNotificationStateFor characteristic: CBCharacteristic,
     error: (any Error)?
   ) {
-    guard isOnMainThread() else {
+    guard isOnMainThread(reportingTo: tracker) else {
       return
     }
     let id = peripheral.identifier
@@ -244,7 +248,7 @@ extension StrapConnection: CBPeripheralDelegate {
     didUpdateValueFor characteristic: CBCharacteristic,
     error: (any Error)?
   ) {
-    guard isOnMainThread() else {
+    guard isOnMainThread(reportingTo: tracker) else {
       return
     }
     let id = peripheral.identifier

@@ -12,7 +12,15 @@ import Flutter
 /// has no actor isolation, and a subclass can't change that. It hands each
 /// call to `CentralScan`, which is.
 final class BleStrapScanner: ScanForHeartRateStrapsStreamHandler {
-  private let scan = CentralScan()
+  private let scan: CentralScan
+  /// Where a call that arrives off the main thread is reported.
+  private let tracker: any ErrorTracker
+
+  init(tracker: any ErrorTracker) {
+    self.tracker = tracker
+    self.scan = CentralScan(tracker: tracker)
+    super.init()
+  }
 
   override func onListen(withArguments arguments: Any?, sink: PigeonEventSink<BleScanEvent>) {
     // Flutter calls stream handlers on its platform thread, which on iOS is
@@ -20,8 +28,9 @@ final class BleStrapScanner: ScanForHeartRateStrapsStreamHandler {
     // Swift can't know that. The guard checks it; assumeIsolated then tells
     // the compiler, and can't fail because the guard has just checked. If
     // Flutter ever broke that contract, the scan wouldn't start and the
-    // picker would keep showing that it's looking, with a fault in the log.
-    guard isOnMainThread() else {
+    // picker would keep showing that it's looking, and the tracker would
+    // report it.
+    guard isOnMainThread(reportingTo: tracker) else {
       return
     }
     // Pigeon's generated PigeonEventSink isn't marked Sendable, so Swift
@@ -39,7 +48,7 @@ final class BleStrapScanner: ScanForHeartRateStrapsStreamHandler {
   override func onCancel(withArguments arguments: Any?) {
     // See onListen. If this were ever skipped, the scan would keep running
     // until the next start or stop.
-    guard isOnMainThread() else {
+    guard isOnMainThread(reportingTo: tracker) else {
       return
     }
     let scan = scan
