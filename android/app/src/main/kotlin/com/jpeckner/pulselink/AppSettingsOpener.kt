@@ -9,7 +9,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
-import android.util.Log
 
 /**
  * Answers `openAppSettings` (see pigeons/app_settings_api.dart) by opening
@@ -18,7 +17,10 @@ import android.util.Log
  *
  * Pigeon runs this on the main thread.
  */
-class AppSettingsOpener(private val context: Context) : AppSettingsApi {
+class AppSettingsOpener(
+    private val context: Context,
+    private val tracker: ErrorTracker,
+) : AppSettingsApi {
     override suspend fun openAppSettings(): Boolean {
         val intent = Intent(
             Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
@@ -30,7 +32,7 @@ class AppSettingsOpener(private val context: Context) : AppSettingsApi {
         } catch (error: ActivityNotFoundException) {
             // Some customized Android builds have no App info page. Dart
             // tells the user it couldn't open Settings.
-            Log.w(TAG, "No activity can show this app's settings", error)
+            tracker.logError(TAG, "No activity can show this app's settings", error)
             false
         }
     }

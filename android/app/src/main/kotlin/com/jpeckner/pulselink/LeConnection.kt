@@ -69,7 +69,10 @@ sealed interface GattOperation {
 // The Bluetooth calls below need BLUETOOTH_CONNECT, which Android lint can't
 // see is checked through ConnectAction; each also catches SecurityException.
 @SuppressLint("MissingPermission")
-class LeConnection(private val context: Context) {
+class LeConnection(
+    private val context: Context,
+    private val tracker: ErrorTracker,
+) {
     private val mainHandler = Handler(Looper.getMainLooper())
     private val adapter: BluetoothAdapter? =
         context.getSystemService(BluetoothManager::class.java)?.adapter
@@ -215,7 +218,7 @@ class LeConnection(private val context: Context) {
                 ?.takeIf { BluetoothAdapter.checkBluetoothAddress(strapId) }
                 ?.getRemoteDevice(strapId)
         if (device == null) {
-            Log.w(TAG, "No strap with the id $strapId")
+            tracker.logError(TAG, "No strap with the id $strapId")
             finish(BleConnectFailed(BleConnectFailureReason.UNREACHABLE))
             return
         }
@@ -227,7 +230,7 @@ class LeConnection(private val context: Context) {
                 // transport, since some straps also offer classic Bluetooth.
                 device.connectGatt(context, false, callback, BluetoothDevice.TRANSPORT_LE)
             } catch (error: SecurityException) {
-                Log.w(TAG, "Connecting wasn't permitted", error)
+                tracker.logError(TAG, "Connecting wasn't permitted", error)
                 finish(BleConnectFailed(BleConnectFailureReason.UNAUTHORIZED))
                 return
             }
@@ -479,7 +482,7 @@ class LeConnection(private val context: Context) {
                 }
             }
         } catch (error: SecurityException) {
-            Log.w(TAG, "Starting $op wasn't permitted", error)
+            tracker.logError(TAG, "Starting $op wasn't permitted", error)
             false
         }
     }
@@ -590,14 +593,14 @@ class LeConnection(private val context: Context) {
         try {
             gatt.disconnect()
         } catch (error: SecurityException) {
-            Log.w(TAG, "Disconnecting wasn't permitted", error)
+            tracker.logError(TAG, "Disconnecting wasn't permitted", error)
         } finally {
             // Frees Android's connection slot, of which there are only a
             // few; without it, they stay taken until the app is killed.
             try {
                 gatt.close()
             } catch (error: SecurityException) {
-                Log.w(TAG, "Closing the connection wasn't permitted", error)
+                tracker.logError(TAG, "Closing the connection wasn't permitted", error)
             }
         }
     }

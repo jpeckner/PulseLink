@@ -92,6 +92,9 @@ private class ProbeLateinitUsage {
 
 private fun probeForbiddenMethodCall(): Nothing = error("probe")
 
+// Also ForbiddenMethodCall: error-level logging outside LogcatTracker.
+private fun probeErrorLevelLogging(): Int = android.util.Log.e("probe", "probe")
+
 private fun probeElseCase(probe: NativeLintProbe): Int =
     when (probe) {
         NativeLintProbe.A -> 1

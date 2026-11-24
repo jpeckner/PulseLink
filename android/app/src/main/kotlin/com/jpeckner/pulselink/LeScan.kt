@@ -45,7 +45,10 @@ import android.util.Log
 // can't see are checked through ScanAction; each also catches
 // SecurityException.
 @SuppressLint("MissingPermission")
-class LeScan(private val activity: Activity) {
+class LeScan(
+    private val activity: Activity,
+    private val tracker: ErrorTracker,
+) {
     private val mainHandler = Handler(Looper.getMainLooper())
     private val throttle = ScanThrottle()
     private val adapter: BluetoothAdapter? =
@@ -209,7 +212,7 @@ class LeScan(private val activity: Activity) {
             scanner.startScan(listOf(heartRateFilter), scanSettings, callback)
         } catch (error: SecurityException) {
             // The permission was revoked after it was checked.
-            Log.w(TAG, "Starting the scan wasn't permitted", error)
+            tracker.logError(TAG, "Starting the scan wasn't permitted", error)
             sink.success(BleScanFailed(BleScanFailureReason.UNAUTHORIZED))
             return
         } catch (error: IllegalStateException) {
@@ -236,7 +239,7 @@ class LeScan(private val activity: Activity) {
             Log.i(TAG, "Bluetooth was off when stopping the scan", error)
         } catch (error: SecurityException) {
             // The permission was revoked, which stops scans too.
-            Log.w(TAG, "Stopping the scan wasn't permitted", error)
+            tracker.logError(TAG, "Stopping the scan wasn't permitted", error)
         }
     }
 
@@ -253,7 +256,7 @@ class LeScan(private val activity: Activity) {
             try {
                 manager.getConnectedDevices(BluetoothProfile.GATT)
             } catch (error: SecurityException) {
-                Log.w(TAG, "Listing connected straps wasn't permitted", error)
+                tracker.logError(TAG, "Listing connected straps wasn't permitted", error)
                 return
             }
         for (device in devices) {
@@ -261,7 +264,7 @@ class LeScan(private val activity: Activity) {
                 try {
                     device.uuids?.any { it.uuid == StrapUuids.HEART_RATE_SERVICE } == true
                 } catch (error: SecurityException) {
-                    Log.w(TAG, "Reading a device's services wasn't permitted", error)
+                    tracker.logError(TAG, "Reading a device's services wasn't permitted", error)
                     false
                 }
             if (offersHeartRate) {
@@ -280,7 +283,7 @@ class LeScan(private val activity: Activity) {
         try {
             device.name
         } catch (error: SecurityException) {
-            Log.w(TAG, "Reading a strap's name wasn't permitted", error)
+            tracker.logError(TAG, "Reading a strap's name wasn't permitted", error)
             null
         }
 
@@ -314,7 +317,7 @@ class LeScan(private val activity: Activity) {
             return
         }
         scanCallback = null
-        Log.e(TAG, "The scan failed with error $errorCode")
+        tracker.logError(TAG, "The scan failed with error $errorCode")
         if (errorCode == ScanCallback.SCAN_FAILED_FEATURE_UNSUPPORTED) {
             sink?.success(BleScanFailed(BleScanFailureReason.UNSUPPORTED))
         }
