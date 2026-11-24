@@ -31,14 +31,14 @@ class UncaughtErrorReporter {
   /// Routes Flutter's two last-resort hooks here. main() calls it first, so
   /// errors from anything after it are reported.
   void install() {
-    FlutterError.onError = handleFlutterError;
-    PlatformDispatcher.instance.onError = handlePlatformError;
+    FlutterError.onError = _handleFlutterError;
+    PlatformDispatcher.instance.onError = _handlePlatformError;
   }
 
   /// An error while building, laying out or painting widgets, or anything
   /// else Flutter's framework reports. Flutter presents it as it would
   /// anyway, then it's logged.
-  void handleFlutterError(FlutterErrorDetails details) {
+  void _handleFlutterError(FlutterErrorDetails details) {
     _presentFlutterError(details);
     _log(
       'Flutter error in ${details.library ?? 'an unknown library'}',
@@ -52,7 +52,7 @@ class UncaughtErrorReporter {
   /// logged, then reported as unhandled (false), so the platform still
   /// prints it to the device log as it would without this. That matters in
   /// release builds, where `dart:developer`'s log goes nowhere.
-  bool handlePlatformError(Object error, StackTrace stackTrace) {
+  bool _handlePlatformError(Object error, StackTrace stackTrace) {
     _log('Uncaught error', error, stackTrace);
     return false;
   }
