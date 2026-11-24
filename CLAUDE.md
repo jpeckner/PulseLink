@@ -122,8 +122,19 @@ what throws, so this rule and the tests are the check.
   silently. When an exception is left uncaught on purpose, add a short comment
   saying why and what handles it. Anything nothing catches reaches
   `UncaughtErrorReporter` (`lib/app/uncaught_error_reporter.dart`), which
-  `main()` installs first and which logs it; it's a last resort for bugs,
-  not a way to handle expected failures.
+  `main()` installs first and which reports it as fatal; it's a last resort
+  for bugs, not a way to handle expected failures.
+- Report errors through `TrackerService` (`lib/data/tracker_service.dart`),
+  never `developer.log` or `print` directly, so a crash reporting service
+  plugs in at one place. A caught error that shouldn't happen, such as a
+  platform channel failing, is non-fatal; only `UncaughtErrorReporter`
+  reports fatal ones. Expected failures and normal events (a malformed
+  packet, the strap disconnecting) aren't errors: log those with
+  `developer.log`, if at all.
+- There's one `TrackerService`, which `main()` creates. A class that reports
+  errors takes it as a required constructor argument, with no default, so a
+  missing one is a compile error and nothing makes a second one. Tests pass
+  `RecordingTrackerService` (`test/helpers/`) and check what was reported.
 - Every cleanup path gets a test with a dependency that fails.
 
 Before committing changes to `lib/` that add async calls, cleanup code, catch

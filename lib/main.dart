@@ -10,7 +10,9 @@ import 'package:pulselink/app/composition.dart';
 import 'package:pulselink/app/debug/debug_app.dart';
 import 'package:pulselink/app/uncaught_error_reporter.dart';
 import 'package:pulselink/data/app_settings/platform_app_settings.dart';
+import 'package:pulselink/data/ble/ble_strap_data_source.dart';
 import 'package:pulselink/data/ble/ble_strap_scanner.dart';
+import 'package:pulselink/data/tracker_service.dart';
 import 'package:pulselink/data/watch/pigeon_watch_bridge.dart';
 import 'package:pulselink/data/watch_bridge.dart';
 
@@ -20,18 +22,22 @@ import 'package:pulselink/data/watch_bridge.dart';
 /// constructors, so a missing one is a compile error, not a runtime lookup
 /// failure.
 void main() {
+  // The app's only tracker: everything that reports errors gets this one.
+  const tracker = TrackerService();
   // First, so errors that nothing else catches, from anything below, are
   // logged rather than only printed.
-  const UncaughtErrorReporter().install();
+  const UncaughtErrorReporter(tracker: tracker).install();
   // Before anything below reaches the platform: WatchSync sends its first
   // snapshot through a platform channel as soon as it starts, before runApp.
   WidgetsFlutterBinding.ensureInitialized();
-  Bloc.observer = const AppBlocObserver();
+  Bloc.observer = const AppBlocObserver(tracker: tracker);
 
   final platform = AppPlatform(
     strapScanner: BleStrapScanner(),
-    appSettings: PlatformAppSettings(),
+    appSettings: PlatformAppSettings(tracker: tracker),
     watchBridge: _watchBridge(),
+    createStrapSource: (strapId) =>
+        BleStrapDataSource(strapId: strapId, tracker: tracker),
   );
   if (kReleaseMode) {
     runApp(releaseApp(platform));

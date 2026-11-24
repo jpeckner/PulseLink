@@ -9,6 +9,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
 import 'package:pulselink/data/ble/ble_api.pigeon.dart';
 import 'package:pulselink/data/strap_data_source.dart';
+import 'package:pulselink/data/tracker_service.dart';
 import 'package:pulselink/domain/battery_level.dart';
 import 'package:pulselink/domain/heart_rate_measurement_parser.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
@@ -26,12 +27,14 @@ import 'package:pulselink/domain/strap_connection_failure.dart';
 /// comes in Milestone 6.
 class BleStrapDataSource implements StrapDataSource {
   /// Connects to the strap with `strapId`, from a scan. [api] and [events]
-  /// stand in for the platform channels in tests.
+  /// stand in for the platform channels in tests. Failures on those channels
+  /// are reported to `tracker`.
   ///
   /// Only one source should be in use at a time: the native side connects to
   /// one strap, and each source opens its own event channel.
   new({
     required this._strapId,
+    required this._tracker,
     BleConnectionApi? api,
     Stream<BleStrapEvent>? events,
   }) : _api = api ?? BleConnectionApi(),
@@ -40,6 +43,7 @@ class BleStrapDataSource implements StrapDataSource {
   final StrapBleIdentifier _strapId;
   final BleConnectionApi _api;
   final Stream<BleStrapEvent> _events;
+  final TrackerService _tracker;
   final _samples = StreamController<HeartRateSample>.broadcast();
   final _connectionLost = StreamController<StrapConnectionFailure>.broadcast();
   final _batteryLevel = StreamController<BatteryLevel?>.broadcast();
@@ -168,7 +172,7 @@ class BleStrapDataSource implements StrapDataSource {
       // The native side reports expected failures as BleConnectFailed, so
       // this means the channel itself failed, such as a missing native
       // handler. Either way the phone can't connect.
-      developer.log(
+      _tracker.logError(
         'Connecting failed on the platform channel',
         name: 'ble',
         error: error,
@@ -184,7 +188,7 @@ class BleStrapDataSource implements StrapDataSource {
     } on PlatformException catch (error, stackTrace) {
       // Nothing more to do: the native side can't be told to let go, and
       // this source is stopped either way.
-      developer.log(
+      _tracker.logError(
         'Disconnecting failed on the platform channel',
         name: 'ble',
         error: error,
@@ -238,7 +242,7 @@ class BleStrapDataSource implements StrapDataSource {
     if (error is PlatformException) {
       // A native error on the event stream. Measurements stop, and the live
       // screen marks the last reading stale.
-      developer.log(
+      _tracker.logError(
         'The strap event stream failed',
         name: 'ble',
         error: error,

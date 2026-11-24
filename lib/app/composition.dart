@@ -24,7 +24,7 @@ class AppPlatform {
     required this.strapScanner,
     required this.appSettings,
     required this.watchBridge,
-    this.createStrapSource,
+    required this.createStrapSource,
   });
 
   /// Used by the strap picker, which scans only while it's open.
@@ -36,9 +36,9 @@ class AppPlatform {
   /// The platform's watch app, if it has one; null where there's none.
   final WatchBridge? watchBridge;
 
-  /// Makes the source for a picked strap. Null for the real one, a BLE
-  /// strap; tests pass a stub.
-  final StrapDataSource Function(StrapBleIdentifier strapId)? createStrapSource;
+  /// Makes the source for a picked strap: main() passes one that connects
+  /// to a BLE strap; tests pass a stub.
+  final StrapDataSource Function(StrapBleIdentifier strapId) createStrapSource;
 }
 
 /// The release app: heart rate only from a strap the user picks, never

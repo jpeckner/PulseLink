@@ -98,7 +98,7 @@ flowchart TB
 
 | Layer | Component | What it does |
 | --- | --- | --- |
-| Root | `main()` | Installs `UncaughtErrorReporter` first, which logs any error nothing else caught (a bug, never an expected failure), while keeping Flutter's own handling. Then gathers the platform's pieces (`AppPlatform`), then builds the app once: `releaseApp` in release builds, or `debugApp` in debug and profile builds, which adds demo data and the debug override. Gives `WatchSync` a bridge on iOS only, through an exhaustive switch on the platform. |
+| Root | `main()` | Creates the app's one `TrackerService`, which it passes to everything that reports errors. Installs `UncaughtErrorReporter` first, which reports any error nothing else caught (a bug, never an expected failure) to `TrackerService` as fatal, while keeping Flutter's own handling. Then gathers the platform's pieces (`AppPlatform`), then builds the app once: `releaseApp` in release builds, or `debugApp` in debug and profile builds, which adds demo data and the debug override. Gives `WatchSync` a bridge on iOS only, through an exhaustive switch on the platform. |
 | Widgets | `LiveHeartRateScreen` | Shows the cubits' state. Holds no logic beyond choosing what to draw. |
 | Widgets | `StrapPickerScreen` | Lists straps while scanning. Its `BlocProvider` creates the picker cubit and closes it with the screen. |
 | State | `LiveHeartRateCubit` | Turns the source's samples, failures and connection drops into screen state. A timer marks a reading stale 10 seconds after its timestamp. |
@@ -108,6 +108,7 @@ flowchart TB
 | Data | `SwitchableStrapDataSource` | Owns whichever `StrapDataSource` is current, so the cubits never change source themselves. Starts with none, reporting no strap until one is picked. |
 | Data | `BleStrapDataSource` | The strap through `ble_api`. Parses raw Heart Rate Measurement bytes in exactly one place. Expected failures come back as typed results, never exceptions. |
 | Data | `PigeonWatchBridge` | The watch through `watch_api`. Turns platform errors into a `WatchDeliveryResult`. |
+| Data | `TrackerService` | Where errors are reported from: fatal from `UncaughtErrorReporter`, non-fatal from `AppBlocObserver` and from the platform-channel failures `BleStrapDataSource` and `PlatformAppSettings` catch. Logs through `dart:developer` for now; a crash reporting service, and Milestone 6's in-app debug log, would plug in there. Expected failures and normal events, such as a malformed packet, don't go through it. |
 
 ### Swap points
 
@@ -119,6 +120,7 @@ flowchart TB
 | `StrapScanner` | `BleStrapScanner` | Tests: `StubStrapScanner`. |
 | `AppSettings` | `PlatformAppSettings` | Tests: `StubAppSettings`. |
 | `WatchBridge` | `PigeonWatchBridge` | Tests: `FakeWatchBridge`, which records snapshots and can fail before or after returning a future. |
+| `TrackerService` | the one `main()` creates, a required constructor argument wherever errors are reported | Tests: `RecordingTrackerService`, which records each error. |
 | Clock | system clock | Tests: `package:clock` with a fixed or fake-async clock, for staleness and `sentAt`. |
 
 ## 2. Phone app: native code

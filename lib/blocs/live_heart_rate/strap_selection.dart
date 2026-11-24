@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for the full license text.
 
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
-import 'package:pulselink/data/ble/ble_strap_data_source.dart';
 import 'package:pulselink/data/strap_data_source.dart';
 import 'package:pulselink/data/switchable_strap_data_source.dart';
 import 'package:pulselink/domain/discovered_strap.dart';
@@ -15,13 +14,13 @@ import 'package:pulselink/domain/strap_ble_identifier.dart';
 /// A small first step: the connection Bloc planned for Milestone 6 takes
 /// this over, with reconnecting and remembering the last strap.
 class StrapSelection {
-  /// [createSource] makes the source for a picked strap; tests pass a stub.
+  /// `createSource` makes the source for a picked strap: a BLE strap in
+  /// the app, a stub in tests.
   new({
     required this._source,
     required this._cubit,
-    StrapDataSource Function(StrapBleIdentifier strapId)? createSource,
-  }) : _createSource =
-           createSource ?? ((strapId) => BleStrapDataSource(strapId: strapId));
+    required this._createSource,
+  });
 
   final SwitchableStrapDataSource _source;
   final LiveHeartRateCubit _cubit;

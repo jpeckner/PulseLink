@@ -18,6 +18,7 @@ import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
 
 import '../../helpers/discovered_strap.dart';
+import '../../helpers/recording_tracker_service.dart';
 
 class _MockConnectionApi extends Mock implements BleConnectionApi;
 
@@ -38,16 +39,19 @@ void main() {
   group('BleStrapDataSource', () {
     late _MockConnectionApi api;
     late StreamController<BleStrapEvent> events;
+    late RecordingTrackerService tracker;
     late BleStrapDataSource source;
     late List<HeartRateSample> samples;
 
     setUp(() {
       api = _MockConnectionApi();
       events = StreamController<BleStrapEvent>.broadcast(sync: true);
+      tracker = RecordingTrackerService();
       source = BleStrapDataSource(
         strapId: strapIdOf('E621E1F8-C36C-495A-93FC-0C247A3E6E5F'),
         api: api,
         events: events.stream,
+        tracker: tracker,
       );
       samples = [];
       source.samples.listen(samples.add);
@@ -118,15 +122,19 @@ void main() {
       }
 
       test('on the platform channel is reported as Bluetooth being '
-          'unavailable', () async {
-        when(() => api.connect(any()))
-            .thenThrow(PlatformException(code: 'channel-error'));
+          'unavailable, and tracked as non-fatal', () async {
+        final error = PlatformException(code: 'channel-error');
+        when(() => api.connect(any())).thenThrow(error);
         expect(
           await source.start(),
           const StrapDataSourceStartResult.failed(
             StrapConnectionFailure.bluetooth(BluetoothProblem.unavailable),
           ),
         );
+        final logged = tracker.errors.single;
+        expect(logged.name, 'ble');
+        expect(logged.error, same(error));
+        expect(logged.fatal, isFalse);
       });
 
       test('means measurements are ignored, and a later start connects '
@@ -224,14 +232,18 @@ void main() {
         expect(samples, hasLength(1));
       });
 
-      test('a native error on the event stream is dropped, and later '
-          'measurements still arrive', () async {
+      test('a native error on the event stream is tracked as non-fatal, and '
+          'later measurements still arrive', () async {
+        final error = PlatformException(code: 'native-error');
         expect(await source.start(), _started);
         events
-          ..addError(PlatformException(code: 'native-error'))
+          ..addError(error)
           ..add(BleHeartRateMeasurement(value: _packet));
         await _delivered();
         expect(samples, hasLength(1));
+        final logged = tracker.errors.single;
+        expect(logged.error, same(error));
+        expect(logged.fatal, isFalse);
       });
 
       test('the strap disconnecting stops samples, and a later start '
@@ -302,11 +314,15 @@ void main() {
         expect(samples, isEmpty);
       });
 
-      test('a platform failure to disconnect is logged, not thrown', () async {
-        when(() => api.disconnect())
-            .thenThrow(PlatformException(code: 'channel-error'));
+      test('a platform failure to disconnect is tracked as non-fatal, not '
+          'thrown', () async {
+        final error = PlatformException(code: 'channel-error');
+        when(() => api.disconnect()).thenThrow(error);
         expect(await source.start(), _started);
         await expectLater(source.stop(), completes);
+        final logged = tracker.errors.single;
+        expect(logged.error, same(error));
+        expect(logged.fatal, isFalse);
       });
     });
 
@@ -390,6 +406,7 @@ void main() {
       events = StreamController<BleStrapEvent>(onCancel: () => throw failure);
       source = BleStrapDataSource(
         strapId: strapIdOf('strap-1'),
+        tracker: RecordingTrackerService(),
         api: api,
         events: events.stream,
       );
@@ -469,7 +486,10 @@ void main() {
           MockStreamHandler.inline(onListen: (_, events) => strap = events),
         );
 
-      final source = BleStrapDataSource(strapId: strapIdOf('strap-1'));
+      final source = BleStrapDataSource(
+        strapId: strapIdOf('strap-1'),
+        tracker: RecordingTrackerService(),
+      );
       final samples = <HeartRateSample>[];
       source.samples.listen(samples.add);
 

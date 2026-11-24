@@ -8,10 +8,12 @@ import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
 import 'package:pulselink/blocs/live_heart_rate/strap_selection.dart';
 import 'package:pulselink/data/ble/ble_api.pigeon.dart';
+import 'package:pulselink/data/ble/ble_strap_data_source.dart';
 import 'package:pulselink/data/switchable_strap_data_source.dart';
 import 'package:pulselink/domain/strap_ble_identifier.dart';
 
 import '../helpers/discovered_strap.dart';
+import '../helpers/recording_tracker_service.dart';
 import '../helpers/stub_strap_data_source.dart';
 
 void main() {
@@ -132,9 +134,14 @@ void main() {
         final cubit = LiveHeartRateCubit(source: source);
         await cubit.start();
 
+        // The source main() makes for a picked strap.
         await StrapSelection(
           source: source,
           cubit: cubit,
+          createSource: (strapId) => BleStrapDataSource(
+            strapId: strapId,
+            tracker: RecordingTrackerService(),
+          ),
         ).select(discoveredStrapOf('strap-1', 'TICKR'));
 
         expect(connected, [

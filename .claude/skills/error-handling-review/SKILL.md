@@ -65,8 +65,14 @@ Pigeon platform channels or `drift`)
 
 - `on SomeException` with a specific type. No bare `catch`, no catching
   `Error` (those are programmer errors; see the no-assertions rule).
-- Nothing swallowed silently: the error is turned into a result, logged, or
-  rethrown with `rethrow` (not `throw e`, which loses the stack trace).
+- Nothing swallowed silently: the error is turned into a result, reported,
+  or rethrown with `rethrow` (not `throw e`, which loses the stack trace).
+- An error that shouldn't happen is reported through the injected
+  `TrackerService`, as non-fatal, not with `developer.log` or `print`, and
+  its test checks the report with `RecordingTrackerService`. Expected
+  failures and normal events aren't reported.
+- A class that reports errors takes `TrackerService` as a required
+  constructor argument with no default; only `main()` creates one.
 
 **Deliberately uncaught exceptions**
 
