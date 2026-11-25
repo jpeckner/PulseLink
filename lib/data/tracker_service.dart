@@ -11,7 +11,7 @@ import 'dart:developer' as developer;
 /// to callers as typed results.
 ///
 /// For now it logs through `dart:developer`. A crash reporting service, and
-/// the in-app debug log planned for Milestone 6, would plug in here.
+/// the in-app debug log planned for Milestone 7, would plug in here.
 ///
 /// The app has one: main() creates it and passes it, through constructors,
 /// to everything that reports errors, which takes it as a required argument.

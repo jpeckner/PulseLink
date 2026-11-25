@@ -8,7 +8,7 @@ import 'package:pulselink/data/tracker_service.dart';
 /// Logs every Bloc and Cubit state change with a timestamp, and reports
 /// their errors.
 ///
-/// A first step toward the in-app debug log planned for Milestone 6.
+/// A first step toward the in-app debug log planned for Milestone 7.
 class AppBlocObserver extends BlocObserver {
   /// State changes are noted to `tracker`, and errors reported to it as
   /// non-fatal.

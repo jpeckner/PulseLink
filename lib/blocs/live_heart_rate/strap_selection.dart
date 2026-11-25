@@ -11,7 +11,7 @@ import 'package:pulselink/domain/strap_ble_identifier.dart';
 /// Switches the live heart rate to a strap the user picked, back to no
 /// strap, or, in debug and profile builds, to demo data.
 ///
-/// A small first step: the connection Bloc planned for Milestone 6 takes
+/// A small first step: the connection Bloc planned for Milestone 7 takes
 /// this over, with reconnecting and remembering the last strap.
 class StrapSelection {
   /// `createSource` makes the source for a picked strap: a BLE strap in
