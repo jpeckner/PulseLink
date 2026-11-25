@@ -108,7 +108,7 @@ flowchart TB
 | Data | `SwitchableStrapDataSource` | Owns whichever `StrapDataSource` is current, so the cubits never change source themselves. Starts with none, reporting no strap until one is picked. |
 | Data | `BleStrapDataSource` | The strap through `ble_api`. Parses raw Heart Rate Measurement bytes in exactly one place. Expected failures come back as typed results, never exceptions. |
 | Data | `PigeonWatchBridge` | The watch through `watch_api`. Turns platform errors into a `WatchDeliveryResult`. |
-| Data | `TrackerService` | Where errors are reported from: fatal from `UncaughtErrorReporter`, non-fatal from `AppBlocObserver` and from the platform-channel failures `BleStrapDataSource` and `PlatformAppSettings` catch. Logs through `dart:developer` for now; a crash reporting service, and Milestone 6's in-app debug log, would plug in there. Expected failures and normal events, such as a malformed packet, don't go through it. |
+| Data | `TrackerService` | Where errors are reported from: fatal from `UncaughtErrorReporter`, non-fatal from `AppBlocObserver` and from the platform-channel failures `BleStrapDataSource`, `PlatformAppSettings` and `PigeonWatchBridge` catch. Logs through `dart:developer` for now; a crash reporting service, and Milestone 6's in-app debug log, would plug in there. Expected failures and normal events, such as a malformed packet, aren't errors: they're noted through its `logInfo()`, by `AppBlocObserver`, `BleStrapDataSource` and `WatchSync`. |
 
 ### Swap points
 

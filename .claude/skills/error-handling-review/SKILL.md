@@ -70,7 +70,8 @@ Pigeon platform channels or `drift`)
 - An error that shouldn't happen is reported through the injected
   `TrackerService`, as non-fatal, not with `developer.log` or `print`, and
   its test checks the report with `RecordingTrackerService`. Expected
-  failures and normal events aren't reported.
+  failures and normal events aren't reported as errors; they're noted with
+  its `logInfo()`, if at all.
 - A class that reports errors takes `TrackerService` as a required
   constructor argument with no default; only `main()` creates one.
 

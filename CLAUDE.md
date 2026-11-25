@@ -129,8 +129,8 @@ what throws, so this rule and the tests are the check.
   plugs in at one place. A caught error that shouldn't happen, such as a
   platform channel failing, is non-fatal; only `UncaughtErrorReporter`
   reports fatal ones. Expected failures and normal events (a malformed
-  packet, the strap disconnecting) aren't errors: log those with
-  `developer.log`, if at all.
+  packet, the strap disconnecting) aren't errors: note those with its
+  `logInfo()`, if at all.
 - There's one `TrackerService`, which `main()` creates. A class that reports
   errors takes it as a required constructor argument, with no default, so a
   missing one is a compile error and nothing makes a second one. Tests pass
