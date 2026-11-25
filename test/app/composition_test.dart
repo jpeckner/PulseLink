@@ -14,6 +14,7 @@ import '../helpers/beats_per_minute.dart';
 import '../helpers/discovered_strap.dart';
 import '../helpers/english.dart';
 import '../helpers/fake_watch_bridge.dart';
+import '../helpers/recording_tracker_service.dart';
 import '../helpers/stub_app_settings.dart';
 import '../helpers/stub_strap_data_source.dart';
 import '../helpers/stub_strap_scanner.dart';
@@ -39,6 +40,7 @@ void main() {
             strapScanner: scanner,
             appSettings: StubAppSettings(),
             watchBridge: watch,
+            tracker: RecordingTrackerService(),
             createStrapSource: (strapId) {
               created.add(strapId);
               return strap;

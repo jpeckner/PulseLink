@@ -35,9 +35,10 @@ void main() {
   final platform = AppPlatform(
     strapScanner: BleStrapScanner(),
     appSettings: PlatformAppSettings(tracker: tracker),
-    watchBridge: _watchBridge(),
+    watchBridge: _watchBridge(tracker),
     createStrapSource: (strapId) =>
         BleStrapDataSource(strapId: strapId, tracker: tracker),
+    tracker: tracker,
   );
   if (kReleaseMode) {
     runApp(releaseApp(platform));
@@ -52,12 +53,13 @@ void main() {
 /// The platform's watch app, if it has one. `WatchSync` works with any
 /// `WatchBridge`, so supporting another wearable means giving its
 /// platform's case a bridge here.
-WatchBridge? _watchBridge() => switch (defaultTargetPlatform) {
-  TargetPlatform.iOS => PigeonWatchBridge(),
-  // No watch app to sync with yet. Wear OS would go in the Android case.
-  TargetPlatform.android ||
-  TargetPlatform.fuchsia ||
-  TargetPlatform.linux ||
-  TargetPlatform.macOS ||
-  TargetPlatform.windows => null,
-};
+WatchBridge? _watchBridge(TrackerService tracker) =>
+    switch (defaultTargetPlatform) {
+      TargetPlatform.iOS => PigeonWatchBridge(tracker: tracker),
+      // No watch app to sync with yet. Wear OS would go in the Android case.
+      TargetPlatform.android ||
+      TargetPlatform.fuchsia ||
+      TargetPlatform.linux ||
+      TargetPlatform.macOS ||
+      TargetPlatform.windows => null,
+    };

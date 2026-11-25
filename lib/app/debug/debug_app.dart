@@ -31,7 +31,7 @@ Widget debugApp(AppPlatform platform) {
   // Before starting the source; see releaseApp.
   final batteryCubit = StrapBatteryCubit(source: overrideSource);
   final cubit = startedCubit(overrideSource);
-  syncWatch(cubit, platform.watchBridge);
+  syncWatch(cubit, platform.watchBridge, platform.tracker);
   final selection = StrapSelection(
     source: source,
     cubit: cubit,

@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: MIT
 // See the LICENSE file in the project root for the full license text.
 
-import 'dart:developer' as developer;
-
 import 'package:bloc/bloc.dart';
 import 'package:pulselink/data/tracker_service.dart';
 
@@ -12,7 +10,8 @@ import 'package:pulselink/data/tracker_service.dart';
 ///
 /// A first step toward the in-app debug log planned for Milestone 6.
 class AppBlocObserver extends BlocObserver {
-  /// Errors are reported to `tracker` as non-fatal.
+  /// State changes are noted to `tracker`, and errors reported to it as
+  /// non-fatal.
   const new({required this._tracker});
 
   final TrackerService _tracker;
@@ -20,7 +19,7 @@ class AppBlocObserver extends BlocObserver {
   @override
   void onChange(BlocBase<Object?> bloc, Change<Object?> change) {
     super.onChange(bloc, change);
-    developer.log(
+    _tracker.logInfo(
       '${DateTime.now().toIso8601String()} ${bloc.runtimeType} $change',
       name: 'bloc',
     );

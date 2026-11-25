@@ -3,11 +3,11 @@
 // See the LICENSE file in the project root for the full license text.
 
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:bloc/bloc.dart';
 import 'package:clock/clock.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
+import 'package:pulselink/data/tracker_service.dart';
 import 'package:pulselink/data/watch_bridge.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/watch_heart_rate_snapshot.dart';
@@ -22,15 +22,16 @@ import 'package:pulselink/domain/watch_heart_rate_snapshot.dart';
 /// timestamp, so it's right even when snapshots stop arriving. A change
 /// that's only the reading going stale is therefore not sent.
 class WatchSync {
+  /// Each change in how delivery goes is noted to `tracker`.
   new({
     required this._heartRate,
     required this._bridge,
-    this._log = _developerLog,
+    required this._tracker,
   });
 
   final StateStreamable<LiveHeartRateState> _heartRate;
   final WatchBridge _bridge;
-  final void Function(String message) _log;
+  final TrackerService _tracker;
 
   StreamSubscription<LiveHeartRateState>? _subscription;
   bool _isClosed = false;
@@ -141,7 +142,7 @@ class WatchSync {
       return;
     }
     _lastLiveResult = description;
-    _log('Live snapshots: $description');
+    _tracker.logInfo('Live snapshots: $description', name: 'watch');
   }
 
   void _onContextResult(WatchDeliveryResult result) {
@@ -150,7 +151,7 @@ class WatchSync {
       return;
     }
     _lastContextResult = description;
-    _log('Application context: $description');
+    _tracker.logInfo('Application context: $description', name: 'watch');
   }
 
   static String _describe(WatchDeliveryResult result) => switch (result) {
@@ -164,9 +165,6 @@ class WatchSync {
       "dropped, this device can't talk to a watch",
     WatchDeliveryResult.failed => 'failed',
   };
-
-  static void _developerLog(String message) =>
-      developer.log(message, name: 'watch');
 }
 
 /// A snapshot without its `sentAt`, to tell whether anything changed.

@@ -4,10 +4,11 @@
 
 import 'dart:developer' as developer;
 
-/// The one place errors are reported from: a bug, or a failure the app gets
-/// past but shouldn't happen, such as a platform channel with no native
-/// handler. Expected failures, and normal events such as a malformed packet
-/// or the strap disconnecting, don't come here.
+/// The one place errors are reported from, through [logError]: a bug, or a
+/// failure the app gets past but shouldn't happen, such as a platform
+/// channel with no native handler. Normal events worth noting, such as the
+/// strap disconnecting, can go through [logInfo]. Expected failures go back
+/// to callers as typed results.
 ///
 /// For now it logs through `dart:developer`. A crash reporting service, and
 /// the in-app debug log planned for Milestone 6, would plug in here.
@@ -48,6 +49,24 @@ class TrackerService {
       level: 1000,
       error: redactedError,
       stackTrace: stackTrace,
+    );
+  }
+
+  /// Notes [message], a normal event rather than an error, under [name]
+  /// (such as `ble`).
+  void logInfo(String message, {required String name}) {
+    // Redacted, as in logError.
+    final redactedMessage = message.redactedValue;
+
+    // Forward to your crash reporting service (e.g., Crashlytics, DataDog),
+    // as a breadcrumb sent with the next report
+    // FirebaseCrashlytics.instance.log(redactedMessage);
+
+    developer.log(
+      redactedMessage,
+      name: name,
+      // dart:developer's INFO level.
+      level: 800,
     );
   }
 }

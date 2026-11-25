@@ -12,6 +12,7 @@ import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/watch_heart_rate_snapshot.dart';
 
 import '../../helpers/beats_per_minute.dart';
+import '../../helpers/recording_tracker_service.dart';
 import '../../helpers/strap_connection_failures.dart';
 
 class _MockWatchSessionApi extends Mock implements pigeon.WatchSessionApi;
@@ -57,11 +58,13 @@ void main() {
 
   group('PigeonWatchBridge', () {
     late _MockWatchSessionApi api;
+    late RecordingTrackerService tracker;
     late PigeonWatchBridge bridge;
 
     setUp(() {
       api = _MockWatchSessionApi();
-      bridge = PigeonWatchBridge(api: api);
+      tracker = RecordingTrackerService();
+      bridge = PigeonWatchBridge(tracker: tracker, api: api);
       when(() => api.sendLiveSnapshot(any()))
           .thenAnswer((_) async => pigeon.WatchDeliveryOutcome.sent);
       when(() => api.updateApplicationContext(any()))
@@ -243,21 +246,25 @@ void main() {
           }
         });
 
-        test(
-          'reports no native handler, as on Android, as unsupported',
-          () async {
-            final error = PlatformException(code: 'channel-error');
-            when(() => api.sendLiveSnapshot(any())).thenThrow(error);
-            when(() => api.updateApplicationContext(any())).thenThrow(error);
+        test('reports no native handler, as on Android, as unsupported, and '
+            'tracks it as non-fatal', () async {
+          final error = PlatformException(code: 'channel-error');
+          when(() => api.sendLiveSnapshot(any())).thenThrow(error);
+          when(() => api.updateApplicationContext(any())).thenThrow(error);
 
-            expect(
-              await call.on(bridge, _snapshot()),
-              WatchDeliveryResult.unsupported,
-            );
-          },
-        );
+          expect(
+            await call.on(bridge, _snapshot()),
+            WatchDeliveryResult.unsupported,
+          );
+          final logged = tracker.errors.single;
+          expect(logged.name, 'watch');
+          expect(logged.error, same(error));
+          expect(logged.fatal, isFalse);
+          expect(tracker.infos, isEmpty);
+        });
 
-        test('reports any other platform failure as failed', () async {
+        test('reports any other platform failure as failed, and tracks it '
+            'as non-fatal', () async {
           final error = PlatformException(code: 'native-error');
           when(() => api.sendLiveSnapshot(any())).thenThrow(error);
           when(() => api.updateApplicationContext(any())).thenThrow(error);
@@ -266,6 +273,10 @@ void main() {
             await call.on(bridge, _snapshot()),
             WatchDeliveryResult.failed,
           );
+          final logged = tracker.errors.single;
+          expect(logged.name, 'watch');
+          expect(logged.error, same(error));
+          expect(logged.fatal, isFalse);
         });
 
         test('passes on an error that is not a platform failure', () async {

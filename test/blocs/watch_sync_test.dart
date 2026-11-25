@@ -15,6 +15,7 @@ import 'package:pulselink/domain/watch_heart_rate_snapshot.dart';
 
 import '../helpers/beats_per_minute.dart';
 import '../helpers/fake_watch_bridge.dart';
+import '../helpers/recording_tracker_service.dart';
 import '../helpers/strap_connection_failures.dart';
 
 final _now = DateTime.utc(2026, 11, 15, 10, 4);
@@ -83,15 +84,18 @@ WatchHeartRateSnapshot _snapshot({
 void main() {
   group('WatchSync', () {
     late FakeWatchBridge bridge;
-    late List<String> logs;
+    late RecordingTrackerService tracker;
 
     setUp(() {
       bridge = FakeWatchBridge();
-      logs = [];
+      tracker = RecordingTrackerService();
     });
 
     WatchSync syncOf(_FakeHeartRate heartRate) =>
-        WatchSync(heartRate: heartRate, bridge: bridge, log: logs.add);
+        WatchSync(heartRate: heartRate, bridge: bridge, tracker: tracker);
+
+    /// The info messages noted so far, oldest first.
+    List<String> logs() => [for (final info in tracker.infos) info.message];
 
     test('sends the current state when started, live and as context', () {
       return _atNow(() async {
@@ -332,13 +336,14 @@ void main() {
           );
           await _settle();
 
-          expect(logs, hasLength(2));
-          expect(logs.where((log) => log.startsWith('Live snapshots: ')), [
+          expect(logs(), hasLength(2));
+          expect(logs().where((log) => log.startsWith('Live snapshots: ')), [
             hasLength(greaterThan('Live snapshots: '.length)),
           ]);
-          expect(logs.where((log) => log.startsWith('Application context: ')), [
-            hasLength(greaterThan('Application context: '.length)),
-          ]);
+          expect(
+            logs().where((log) => log.startsWith('Application context: ')),
+            [hasLength(greaterThan('Application context: '.length))],
+          );
 
           // A different result is logged again.
           final other = switch (result) {
@@ -352,8 +357,9 @@ void main() {
           bridge.liveResult = other;
           heartRate.emit(const LiveHeartRateState.waiting(isSimulated: true));
           await _settle();
-          expect(logs, hasLength(3));
-          expect(logs.last, startsWith('Live snapshots: '));
+          expect(logs(), hasLength(3));
+          expect(logs().last, startsWith('Live snapshots: '));
+          expect(tracker.infos.map((info) => info.name), everyElement('watch'));
           await sync.close();
         });
       });
@@ -380,7 +386,7 @@ void main() {
           await _settle();
         }
 
-        final live = logs.where((log) => log.startsWith('Live snapshots: '));
+        final live = logs().where((log) => log.startsWith('Live snapshots: '));
         expect(live.toSet(), hasLength(WatchDeliveryResult.values.length));
         await sync.close();
       });
