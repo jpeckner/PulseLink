@@ -282,19 +282,19 @@ private extension StrapConnection {
         finish(.failed(reason))
       case .wait:
         break
+      case .reset:
+        // The strap iOS gave is no longer valid, so let go of it, and the
+        // attempt starts over once Bluetooth is back. The timeout still
+        // bounds the whole attempt.
+        strap = nil
       }
       return
     }
-    switch action {
-    case .connect, .wait:
-      break
-    case .fail:
-      // Bluetooth going off drops the connection without a disconnect
-      // callback.
-      if strap != nil {
-        strap = nil
-        sink?.success(BleStrapDisconnected())
-      }
+    // Bluetooth going off or restarting drops the connection without a
+    // disconnect callback.
+    if action.dropsConnection, strap != nil {
+      strap = nil
+      sink?.success(BleStrapDisconnected())
     }
   }
 
