@@ -3,10 +3,6 @@
 // See the LICENSE file in the project root for the full license text.
 
 import WatchConnectivity
-import os
-
-/// Normal events only; errors go to the `ErrorTracker`.
-private let watchLog = Logger(category: "Watch")
 
 /// The iPhone's side of WatchConnectivity: sends heart-rate snapshots to the
 /// watch app, as live messages and as the application context.
@@ -28,8 +24,9 @@ final class PhoneWatchSession: NSObject {
 
   private var hasRequestedActivation = false
 
-  /// Where failures to reach the watch are reported. Called from
-  /// WatchConnectivity's background queue too, so it's `Sendable`.
+  /// Where failures to reach the watch, and normal events, are reported.
+  /// Called from WatchConnectivity's background queue too, so it's
+  /// `Sendable`.
   private let tracker: any ErrorTracker
 
   /// `nonisolated` so `WatchLink`, which has no actor isolation, can create
@@ -147,7 +144,10 @@ final class PhoneWatchSession: NSObject {
       // activation.
       break
     case .drop(let outcome):
-      watchLog.info("Didn't resend the application context: \(String(describing: outcome), privacy: .public)")
+      tracker.logInfo(
+        "Didn't resend the application context: \(String(describing: outcome))",
+        category: "Watch"
+      )
     }
   }
 
@@ -192,7 +192,7 @@ extension PhoneWatchSession: WCSessionDelegate {
   nonisolated func sessionDidBecomeInactive(_ session: WCSession) {
     // Nothing to do: the session deactivates next. Context updates until
     // then are held.
-    watchLog.info("WatchConnectivity became inactive")
+    tracker.logInfo("WatchConnectivity became inactive", category: "Watch")
   }
 
   nonisolated func sessionDidDeactivate(_ session: WCSession) {

@@ -11,10 +11,11 @@ import Foundation
   @testable import Runner
 #endif
 
-/// An `ErrorTracker` that records each error instead of logging it.
+/// An `ErrorTracker` that records each error and info message instead of
+/// logging it.
 ///
-/// `@unchecked Sendable` because errors can be reported from any thread:
-/// the lock guards `recorded`, which is the only mutable state.
+/// `@unchecked Sendable` because it can be called from any thread: the
+/// lock guards `recorded` and `recordedInfo`, the only mutable state.
 final class RecordingErrorTracker: ErrorTracker, @unchecked Sendable {
   /// One call to `logError`.
   struct Entry: Equatable {
@@ -23,12 +24,24 @@ final class RecordingErrorTracker: ErrorTracker, @unchecked Sendable {
     let errorDescription: String?
   }
 
+  /// One call to `logInfo`.
+  struct InfoEntry: Equatable {
+    let message: String
+    let category: String
+  }
+
   private let lock = NSLock()
   private var recorded: [Entry] = []
+  private var recordedInfo: [InfoEntry] = []
 
   /// Everything reported so far, oldest first.
   var errors: [Entry] {
     lock.withLock { recorded }
+  }
+
+  /// Every info message so far, oldest first.
+  var infos: [InfoEntry] {
+    lock.withLock { recordedInfo }
   }
 
   func logError(_ message: String, category: String, error: (any Error)?) {
@@ -38,5 +51,10 @@ final class RecordingErrorTracker: ErrorTracker, @unchecked Sendable {
       errorDescription: error.map { String(describing: $0) }
     )
     lock.withLock { recorded.append(entry) }
+  }
+
+  func logInfo(_ message: String, category: String) {
+    let entry = InfoEntry(message: message, category: category)
+    lock.withLock { recordedInfo.append(entry) }
   }
 }

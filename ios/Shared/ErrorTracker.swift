@@ -5,11 +5,11 @@
 import Foundation
 import os
 
-/// Where native code reports errors that shouldn't happen: a bug, such as a
+/// Where native code reports errors that shouldn't happen (a bug, such as a
 /// call off the main thread or a malformed message from Dart, or a system
-/// failure the app gets past. Expected failures, which go back to Dart as
-/// typed results, and normal events don't come here: those use `Logger` at
-/// the info or notice level, if at all.
+/// failure the app gets past) through `logError`, and normal events worth
+/// noting through `logInfo`. Expected failures go back to Dart as typed
+/// results.
 ///
 /// The Swift counterpart of Dart's `TrackerService`. Each app has one:
 /// `AppDelegate` creates the iPhone app's and `PulseLinkWatchApp` the
@@ -22,9 +22,13 @@ protocol ErrorTracker: Sendable {
   /// Reports `message`, under `category` (such as "Watch"), with the
   /// `error` that caused it, if there was one.
   func logError(_ message: String, category: String, error: (any Error)?)
+
+  /// Notes `message`, a normal event rather than an error, under
+  /// `category`.
+  func logInfo(_ message: String, category: String)
 }
 
-/// Logs to Apple's unified log at the error level, under the app's
+/// Logs to Apple's unified log at the error or info level, under the app's
 /// subsystem (see `Logger.init(category:)`). A crash reporting service would
 /// plug in here.
 struct OSLogTracker: ErrorTracker {
@@ -44,6 +48,17 @@ struct OSLogTracker: ErrorTracker {
     } else {
       logger.error("\(redactedMessage, privacy: .public)")
     }
+  }
+
+  func logInfo(_ message: String, category: String) {
+    // Redacted, as in logError.
+    let redactedMessage = message.redactedValue
+
+    // Forward to your crash reporting service (e.g., Crashlytics, DataDog),
+    // as a breadcrumb sent with the next report
+    //   Crashlytics.crashlytics().log(redactedMessage)
+
+    Logger(category: category).info("\(redactedMessage, privacy: .public)")
   }
 }
 
