@@ -57,8 +57,19 @@ style:
         reason: 'Throws on a programmer error; handle null with `?.` or `?:` instead.'
       - value: 'kotlin.TODO'
         reason: 'Throws when reached; finish the code instead.'
-      # Error-level logging, which only LogcatTracker does.
+      # Logging straight to Logcat, at any level, which only LogcatTracker
+      # does.
       - value: 'android.util.Log.e'
-        reason: 'Report an error that should not happen through ErrorTracker; log expected failures with Log.w or Log.i.'
+        reason: 'Report an error that should not happen through ErrorTracker.logError.'
       - value: 'android.util.Log.wtf'
-        reason: 'Report an error that should not happen through ErrorTracker; log expected failures with Log.w or Log.i.'
+        reason: 'Report an error that should not happen through ErrorTracker.logError.'
+      - value: 'android.util.Log.w'
+        reason: 'Note an expected failure through ErrorTracker.logWarning.'
+      - value: 'android.util.Log.i'
+        reason: 'Note a normal event through ErrorTracker.logInfo.'
+      - value: 'android.util.Log.d'
+        reason: 'Note a normal event through ErrorTracker.logInfo.'
+      - value: 'android.util.Log.v'
+        reason: 'Note a normal event through ErrorTracker.logInfo.'
+      - value: 'android.util.Log.println'
+        reason: 'Log through ErrorTracker instead.'

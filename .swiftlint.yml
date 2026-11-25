@@ -37,20 +37,20 @@ custom_rules:
       (CLAUDE.md, "No assertions").
     severity: error
 
-  no_error_level_logging:
-    name: No error-level logging
-    # Logger's error, warning, fault and critical levels, and os_log and
-    # NSLog, outside OSLogTracker, the one place that logs errors.
-    regex: '\.(error|warning|fault|critical)\s*\(\s*"|\b(os_log|NSLog)\s*\('
+  no_direct_logging:
+    name: No direct logging
+    # Logger at any level, and os_log and NSLog, outside OSLogTracker, the
+    # one place that logs.
+    regex: '\.(log|trace|debug|info|notice|error|warning|fault|critical)\s*\(\s*("|level:)|\b(os_log|NSLog)\s*\('
     excluded: 'ios/Shared/ErrorTracker\.swift'
     # Code only, not comments that mention these.
     match_kinds:
       - identifier
       - string
     message: >-
-      Report an error that shouldn't happen through ErrorTracker; log
-      expected failures and normal events at the info or notice level
-      (CLAUDE.md, "Error handling").
+      Report an error that shouldn't happen through ErrorTracker's
+      logError, and a normal event through its logInfo (CLAUDE.md, "Error
+      handling").
     severity: error
 
   no_catch_all_cases:

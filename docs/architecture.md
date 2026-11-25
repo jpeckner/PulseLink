@@ -134,7 +134,8 @@ permission revoked after it was checked, go to an `ErrorTracker`, the native
 counterpart of Dart's `TrackerService`. `AppDelegate` creates the iPhone
 app's (`OSLogTracker`, unified log) and `MainActivity` Android's
 (`LogcatTracker`), and each passes it to everything below that reports
-errors. It works on any thread, so it doesn't send to Dart. Expected
+errors. It also takes normal events worth noting, through `logInfo()`,
+and on Android expected failures, through `logWarning()`. It works on any thread, so it doesn't send to Dart. Expected
 failures go back to Dart as typed results instead.
 
 ```mermaid
@@ -267,7 +268,7 @@ old.
 | --- | --- | --- |
 | Data on `HeartRateScreen` | `WatchHeartRateDisplay` from `PhoneConnection` | `#Preview` sample displays, inside `#if DEBUG`; lint and binary checks keep them out of release builds |
 | `PhoneConnection`'s input | `WCSession` delegate callbacks | Tests call `receive(_:)`, `reachabilityDidChange(_:at:)` and `decode(_:from:)` directly |
-| `PhoneConnection`'s error tracker | `OSLogTracker`, created by `PulseLinkWatchApp` | Tests: `RecordingErrorTracker`, which records each error |
+| `PhoneConnection`'s error tracker | `OSLogTracker`, created by `PulseLinkWatchApp` | Tests: `RecordingErrorTracker`, which records each error and info message |
 | Time | `TimelineView`'s date | Tests pass a fixed `now` to `WatchHeartRateDisplay` |
 
 ## 4. Phone to watch

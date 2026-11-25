@@ -140,11 +140,11 @@ what throws, so this rule and the tests are the check.
   `ErrorTracker.kt` (`LogcatTracker`). `AppDelegate`, `PulseLinkWatchApp`
   and `MainActivity` each create one and pass it as a required initializer
   or constructor argument. It works on any thread, unlike calls to Dart.
-  Only the tracker logs at the error level: SwiftLint's
-  `no_error_level_logging` rule bans Logger's `.error`, `.warning`,
-  `.fault` and `.critical`, `os_log` and `NSLog` elsewhere, and detekt's
-  `ForbiddenMethodCall` bans `Log.e` and `Log.wtf`. Expected failures and
-  normal events use Logger's info or notice level, or `Log.w` and `Log.i`.
+  Normal events go through the tracker's `logInfo()` too, and on Android
+  expected failures go through its `logWarning()`. Only the tracker logs:
+  SwiftLint's `no_direct_logging` rule bans `Logger` at any level, `os_log`
+  and `NSLog` elsewhere, and detekt's `ForbiddenMethodCall` bans `Log.e`,
+  `Log.wtf`, `Log.w`, `Log.i`, `Log.d`, `Log.v` and `Log.println`.
   Create a Swift `Logger` with `Logger(category:)`, whose subsystem is the
   bundle ID from the build settings, never a hard-coded ID.
   Swift tests pass `RecordingErrorTracker` (`ios/SharedTests/`).
