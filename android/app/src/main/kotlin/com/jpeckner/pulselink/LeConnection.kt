@@ -22,7 +22,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import java.util.UUID
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
@@ -146,7 +145,7 @@ class LeConnection(
             val timeout =
                 Runnable {
                     this.timeout = null
-                    Log.w(TAG, "The strap didn't connect within ${CONNECT_TIMEOUT_MILLIS}ms")
+                    tracker.logWarning(TAG, "The strap didn't connect within ${CONNECT_TIMEOUT_MILLIS}ms")
                     finish(BleConnectFailed(BleConnectFailureReason.UNREACHABLE))
                 }
             this.timeout = timeout
@@ -235,7 +234,7 @@ class LeConnection(
                 return
             }
         if (gatt == null) {
-            Log.w(TAG, "Android couldn't start connecting")
+            tracker.logWarning(TAG, "Android couldn't start connecting")
             finish(BleConnectFailed(BleConnectFailureReason.UNREACHABLE))
             return
         }
@@ -263,11 +262,11 @@ class LeConnection(
             ConnectionChange.DISCOVER -> queue.enqueue(GattOperation.DiscoverServices)
             ConnectionChange.RETRY -> retryConnecting()
             ConnectionChange.FAIL -> {
-                Log.w(TAG, "Connecting failed with status $status")
+                tracker.logWarning(TAG, "Connecting failed with status $status")
                 finish(BleConnectFailed(BleConnectFailureReason.UNREACHABLE))
             }
             ConnectionChange.DROPPED -> {
-                Log.i(TAG, "The strap disconnected with status $status")
+                tracker.logInfo(TAG, "The strap disconnected with status $status")
                 strapDropped()
             }
             ConnectionChange.IGNORE -> Unit
@@ -278,7 +277,7 @@ class LeConnection(
     private fun retryConnecting() {
         val pending = pending ?: return
         pending.canRetry = false
-        Log.i(TAG, "GATT error 133; trying again in ${RETRY_DELAY_MILLIS}ms")
+        tracker.logInfo(TAG, "GATT error 133; trying again in ${RETRY_DELAY_MILLIS}ms")
         closeGatt()
         val retry =
             Runnable {
@@ -312,7 +311,7 @@ class LeConnection(
                 .getService(StrapUuids.HEART_RATE_SERVICE)
                 ?.getCharacteristic(StrapUuids.HEART_RATE_MEASUREMENT)
         if (hadError || measurement == null || !ConnectAction.canNotify(measurement.properties)) {
-            Log.w(TAG, "No heart rate notifications found (status $status)")
+            tracker.logWarning(TAG, "No heart rate notifications found (status $status)")
             finish(BleConnectFailed(ConnectAction.discoveryFailure(hadError)))
             return
         }
@@ -363,7 +362,7 @@ class LeConnection(
             if (!isSuccess) {
                 // The level read after connecting still shows; it just
                 // won't update.
-                Log.i(TAG, "Turning on battery notifications failed with status $status")
+                tracker.logInfo(TAG, "Turning on battery notifications failed with status $status")
             }
             return
         }
@@ -371,7 +370,7 @@ class LeConnection(
             return
         }
         if (!isSuccess) {
-            Log.w(TAG, "Turning on heart rate notifications failed with status $status")
+            tracker.logWarning(TAG, "Turning on heart rate notifications failed with status $status")
             finish(BleConnectFailed(ConnectAction.discoveryFailure(hadError = true)))
             return
         }
@@ -429,7 +428,7 @@ class LeConnection(
                 queue.finishCurrent()
                 if (status != BluetoothGatt.GATT_SUCCESS) {
                     // Optional, so the strap stays connected without it.
-                    Log.i(TAG, "Reading $characteristic failed with status $status")
+                    tracker.logInfo(TAG, "Reading $characteristic failed with status $status")
                     return
                 }
                 valueReceived(characteristic, value)
@@ -529,7 +528,7 @@ class LeConnection(
      * optional, so the strap stays connected without it.
      */
     private fun operationFailed(op: GattOperation) {
-        Log.w(TAG, "$op was refused or timed out")
+        tracker.logWarning(TAG, "$op was refused or timed out")
         val isForConnecting =
             when (op) {
                 GattOperation.DiscoverServices -> true

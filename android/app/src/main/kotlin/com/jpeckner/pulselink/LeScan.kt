@@ -24,7 +24,6 @@ import android.os.Handler
 import android.os.Looper
 import android.os.ParcelUuid
 import android.os.SystemClock
-import android.util.Log
 
 /**
  * Scans for heart-rate straps and turns what happens into scan events for
@@ -185,7 +184,7 @@ class LeScan(
             startScanning()
             return
         }
-        Log.i(TAG, "Delaying the scan ${wait}ms to stay under Android's limit")
+        tracker.logInfo(TAG, "Delaying the scan ${wait}ms to stay under Android's limit")
         val start =
             Runnable {
                 pendingStart = null
@@ -218,7 +217,7 @@ class LeScan(
         } catch (error: IllegalStateException) {
             // Bluetooth turned off after it was checked; the state broadcast
             // that follows reports it.
-            Log.w(TAG, "Bluetooth turned off before the scan started", error)
+            tracker.logWarning(TAG, "Bluetooth turned off before the scan started", error)
             return
         }
         throttle.recordStart(SystemClock.elapsedRealtime())
@@ -236,7 +235,7 @@ class LeScan(
             adapter?.bluetoothLeScanner?.stopScan(callback)
         } catch (error: IllegalStateException) {
             // Bluetooth is already off, which stopped the scan.
-            Log.i(TAG, "Bluetooth was off when stopping the scan", error)
+            tracker.logInfo(TAG, "Bluetooth was off when stopping the scan", error)
         } catch (error: SecurityException) {
             // The permission was revoked, which stops scans too.
             tracker.logError(TAG, "Stopping the scan wasn't permitted", error)
