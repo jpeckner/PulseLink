@@ -649,7 +649,19 @@ bad one is ignored, not half-shown. The banner's grace period trades
 - treat clock skew between phone and watch as a hazard with a stated bound;
 - decide, with a clinician, how long "not reachable" may go unannounced.
 
-## Milestone 6: Hardening and Enhancements (in progress)
+## Milestone 6: Hardening and Enhancements (2026-11-15 to 2026-11-24)
+
+Built: no new screens, but a sturdier app that's ready to show. Every string
+moved into an ARB file. Debug, Profile and Release got their own bundle IDs,
+names and icons, and install side by side, with Ad Hoc IPA export for the
+other two. Release builds show only a real strap's data, and the demo data
+and debug override live only in debug code. The Flutter logo gave way to a
+heart icon. Every error, and every log line, now goes through one tracker
+per language, ready for a crash reporting service. CI pins its runner and
+Flutter version, and shuffles the tests. Checked on an iPhone 17 Pro Max
+with an Apple Watch Series 9, and on a Galaxy A36 5G. 398 Dart tests, 75
+Swift tests (47 for the iPhone app, 28 for the watch), 29 Kotlin tests and
+131 lint plugin tests.
 
 Milestones were renumbered while this one was under way. The work after
 Milestone 5 hardened what was there rather than adding the planned
@@ -659,3 +671,118 @@ log) moved to Milestone 7, a nice-to-have. Polish and portfolio is now
 Milestone 8, and Sessions and history 9. The earlier entries keep the
 numbers they had then, so where they mention Milestone 6, that's now
 Milestone 7.
+
+### Text and translations
+
+- **gen-l10n turns an ARB file into a typed class,** `AppLocalizations`, so
+  `context.l10n.tryAgain` is checked by the compiler, like Android's
+  generated `R.string` and unlike iOS's string-keyed `NSLocalizedString`.
+  Each string has a description for translators, and counts and dates are
+  typed placeholders and plurals, never string concatenation.
+- **There are no strings outside the app's localizations,** such as in a
+  bare test widget, and gen-l10n's default getter fails there with `!`.
+  PulseLink generates a nullable getter instead (`nullable-getter` in
+  `l10n.yaml`), and `context.l10n` falls back to English. It uses en_US,
+  because `intl` only knows en_US date formats until the Material
+  localizations load.
+- **A lint keeps it that way:** `no_hardcoded_ui_strings` flags a literal
+  in `Text` or in arguments such as `tooltip:`, except in debug-only code.
+
+### Builds, signing and icons
+
+- **One bundle ID per build configuration, two different models.** Xcode
+  sets them per configuration at the project level (`PULSELINK_BUNDLE_ID`),
+  and every target derives its own from that, the watch app adding
+  `.watchkitapp` as Apple requires. Gradle does it per build type, with
+  `applicationIdSuffix` and manifest placeholders for the name and icon.
+  Logs follow too: each Swift `Logger` takes its subsystem from the bundle
+  ID, so a Debug build's logs never mix with Release's.
+- **`flutter build ipa` exits 0 even when the export fails,** so the README
+  says to look for "Built IPA" in its output.
+- **Icons drawn once, as vectors.** A Swift script draws the heart and ECG
+  trace and writes every size and background. iOS 26's Release icon is an
+  Icon Composer document, so iOS can show it in Dark, Clear and Tinted.
+  Android's is an adaptive icon with a monochrome layer for themed icons.
+
+### Release builds show real data only
+
+- **Dart has no `#if DEBUG`, but a constant does the same job.** `main()`
+  picks `releaseApp` or `debugApp` with `kReleaseMode`, a compile-time
+  constant, so the release compiler drops the debug branch, and everything
+  only it imports. That only holds if nothing else imports the debug code,
+  so it lives in `debug_*.dart` files and `debug/` folders.
+- **The build proves it.** The pre-merge checks search the compiled release
+  code, on both platforms, for the names and strings the debug files
+  declare. The same check looks for SwiftUI previews in the release
+  binaries.
+
+### Errors and logs
+
+- **Dart has no checked exceptions,** so nothing in the compiler says what
+  throws. Expected failures come back as typed results, and the rest is
+  caught at two hooks: `FlutterError.onError` for errors inside the
+  framework, and `PlatformDispatcher.onError` for everything else
+  asynchronous. `UncaughtErrorReporter` installs both, first thing in
+  `main()`, and returning false from the second keeps the platform's own
+  report as well.
+- **One tracker, through a composition root rather than a container.**
+  `main()` creates the only `TrackerService` and passes it down; every
+  class that logs takes it as a required constructor argument with no
+  default, so forgetting it is a compile error. That's Swift-style
+  initializer injection, and at this size it needs no `get_it`.
+- **The same shape natively.** Swift's `ErrorTracker` is a `Sendable`
+  protocol, because WatchConnectivity calls in on background queues;
+  Kotlin's is an interface, with a `logWarning` too, since Android's
+  expected BLE failures had always been warnings. `AppDelegate`,
+  `PulseLinkWatchApp` and `MainActivity` each create one.
+- **Lints make it the only way.** A SwiftLint regex rule bans `Logger` at
+  every level, `os_log` and `NSLog` outside `ErrorTracker.swift`, and
+  detekt's `ForbiddenMethodCall` bans every `Log` call outside
+  `LogcatTracker`. A probe plants a violation of each and fails unless it's
+  reported, so a linter that silently stops can't pass.
+- **Redaction is a placeholder, on purpose.** Each tracker passes messages
+  through file-private `redactedValue` extensions that remove nothing yet,
+  so there's one place to add it, and nothing else can mistake it for the
+  real thing. One message already needs it: Android's unknown-strap error
+  includes the strap's MAC address.
+- **An error depends on where it happens.** A missing native handler is
+  expected on Android, which has no watch app, but `main()` only creates
+  the watch bridge on iOS, where it's always registered. So there it's a
+  bug, and is reported as one.
+
+### CI and tooling
+
+- **`ubuntu-latest` moved under the project,** to an Ubuntu without the
+  `libxml2` SwiftLint's Linux build needs, so CI broke with no change here.
+  The job now pins `ubuntu-24.04`, and the lint script names any missing
+  library instead of passing on the loader's error.
+- **The Flutter version lives in `pubspec.yaml`** (`environment.flutter`),
+  so `flutter pub get` refuses any other version locally, and CI installs
+  it from there rather than from its own copy.
+- **Tests run in a random order,** locally and in CI, with the seed logged,
+  so tests that depend on each other fail early and can be replayed.
+- **`docs/swift-vs-dart-safety.md` lists 15 places** where Swift's compiler
+  is safer than Dart's, and how PulseLink makes up for each: the lints, or
+  a convention, or, in one case, an accepted gap.
+
+### BLE
+
+- **iOS drops connections silently when Bluetooth restarts.** In
+  `.resetting`, CoreBluetooth invalidates every peripheral without calling
+  the disconnect callback, so the app showed a reading going stale instead
+  of "Strap disconnected". It now reports the drop, as it already did for
+  Bluetooth turning off, and an attempt in progress starts over. Found by
+  reading the code: iOS restarts Bluetooth only on its own, so there's no
+  way to check it by hand.
+
+Regulated-app notes: release builds can't show simulated data, and a check
+on the compiled binaries proves it each time, which is the kind of
+verification a regulated team keeps as a record. Each build has its own ID,
+name and icon, so a test build can't be mistaken for the real one. Errors
+and logs leave each app through one class, which is where redaction and
+crash reporting go. A regulated team would also:
+- choose the crash reporting service as SOUP, with its version, its known
+  issues and a data-processing agreement;
+- define what counts as personal information in a log, such as a strap's
+  address, and test that redaction removes it;
+- keep the release-binary checks as a documented step of every release.

@@ -1,8 +1,7 @@
 # PulseLink architecture
 
 How the phone app, the Apple Watch app and the link between them fit
-together, as of Milestone 5, plus the no-strap start and debug-only demo
-data that came after it. Update it when a milestone changes a component
+together, as of Milestone 6. Update it when a milestone changes a component
 or a message; Milestone 7 will add the connection state machine, and
 Milestone 9 the watch's start and stop commands.
 
