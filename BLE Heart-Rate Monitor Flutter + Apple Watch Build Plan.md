@@ -55,7 +55,7 @@ Disclaimer to include in the app and README: "For learning and fitness use only.
 
 ## Tech stack and architecture
 
-Flutter can't build watchOS apps, so the watch app is native SwiftUI. It talks to the Flutter app through Apple's WatchConnectivity framework, bridged into Dart with a platform channel.
+Flutter can't build watchOS apps, so the watch app is native SwiftUI. It talks to the Flutter app through Apple's WatchConnectivity framework, in Swift, which Dart calls through Pigeon.
 
 | Layer | Choice | Notes |
 | --- | --- | --- |
@@ -66,8 +66,10 @@ Flutter can't build watchOS apps, so the watch app is native SwiftUI. It talks t
 | Charts | `fl_chart` | Session history graphs |
 | Watch app | SwiftUI, watchOS | Embedded in the iOS Runner project |
 | Phone-watch bridge | WatchConnectivity in Swift, called from Dart through Pigeon (`pigeons/watch_api.dart`) | Written by hand for learning, rather than the `watch_connectivity` package |
-| Tests | `flutter_test`, `mocktail`, bloc\_test, XCTest | Fakes for BLE and watch |
-| CI | GitHub Actions | Analyze, test, build |
+| Text | gen-l10n (`flutter_localizations`, `intl`) | Every string in `lib/l10n/app_en.arb`, read through the generated, typed `AppLocalizations` |
+| Errors and logs | `TrackerService` (Dart), `ErrorTracker` (Swift and Kotlin) | The one place each language logs, through `dart:developer`, the unified log and Logcat for now; a crash reporting service plugs in there |
+| Tests | `flutter_test`, `mocktail`, bloc\_test, Swift Testing, JUnit | Fakes for BLE and watch |
+| CI | GitHub Actions | Analyze, format, test and lint; app builds come in Milestone 8 |
 
 Layers in the Flutter app, top to bottom:
 
@@ -95,8 +97,8 @@ MVP (phone):
 - Scan for devices advertising the Heart Rate Service, then pick and pair one
 - Live screen: big bpm number, last-updated time, connection status, sensor-contact indicator, battery level if available
 - Clear states: scanning, connecting, connected, reconnecting, disconnected, Bluetooth off, permission denied
-- Automatic reconnect to the last device after a drop or app restart
-- Demo mode using `FakeStrapDataSource`, so the app works with no hardware (also useful for screenshots and tests)
+- Automatic reconnect to the last device after a drop or app restart (Milestone 7)
+- Demo mode using `FakeStrapDataSource`, so the app works with no hardware (also useful for screenshots and tests); in debug and profile builds only, since release builds show only a real strap's data
 
 MVP (watch):
 
@@ -132,7 +134,7 @@ Each milestone ends with something I can run on a device and a commit. Each one 
    - Done when: the same checks as Milestone 3 pass on an Android phone.
 5. **Apple Watch app.** Done. A native SwiftUI watchOS app embedded in the iOS app, fed over WatchConnectivity: the phone's Swift sends a snapshot of the live state, as a live message and as the application context, through a second Pigeon contract. The watch shows the bpm with when it was measured, marks it stale after 10 seconds by its own clock, shows why there's no heart rate, tags demo data, says when the iPhone has been unreachable for 5 seconds, and shows the latest state on launch. Swift Testing covers both apps, in `RunnerTests` and `PulseLinkWatchTests`. It needs only the iOS app, so it didn't depend on Milestone 4.
    - Done when: the watch shows live bpm with its age and connection status, and handles "phone not reachable".
-6. **Hardening and Enhancements.** In progress. Making what Milestones 1-5 built sturdier and ready to show, in place of the reliability work first planned here, which moved to Milestone 7: all user-facing text in `app_en.arb`, read through the generated `AppLocalizations`; Swift safety rules for the native code; a separate bundle ID for each build, and IPA export; release builds that show only real data, with demo data and the debug override kept to debug builds; license headers; SwiftLint in CI; the app icon; CI pinned to the project's Flutter version; error reporting through `TrackerService` and `UncaughtErrorReporter`, with native `ErrorTracker`s, placeholders for redacting personal information, and lint rules that ban logging around them; and reporting a dropped strap when iOS restarts Bluetooth.
+6. **Hardening and Enhancements.** Done. Made what Milestones 1-5 built sturdier and ready to show, in place of the reliability work first planned here, which moved to Milestone 7: all user-facing text in `app_en.arb`, read through the generated `AppLocalizations`; Swift safety rules for the native code; a separate bundle ID for each build, and IPA export; release builds that show only real data, with demo data and the debug override kept to debug builds; license headers; SwiftLint in CI; the app icon; CI pinned to the project's Flutter version; error reporting through `TrackerService` and `UncaughtErrorReporter`, with native `ErrorTracker`s, placeholders for redacting personal information, and lint rules that ban logging around them; and reporting a dropped strap when iOS restarts Bluetooth.
    - Done when: the epic passes every pre-merge check, the release builds run on an iPhone (with the watch) and an Android phone, and it merges into `develop`.
 7. **BLE Reliability** (nice-to-have). Connection state machine (a Bloc), automatic reconnect with backoff, Bluetooth off and on, app backgrounded, remembering the last device, and the in-app debug log; on iOS, one shared `CBCentralManager` and the `bluetooth-central` background mode; on Android, the `connectedDevice` foreground service shelved in Milestone 4. Most of it is shared Dart, so Android runs it too, but only the iPhone is checked for the rest.
    - Done when: on an iPhone, I can walk out of range and back, toggle Bluetooth, background the app, and kill and reopen it, and it always recovers or explains itself; and on an Android phone, streaming carries on in the background.
@@ -194,7 +196,7 @@ Testing:
 - Native: Swift Testing in `RunnerTests` (iPhone app, including the shared message encoding and decoding) and `PulseLinkWatchTests` (watch app), and JUnit for the Kotlin; `tool/test_swift.sh` runs the Swift tests on simulators.
 - Manual test checklist in `docs/test-plan.md`: out of range, Bluetooth toggled, app killed, phone locked, watch unreachable, strap battery low.
 
-CI (GitHub Actions): `flutter analyze`, `dart format --set-exit-if-changed`, `flutter test` with coverage on every push; an Android build on Ubuntu and an iOS build on macOS (no code signing).
+CI (GitHub Actions): `flutter analyze`, `dart format --set-exit-if-changed`, `flutter test` with coverage on every push; an Android build on Ubuntu and an iOS build on macOS (no code signing). As of Milestone 6 it runs analyze, format, the tests in a random order, the lint plugin's own checks and the native lints, with the Flutter version pinned in `pubspec.yaml`; the builds, and the Swift tests on macOS, come in Milestone 8.
 
 Docs to commit:
 
@@ -202,6 +204,7 @@ Docs to commit:
 - `docs/architecture.md`: layers, the phone-watch design, and Mermaid sequence diagrams for connect-and-stream and watch start/stop. Started in Milestone 5 with the phone app, the watch app and the messages between them; connect-and-stream and watch start/stop are still to come.
 - `docs/hazards.md`: a lightweight hazard table (hazard, cause, mitigation), such as stale bpm shown as current, or a session lost on crash. It mirrors how regulated teams think without claiming compliance.
 - `docs/learning-log.md`: what I learned per milestone, with Flutter-vs-native notes. Useful interview material.
+- `docs/swift-vs-dart-safety.md`: where Swift's compiler is safer than Dart's, and how PulseLink makes up for each. Added in Milestone 6.
 
 ## Setup checklist and open questions
 
@@ -217,5 +220,5 @@ Open questions:
 
 - Which features need a full Bloc (events) versus a simpler Cubit? Plan: Bloc for connection and sessions, Cubits elsewhere.
 - Hand-written platform channels, or the `watch_connectivity` package? Decided in Milestone 5: hand-written Swift, called through Pigeon.
-- App name and bundle ID
+- App name and bundle ID? Decided in Milestone 6: PulseLink, `com.jpeckner.pulselink`, with `.debug` and `.profile` for those builds, so all three install side by side.
 - Android-only Wear OS app later, or never?

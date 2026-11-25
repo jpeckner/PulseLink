@@ -20,7 +20,7 @@ strap or watch.
 - [x] 3. Real BLE on iOS
 - [x] 4. Real BLE on Android
 - [x] 5. Apple Watch app
-- [ ] 6. Hardening and Enhancements
+- [x] 6. Hardening and Enhancements
 - [ ] 7. BLE Reliability (nice-to-have)
 - [ ] 8. Polish and portfolio (nice-to-have)
 - [ ] 9. Sessions and history (nice-to-have)
@@ -28,7 +28,8 @@ strap or watch.
 ## Tech stack
 
 Flutter (iOS + Android), Material 3 via `material_ui`, `flutter_bloc` for state,
-`freezed` for immutable models and states, `very_good_analysis` for lints. iOS
+`freezed` for immutable models and states, gen-l10n for text,
+`very_good_analysis` for lints. iOS
 native dependencies use Swift Package Manager only; no CocoaPods. The watchOS
 app is native SwiftUI. The phone talks to it over WatchConnectivity, in Swift,
 which Dart calls through Pigeon.
@@ -337,6 +338,27 @@ Release builds don't contain this code: only `debugApp`
 (`lib/app/debug/debug_app.dart`) creates it, `main()` uses `debugApp` only in
 its non-release branch, and because `kReleaseMode` is a compile-time
 constant, the release compiler removes that branch.
+
+## Logs and error reporting
+
+Each language logs in one place, so a crash reporting service plugs in
+there and nowhere else. Each of these classes has its Crashlytics calls in
+comments, and passes messages through placeholders for removing personal
+information, which remove nothing yet.
+
+| Code | Class | Where it goes for now | How to read it |
+| --- | --- | --- | --- |
+| Dart | `TrackerService` (`lib/data/tracker_service.dart`) | `dart:developer`, named `ble`, `bloc`, `watch`, `settings` or `uncaught` | DevTools' Logging view, while `flutter run` is attached |
+| Swift (iPhone and watch) | `OSLogTracker` (`ios/Shared/ErrorTracker.swift`) | Apple's unified log, under the build's bundle ID, such as `com.jpeckner.pulselink.debug` | Console.app on a Mac, with the device selected, filtered on that subsystem |
+| Kotlin | `LogcatTracker` (`ErrorTracker.kt`) | Logcat, tagged `LeScan`, `LeConnection` or `AppSettingsOpener` | Android Studio's Logcat, or `adb logcat` |
+
+`main()`, `AppDelegate`, `PulseLinkWatchApp` and `MainActivity` each create
+their app's only tracker and pass it to everything that logs, as a required
+argument. Errors that shouldn't happen go to `logError`, and normal events
+to `logInfo` (and, on Android, expected failures to `logWarning`). Errors
+nothing catches reach `UncaughtErrorReporter`, which reports them as fatal.
+SwiftLint and detekt fail the build on any logging outside the trackers; see
+"Error handling" in [CLAUDE.md](CLAUDE.md).
 
 ## Commit messages
 

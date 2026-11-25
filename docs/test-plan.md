@@ -200,7 +200,21 @@ correctly, signed, with matching versions. Tabled for now. When it happens,
 note whether it comes back by itself, and whether the Watch app on the
 iPhone shows PulseLink with an Install button.
 
-## Release builds
+## Milestone 6: Hardening and Enhancements
+
+### Builds side by side
+
+- [ ] **Three builds:** install a Debug, a Profile and a Release build on
+  the same phone. All three appear, as **PulseLink Debug** (grey icon),
+  **PulseLink Profile** (green) and **PulseLink** (white), and each opens
+  and runs by itself. On an iPhone, each brings its own watch app, with the
+  same icon.
+- [ ] **Ad Hoc install:** export a Profile or Release IPA (see "iOS Ad Hoc
+  builds" in the README), install it on an iPhone, then install its watch
+  app from the Watch app on the iPhone. Both open, and the watch shows what
+  the phone shows.
+
+### Release builds
 
 Release builds never show simulated or debug data. Install a Release build
 (see "iOS Ad Hoc builds" in the README, or `flutter run --release` on
@@ -223,6 +237,24 @@ Android) and check:
   wallpaper and style settings), the icon turns into a tinted heart with the
   trace cut out.
 
+### Logs
+
+See "Logs and error reporting" in the README for where each kind of log
+goes. Run a debug build with `flutter run`, and open DevTools' Logging view.
+
+- [ ] **Dart:** state changes appear under `bloc`. Connect a strap, then
+  take its battery out: "The strap disconnected" appears under `ble`. With
+  a watch, how delivery is going appears under `watch`.
+- [ ] **Android:** in Logcat, filtered on the tag `LeConnection`, the same
+  drop shows "The strap disconnected with status …" at the Info level.
+- [ ] **Uncaught errors** (optional): on the unmerged `feat/CrashTest`
+  branch, tap the Bluetooth button in the app bar. A severe entry under
+  `uncaught` names `CrashTestException`.
+
+iOS logs only errors that shouldn't happen, and a few WatchConnectivity
+events, so there's nothing to provoke there. Its Bluetooth-reset handling
+can't be checked by hand either: iOS restarts Bluetooth only on its own.
+
 ## Run log
 
 | Date | Build (commit) | Phone and OS | Strap | Result |
@@ -230,3 +262,5 @@ Android) and check:
 | 2026-11-15 | 68e2e19 (Milestone 4 epic plus the shelved background branch) | Samsung Galaxy A36 5G, Android 16 | COOSPO Armband Heart Rate Monitor | Pass: scanning, connecting, live bpm, battery and background streaming, checked before this checklist was written |
 | 2026-11-15 | 6b4f5e5 (Milestone 5 epic) | iPhone 17 Pro Max, iOS 27.0.1, with Apple Watch Series 9, watchOS 27.0.1 | None (demo mode) | Pass, except that "iPhone not reachable" flashed each time the wrist was raised; checked before this checklist was written |
 | 2026-11-15 | 4877cf4 (the reachability fix) | iPhone 17 Pro Max, iOS 27.0.1, with Apple Watch Series 9, watchOS 27.0.1 | None (demo mode) | Pass: no flash on raising the wrist |
+| 2026-11-24 | e8049da (Milestone 6 epic) | iPhone 17 Pro Max, iOS 27.0.1, with Apple Watch Series 9, watchOS 27.0.1 | COOSPO Armband Heart Rate Monitor | Pass: the Milestone 6 checks, including the three builds side by side, the Ad Hoc install, the Release build with a real strap on the phone and the watch, and the logs |
+| 2026-11-24 | e8049da (Milestone 6 epic) | Samsung Galaxy A36 5G, Android 16 | COOSPO Armband Heart Rate Monitor | Pass: the Milestone 6 checks, including the three builds side by side, the Release build with a real strap, the themed icon, and the logs |
