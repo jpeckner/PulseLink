@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Justin Peckner
+# SPDX-License-Identifier: MIT
+# See the LICENSE file in the project root for the full license text.
+
 """Check that debug-only Dart code didn't make it into a release build.
 
 Usage: check_release_binary.py <binary or .apk> [...]

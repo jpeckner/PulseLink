@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import Foundation
 
 /// Turns the Pigeon snapshot Dart sends (pigeons/watch_api.dart) into the
@@ -12,6 +16,8 @@ extension HeartRateSnapshot {
     // Pigeon's sealed classes become plain protocols in Swift, which any
     // type could conform to, so this switch can't list every case.
     switch pigeon.status {
+    case is WatchNoStrap:
+      status = .noStrap
     case is WatchWaiting:
       status = .waiting
     case is WatchReceiving:

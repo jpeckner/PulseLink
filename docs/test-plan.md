@@ -5,9 +5,10 @@ Simulator or the Android emulator, and these cover what unit and widget tests
 can't. Run them on a debug build (`flutter run` on a connected iPhone or
 Android phone) before merging an epic into `develop`, and note each run in
 the log at the end. The Apple Watch checks need an iPhone and its paired
-watch, but no strap: demo mode drives them.
+watch, but no strap: demo data (from the debug override, in a debug build)
+drives them.
 
-Each milestone adds its own section. Milestone 6 will add walking out of
+Each milestone adds its own section. Milestone 7 will add walking out of
 range and back, toggling Bluetooth while connected, backgrounding the app
 (on both platforms, once Android's background streaming lands), and killing
 and reopening it.
@@ -24,10 +25,14 @@ and reopening it.
 
 ## Milestone 3: Real BLE on iOS
 
-### Demo mode
+### Launch and demo data
 
-- [ ] **Launch:** the app opens in demo mode, with a "Demo" badge, a moving
-  bpm, the update time, and an 80% battery in the app bar.
+- [ ] **Launch:** the app opens on real data: "No strap connected", with a
+  **Find strap** button.
+- [ ] **Demo data:** long-press the title, then tap **Data: Real strap**,
+  the first of three buttons. The screen shows a "Demo" badge, a moving bpm,
+  the update time, and an 80% battery in the app bar, and the button reads
+  **Data: Demo**. Tap it again: back to "No strap connected".
 
 ### Finding a strap
 
@@ -44,11 +49,13 @@ and reopening it.
   with the picker open. It says "Bluetooth is off". Turn it back on, and
   scanning resumes by itself.
 - [ ] **Closing stops the scan:** close the picker. No strap is connected,
-  and the live screen still shows demo data.
+  and the live screen still shows what it did before: "No strap connected",
+  or demo data.
 
 ### Connecting and live data
 
-- [ ] **Connect:** pick the strap. The Demo badge goes, and a live bpm
+- [ ] **Connect:** pick the strap. The Demo badge goes, if demo data was on,
+  and a live bpm
   arrives within a few seconds, close to the strap maker's app.
 - [ ] **Skin contact:** take the strap off. The screen says there's no skin
   contact (or shows "--" for a strap that can't detect contact). Put it back
@@ -86,9 +93,9 @@ and reopening it.
 The Milestone 3 checks, on an Android phone. Where Android differs from iOS,
 the check says so.
 
-### Demo mode
+### Launch and demo data
 
-- [ ] **Launch:** as on iOS.
+- [ ] **Launch and demo data:** as on iOS.
 
 ### Finding a strap
 
@@ -108,7 +115,8 @@ the check says so.
   The sixth time, the strap may take up to 30 seconds to appear, but it does
   appear. (Without the throttle, Android would silently find nothing.)
 - [ ] **Closing stops the scan:** close the picker. No strap is connected,
-  and the live screen still shows demo data.
+  and the live screen still shows what it did before: "No strap connected",
+  or demo data.
 
 ### Connecting and live data
 
@@ -144,8 +152,11 @@ the check says so.
 - Run the phone app from Xcode or `flutter run`. The watch app comes with
   it: the iPhone installs it on the watch, which can take a minute. If it
   doesn't appear, install it from the Watch app on the iPhone (My Watch >
-  PulseLink), or run the `PulseLinkWatch` scheme from Xcode.
-- Demo mode is enough for every check except the last section.
+  PulseLink Debug, for a debug build), or run the `PulseLinkWatch` scheme
+  from Xcode. Each build's watch app talks only to the phone app of the
+  same build (debug, profile or release).
+- Demo data is enough for every check except the last section: switch to
+  it on the phone first (long-press the title, then **Data: Real strap**).
 
 ### Live data
 
@@ -189,6 +200,61 @@ correctly, signed, with matching versions. Tabled for now. When it happens,
 note whether it comes back by itself, and whether the Watch app on the
 iPhone shows PulseLink with an Install button.
 
+## Milestone 6: Hardening and Enhancements
+
+### Builds side by side
+
+- [ ] **Three builds:** install a Debug, a Profile and a Release build on
+  the same phone. All three appear, as **PulseLink Debug** (grey icon),
+  **PulseLink Profile** (green) and **PulseLink** (white), and each opens
+  and runs by itself. On an iPhone, each brings its own watch app, with the
+  same icon.
+- [ ] **Ad Hoc install:** export a Profile or Release IPA (see "iOS Ad Hoc
+  builds" in the README), install it on an iPhone, then install its watch
+  app from the Watch app on the iPhone. Both open, and the watch shows what
+  the phone shows.
+
+### Release builds
+
+Release builds never show simulated or debug data. Install a Release build
+(see "iOS Ad Hoc builds" in the README, or `flutter run --release` on
+Android) and check:
+
+- [ ] **No demo data:** the app opens on "No strap connected", with a
+  **Find strap** button.
+- [ ] **No debug override:** long-pressing the title shows no override
+  buttons, so there's no way to switch to demo data.
+- [ ] **Watch:** with the iPhone app open, the watch shows "No strap
+  connected" and "Pick one in PulseLink on your iPhone", with no "Demo" tag.
+- [ ] **A real strap:** pick a strap. A live bpm arrives, on the phone and
+  the watch, as in a debug build.
+- [ ] **Icon:** the red heart on white, on the phone and the watch, while a
+  debug build installed alongside has it on grey.
+- [ ] **iPhone icon appearances:** long-press the Home Screen and choose
+  Edit > Customize. The icon follows Dark (near-black, with the trace cut
+  out of the heart), Clear and Tinted.
+- [ ] **Android themed icon:** with themed icons on (in the launcher's
+  wallpaper and style settings), the icon turns into a tinted heart with the
+  trace cut out.
+
+### Logs
+
+See "Logs and error reporting" in the README for where each kind of log
+goes. Run a debug build with `flutter run`, and open DevTools' Logging view.
+
+- [ ] **Dart:** state changes appear under `bloc`. Connect a strap, then
+  take its battery out: "The strap disconnected" appears under `ble`. With
+  a watch, how delivery is going appears under `watch`.
+- [ ] **Android:** in Logcat, filtered on the tag `LeConnection`, the same
+  drop shows "The strap disconnected with status …" at the Info level.
+- [ ] **Uncaught errors** (optional): on the unmerged `feat/CrashTest`
+  branch, tap the Bluetooth button in the app bar. A severe entry under
+  `uncaught` names `CrashTestException`.
+
+iOS logs only errors that shouldn't happen, and a few WatchConnectivity
+events, so there's nothing to provoke there. Its Bluetooth-reset handling
+can't be checked by hand either: iOS restarts Bluetooth only on its own.
+
 ## Run log
 
 | Date | Build (commit) | Phone and OS | Strap | Result |
@@ -196,3 +262,5 @@ iPhone shows PulseLink with an Install button.
 | 2026-11-15 | 68e2e19 (Milestone 4 epic plus the shelved background branch) | Samsung Galaxy A36 5G, Android 16 | COOSPO Armband Heart Rate Monitor | Pass: scanning, connecting, live bpm, battery and background streaming, checked before this checklist was written |
 | 2026-11-15 | 6b4f5e5 (Milestone 5 epic) | iPhone 17 Pro Max, iOS 27.0.1, with Apple Watch Series 9, watchOS 27.0.1 | None (demo mode) | Pass, except that "iPhone not reachable" flashed each time the wrist was raised; checked before this checklist was written |
 | 2026-11-15 | 4877cf4 (the reachability fix) | iPhone 17 Pro Max, iOS 27.0.1, with Apple Watch Series 9, watchOS 27.0.1 | None (demo mode) | Pass: no flash on raising the wrist |
+| 2026-11-24 | e8049da (Milestone 6 epic) | iPhone 17 Pro Max, iOS 27.0.1, with Apple Watch Series 9, watchOS 27.0.1 | COOSPO Armband Heart Rate Monitor | Pass: the Milestone 6 checks, including the three builds side by side, the Ad Hoc install, the Release build with a real strap on the phone and the watch, and the logs |
+| 2026-11-24 | e8049da (Milestone 6 epic) | Samsung Galaxy A36 5G, Android 16 | COOSPO Armband Heart Rate Monitor | Pass: the Milestone 6 checks, including the three builds side by side, the Release build with a real strap, the themed icon, and the logs |

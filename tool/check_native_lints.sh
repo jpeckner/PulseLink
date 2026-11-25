@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Justin Peckner
+# SPDX-License-Identifier: MIT
+# See the LICENSE file in the project root for the full license text.
+
 # Proves the native linters are running, and that every rule they enforce
 # reports and fails the lint.
 #
@@ -52,6 +56,8 @@ var probeImplicitlyUnwrapped: Int!
 
 func probeNoAssertions() { fatalError("probe") }
 
+func probeNoDirectLogging(_ logger: Logger) { logger.info("probe") }
+
 func probeNoCatchAllCases(_ probe: NativeLintProbe) -> Int {
   switch probe {
   case .a:
@@ -85,6 +91,9 @@ private class ProbeLateinitUsage {
 }
 
 private fun probeForbiddenMethodCall(): Nothing = error("probe")
+
+// Also ForbiddenMethodCall: logging straight to Logcat outside LogcatTracker.
+private fun probeDirectLogging(): Int = android.util.Log.i("probe", "probe")
 
 private fun probeElseCase(probe: NativeLintProbe): Int =
     when (probe) {

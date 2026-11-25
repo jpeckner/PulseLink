@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import CoreBluetooth
 import Foundation
 import Testing
@@ -25,10 +29,27 @@ struct ConnectActionTests {
     (.unauthorized, .fail(.unauthorized)),
     (.unsupported, .fail(.unsupported)),
     (.unknown, .wait),
-    (.resetting, .wait),
+    (.resetting, .reset),
   ])
   func eachBluetoothStateHasAnAction(state: CBManagerState, action: ConnectAction) {
     #expect(ConnectAction(state) == action)
+  }
+
+  // iOS calls no disconnect callback when Bluetooth goes off or restarts,
+  // so StrapConnection reports the drop itself in these states.
+  @Test(arguments: [
+    (ConnectAction.connect, false),
+    (.wait, false),
+    (.fail(.poweredOff), true),
+    (.fail(.unauthorized), true),
+    (.fail(.unsupported), true),
+    (.reset, true),
+  ])
+  func dropsAConnectedStrapWhenBluetoothGoesOffOrRestarts(
+    action: ConnectAction,
+    drops: Bool
+  ) {
+    #expect(action.dropsConnection == drops)
   }
 }
 

@@ -1,7 +1,9 @@
-import 'package:material_ui/material_ui.dart';
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
 
-const disclaimerText =
-    'For learning and fitness use only. Not a medical device.';
+import 'package:material_ui/material_ui.dart';
+import 'package:pulselink/l10n/l10n.dart';
 
 /// The non-medical disclaimer, shown on every main screen.
 class DisclaimerBanner extends StatelessWidget {
@@ -11,7 +13,7 @@ class DisclaimerBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Text(
-      disclaimerText,
+      context.l10n.disclaimer,
       textAlign: TextAlign.center,
       style: theme.textTheme.bodySmall?.copyWith(
         color: theme.colorScheme.onSurfaceVariant,

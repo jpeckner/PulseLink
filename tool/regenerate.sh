@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Justin Peckner
+# SPDX-License-Identifier: MIT
+# See the LICENSE file in the project root for the full license text.
+
 # Cleans every build output and cache, then regenerates everything:
-# packages, freezed code, Pigeon platform-channel code and (on macOS) the iOS
-# project config.
+# packages, freezed code, localized strings, Pigeon platform-channel code and
+# (on macOS) the iOS project config.
 #
 # Run from anywhere: tool/regenerate.sh
 # Use it when builds act strangely, or after switching branches or upgrading
@@ -25,6 +29,9 @@ flutter pub get
 step 'Generating freezed code'
 dart run build_runner build --delete-conflicting-outputs
 
+step 'Generating localized strings (gen-l10n, see l10n.yaml)'
+flutter gen-l10n
+
 step 'Generating platform-channel code (Pigeon)'
 tool/pigeon.sh
 
@@ -37,7 +44,8 @@ fi
 
 step 'Checking generated code against git'
 # Only generated files, so your own uncommitted edits don't count.
-generated=('*.freezed.dart' '*.pigeon.dart' '*.pigeon.swift' '*.pigeon.kt')
+generated=('*.freezed.dart' 'lib/l10n/app_localizations*.dart' '*.pigeon.dart'
+  '*.pigeon.swift' '*.pigeon.kt')
 if [[ -n "$(git status --porcelain -- "${generated[@]}")" ]]; then
   git status --short -- "${generated[@]}"
   echo 'Generated code differs from what is committed. Review and commit it.'

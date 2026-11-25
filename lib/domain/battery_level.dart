@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import 'package:meta/meta.dart';
 
 /// A strap's battery level, as a percentage from 0 to 100.

@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
@@ -28,14 +32,15 @@ class LiveHeartRateCubit extends Cubit<LiveHeartRateState> {
 
   /// Subscribes to the source and starts it. If the source can't start, the
   /// state becomes [LiveHeartRateConnectionFailed]; calling this again
-  /// retries, showing [LiveHeartRateWaiting] meanwhile. Safe to call more
+  /// retries, showing [LiveHeartRateWaiting] meanwhile. With no strap picked,
+  /// it becomes [LiveHeartRateNoStrap]. Safe to call more
   /// than once; does nothing after [close].
   Future<void> start() async {
     if (isClosed) {
       return;
     }
     switch (state) {
-      case LiveHeartRateConnectionFailed():
+      case LiveHeartRateConnectionFailed() || LiveHeartRateNoStrap():
         emit(LiveHeartRateState.waiting(isSimulated: _source.isSimulated));
       case LiveHeartRateWaiting() || LiveHeartRateReading():
         // Already showing what's arrived so far.
@@ -65,6 +70,8 @@ class LiveHeartRateCubit extends Cubit<LiveHeartRateState> {
             isSimulated: _source.isSimulated,
           ),
         );
+      case StrapDataSourceNoStrap():
+        emit(const LiveHeartRateState.noStrap());
     }
   }
 
@@ -123,7 +130,9 @@ class LiveHeartRateCubit extends Cubit<LiveHeartRateState> {
     switch (state) {
       case final LiveHeartRateReading reading:
         emit(reading.copyWith(isStale: true));
-      case LiveHeartRateWaiting() || LiveHeartRateConnectionFailed():
+      case LiveHeartRateWaiting() ||
+          LiveHeartRateConnectionFailed() ||
+          LiveHeartRateNoStrap():
         // No reading to mark. The stale timer only starts once a reading has
         // been emitted, so this doesn't happen in practice.
         break;

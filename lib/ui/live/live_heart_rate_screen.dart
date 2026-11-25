@@ -1,7 +1,10 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
@@ -11,6 +14,7 @@ import 'package:pulselink/domain/battery_level.dart';
 import 'package:pulselink/domain/discovered_strap.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
+import 'package:pulselink/l10n/l10n.dart';
 import 'package:pulselink/ui/widgets/disclaimer_banner.dart';
 import 'package:pulselink/ui/widgets/problem_view.dart';
 
@@ -59,7 +63,7 @@ class LiveHeartRateScreen extends StatelessWidget {
         appBar: AppBar(
           title: GestureDetector(
             onLongPress: onTitleLongPress,
-            child: const Text('PulseLink'),
+            child: Text(context.l10n.appTitle),
           ),
           actions: [
             BlocBuilder<StrapBatteryCubit, BatteryLevel?>(
@@ -73,7 +77,7 @@ class LiveHeartRateScreen extends StatelessWidget {
             ),
             IconButton(
               icon: const Icon(Icons.bluetooth_searching),
-              tooltip: 'Find strap',
+              tooltip: context.l10n.findStrapTooltip,
               // Not awaited: it only opens the picker and passes on what it
               // returns; connecting reports through the cubit's state.
               onPressed: () => unawaited(_findStrap(context)),
@@ -96,6 +100,10 @@ class LiveHeartRateScreen extends StatelessWidget {
                     children: [
                       Center(
                         child: switch (state) {
+                          LiveHeartRateNoStrap() => _NoStrapView(
+                            // Not awaited, as for the app bar's button.
+                            onFindStrap: () => unawaited(_findStrap(context)),
+                          ),
                           LiveHeartRateWaiting() => const _WaitingView(),
                           LiveHeartRateReading(:final sample, :final isStale) =>
                             _ReadingView(sample: sample, isStale: isStale),
@@ -140,6 +148,47 @@ class LiveHeartRateScreen extends StatelessWidget {
   }
 }
 
+/// No strap picked yet: asks for one.
+class _NoStrapView extends StatelessWidget {
+  const new({required this.onFindStrap});
+
+  final VoidCallback onFindStrap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.monitor_heart_outlined,
+          size: 48,
+          color: theme.colorScheme.primary,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          l10n.noStrapTitle,
+          style: theme.textTheme.titleLarge,
+          textAlign: .center,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          l10n.noStrapDetail,
+          style: theme.textTheme.bodyLarge,
+          textAlign: .center,
+        ),
+        const SizedBox(height: 24),
+        FilledButton.icon(
+          onPressed: onFindStrap,
+          icon: const Icon(Icons.bluetooth_searching),
+          label: Text(l10n.findStrapButton),
+        ),
+      ],
+    );
+  }
+}
+
 class _WaitingView extends StatelessWidget {
   const new();
 
@@ -151,7 +200,7 @@ class _WaitingView extends StatelessWidget {
         const _BeatsPerMinuteReadout(beatsPerMinute: null, isStale: false),
         const SizedBox(height: 16),
         Text(
-          'Waiting for heart-rate data…',
+          context.l10n.waitingForData,
           style: Theme.of(context).textTheme.bodyLarge,
         ),
       ],
@@ -173,27 +222,29 @@ class _ConnectionFailedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return ProblemView(
       message: switch (failure) {
-        BluetoothFailure(:final problem) => bluetoothProblemMessage(problem),
+        BluetoothFailure(:final problem) => bluetoothProblemMessage(
+          l10n,
+          problem,
+        ),
         StrapUnreachable() => (
           icon: Icons.sensors_off,
-          title: "Can't reach the strap",
-          detail:
-              "Make sure it's on, being worn and nearby, and not connected "
-              'to another app.',
+          title: l10n.strapUnreachableTitle,
+          detail: l10n.strapUnreachableDetail,
           isFixedInSettings: false,
         ),
         NotAHeartRateStrap() => (
           icon: Icons.heart_broken_outlined,
-          title: 'Not a heart-rate strap',
-          detail: "This device doesn't send heart-rate data.",
+          title: l10n.notAHeartRateStrapTitle,
+          detail: l10n.notAHeartRateStrapDetail,
           isFixedInSettings: false,
         ),
         StrapConnectionLost() => (
           icon: Icons.link_off,
-          title: 'Strap disconnected',
-          detail: "Make sure it's on, being worn and nearby, then try again.",
+          title: l10n.strapDisconnectedTitle,
+          detail: l10n.strapDisconnectedDetail,
           isFixedInSettings: false,
         ),
       },
@@ -212,7 +263,8 @@ class _ReadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final time = DateFormat.jms().format(sample.timestamp);
+    final l10n = context.l10n;
+    final time = sample.timestamp;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -240,7 +292,7 @@ class _ReadingView extends StatelessWidget {
                   // accessibility text sizes.
                   Flexible(
                     child: Text(
-                      'No data from strap',
+                      l10n.noDataFromStrap,
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: theme.colorScheme.error,
                       ),
@@ -250,7 +302,7 @@ class _ReadingView extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Last reading $time',
+                l10n.lastReadingAt(time),
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.error,
                 ),
@@ -258,7 +310,7 @@ class _ReadingView extends StatelessWidget {
             ],
           )
         else
-          Text('Updated $time', style: theme.textTheme.bodyLarge),
+          Text(l10n.updatedAt(time), style: theme.textTheme.bodyLarge),
         const SizedBox(height: 16),
         // A stale reading's skin-contact status is out of date too, so hide
         // it. Its space is kept so the readout doesn't jump when data stops.
@@ -284,14 +336,18 @@ class _BeatsPerMinuteReadout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final color = isStale
         ? theme.colorScheme.onSurface.withValues(alpha: 0.38)
         : theme.colorScheme.onSurface;
     final label = switch ((beatsPerMinute, isStale)) {
-      (null, _) => 'No heart-rate reading',
-      (final beatsPerMinute?, true) =>
-        'Last reading $beatsPerMinute beats per minute, out of date',
-      (final beatsPerMinute?, false) => '$beatsPerMinute beats per minute',
+      (null, _) => l10n.noHeartRateLabel,
+      (final beatsPerMinute?, true) => l10n.staleBeatsPerMinuteLabel(
+        beatsPerMinute,
+      ),
+      (final beatsPerMinute?, false) => l10n.beatsPerMinuteLabel(
+        beatsPerMinute,
+      ),
     };
     return Semantics(
       label: label,
@@ -302,7 +358,7 @@ class _BeatsPerMinuteReadout extends StatelessWidget {
         textBaseline: TextBaseline.alphabetic,
         children: [
           Text(
-            beatsPerMinute?.toString() ?? '--',
+            beatsPerMinute?.toString() ?? l10n.noBeatsPerMinute,
             style: theme.textTheme.displayLarge?.copyWith(
               color: color,
               fontWeight: FontWeight.w600,
@@ -310,7 +366,7 @@ class _BeatsPerMinuteReadout extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            'bpm',
+            l10n.beatsPerMinuteUnit,
             style: theme.textTheme.titleLarge?.copyWith(color: color),
           ),
         ],
@@ -319,10 +375,17 @@ class _BeatsPerMinuteReadout extends StatelessWidget {
   }
 }
 
-const _skinContactChip = Chip(
-  avatar: Icon(Icons.check_circle_outline),
-  label: Text('Skin contact'),
-);
+class _SkinContactChip extends StatelessWidget {
+  const new();
+
+  @override
+  Widget build(BuildContext context) {
+    return Chip(
+      avatar: const Icon(Icons.check_circle_outline),
+      label: Text(context.l10n.skinContact),
+    );
+  }
+}
 
 /// Strap status: skin contact for a measured sample, or why there's no
 /// reading. Never about Bluetooth connectivity.
@@ -334,9 +397,10 @@ class _StrapStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final l10n = context.l10n;
     return switch (sample) {
       MeasuredHeartRateSample(skinContact: SkinContact.detected) =>
-        _skinContactChip,
+        const _SkinContactChip(),
       // The strap can't detect skin contact, so there's nothing to say. The
       // chip's space is kept so the readout sits where it does for a strap
       // that can.
@@ -346,21 +410,21 @@ class _StrapStatusChip extends StatelessWidget {
           maintainSize: true,
           maintainAnimation: true,
           maintainState: true,
-          child: _skinContactChip,
+          child: _SkinContactChip(),
         ),
       UnavailableHeartRateSample(
         reason: HeartRateUnavailableReason.noSkinContact,
       ) =>
         Chip(
           avatar: Icon(Icons.error_outline, color: colors.error),
-          label: const Text('No skin contact'),
+          label: Text(l10n.noSkinContact),
         ),
       UnavailableHeartRateSample(
         reason: HeartRateUnavailableReason.zeroBeatsPerMinute,
       ) =>
-        const Chip(
-          avatar: Icon(Icons.info_outline),
-          label: Text('Strap connected, no heart rate yet'),
+        Chip(
+          avatar: const Icon(Icons.info_outline),
+          label: Text(l10n.connectedNoHeartRateYet),
         ),
       // Shown as an error, unlike a bpm of 0: the strap sent a value, but not
       // one that can be a heart rate.
@@ -369,7 +433,7 @@ class _StrapStatusChip extends StatelessWidget {
       ) =>
         Chip(
           avatar: Icon(Icons.error_outline, color: colors.error),
-          label: const Text('Strap reading out of range'),
+          label: Text(l10n.readingOutOfRange),
         ),
     };
   }
@@ -385,11 +449,12 @@ class _BatteryIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final colour = level.isLow ? theme.colorScheme.error : null;
     return Semantics(
-      label:
-          'Strap battery ${level.percent} percent'
-          '${level.isLow ? ', low' : ''}',
+      label: level.isLow
+          ? l10n.batteryLowLabel(level.percent)
+          : l10n.batteryLabel(level.percent),
       excludeSemantics: true,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -402,7 +467,7 @@ class _BatteryIndicator extends StatelessWidget {
               color: colour,
             ),
             Text(
-              '${level.percent}%',
+              l10n.batteryPercent(level.percent),
               style: theme.textTheme.labelLarge?.copyWith(color: colour),
             ),
           ],
@@ -421,7 +486,7 @@ class _DemoBadge extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(right: 16),
       child: Chip(
-        label: const Text('Demo'),
+        label: Text(context.l10n.demoBadge),
         labelStyle: TextStyle(color: colors.onTertiaryContainer),
         backgroundColor: colors.tertiaryContainer,
         side: BorderSide.none,

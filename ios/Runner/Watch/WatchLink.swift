@@ -1,6 +1,6 @@
-import os
-
-private let watchLog = Logger(subsystem: "com.jpeckner.pulselink", category: "Watch")
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
 
 /// Dart's calls to send heart-rate snapshots to the watch
 /// (`WatchSessionApi`, declared in pigeons/watch_api.dart). Turns each into
@@ -10,12 +10,16 @@ private let watchLog = Logger(subsystem: "com.jpeckner.pulselink", category: "Wa
 /// isolation. Each call converts its snapshot before hopping to the main
 /// actor, so only `Sendable` values cross.
 final class WatchLink {
-  private let session = PhoneWatchSession()
+  private let session: PhoneWatchSession
+  /// Where a malformed snapshot from Dart is reported.
+  private let tracker: any ErrorTracker
 
   /// Starts activating WatchConnectivity straight away, as Apple recommends,
   /// rather than on Dart's first call.
-  init() {
-    let session = session
+  init(tracker: any ErrorTracker) {
+    self.tracker = tracker
+    let session = PhoneWatchSession(tracker: tracker)
+    self.session = session
     Task { @MainActor in
       session.activate()
     }
@@ -25,7 +29,7 @@ final class WatchLink {
 extension WatchLink: WatchSessionApi {
   func sendLiveSnapshot(snapshot: WatchHeartRateSnapshot) async throws -> WatchDeliveryOutcome {
     guard let snapshot = HeartRateSnapshot(snapshot) else {
-      watchLog.fault("Dropped a malformed live snapshot from Dart")
+      tracker.logError("Dropped a malformed live snapshot from Dart", category: "Watch", error: nil)
       return .failed
     }
     // No thread check needed: awaiting a main-actor method runs it on the
@@ -37,7 +41,11 @@ extension WatchLink: WatchSessionApi {
     snapshot: WatchHeartRateSnapshot
   ) async throws -> WatchDeliveryOutcome {
     guard let snapshot = HeartRateSnapshot(snapshot) else {
-      watchLog.fault("Dropped a malformed application context from Dart")
+      tracker.logError(
+        "Dropped a malformed application context from Dart",
+        category: "Watch",
+        error: nil
+      )
       return .failed
     }
     return await session.updateApplicationContext(snapshot)

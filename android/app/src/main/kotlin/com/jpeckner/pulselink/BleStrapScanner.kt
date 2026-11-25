@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 package com.jpeckner.pulselink
 
 import android.app.Activity
@@ -11,8 +15,11 @@ import android.app.Activity
  * [activity] shows the permission dialog; MainActivity forwards its result,
  * and its resumes, here.
  */
-class BleStrapScanner(activity: Activity) : ScanForHeartRateStrapsStreamHandler() {
-    private val scan = LeScan(activity)
+class BleStrapScanner(
+    activity: Activity,
+    tracker: ErrorTracker,
+) : ScanForHeartRateStrapsStreamHandler() {
+    private val scan = LeScan(activity, tracker)
 
     override fun onListen(
         p0: Any?,

@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -16,8 +20,12 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        // Release's id and name. Debug and profile add a suffix and a name of
+        // their own (see buildTypes), so all three can be installed on one
+        // phone at once, as on iOS.
         applicationId = "com.jpeckner.pulselink"
+        manifestPlaceholders["appName"] = "PulseLink"
+        manifestPlaceholders["appIcon"] = "@mipmap/ic_launcher"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         // Android 12, the first version with the BLUETOOTH_SCAN and
@@ -34,6 +42,19 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".debug"
+            manifestPlaceholders["appName"] = "PulseLink Debug"
+            // An adaptive icon on grey (src/debug/res).
+            manifestPlaceholders["appIcon"] = "@mipmap/ic_launcher_build"
+        }
+        // The Flutter Gradle plugin creates the profile build type.
+        getByName("profile") {
+            applicationIdSuffix = ".profile"
+            manifestPlaceholders["appName"] = "PulseLink Profile"
+            // An adaptive icon on green (src/profile/res).
+            manifestPlaceholders["appIcon"] = "@mipmap/ic_launcher_build"
+        }
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.

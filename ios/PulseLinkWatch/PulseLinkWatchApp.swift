@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import SwiftUI
 
 /// The Apple Watch app. It shows the heart rate the iPhone app receives from
@@ -5,8 +9,8 @@ import SwiftUI
 @main
 struct PulseLinkWatchApp: App {
   /// Lives as long as the app, so snapshots keep arriving while the screen
-  /// is redrawn.
-  @State private var connection = PhoneConnection()
+  /// is redrawn. It's given the watch app's only error tracker.
+  @State private var connection = PhoneConnection(tracker: OSLogTracker())
 
   var body: some Scene {
     WindowGroup {

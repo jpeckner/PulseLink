@@ -1,7 +1,8 @@
-import WatchConnectivity
-import os
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
 
-private let watchLog = Logger(subsystem: "com.jpeckner.pulselink", category: "Watch")
+import WatchConnectivity
 
 /// The iPhone's side of WatchConnectivity: sends heart-rate snapshots to the
 /// watch app, as live messages and as the application context.
@@ -23,10 +24,16 @@ final class PhoneWatchSession: NSObject {
 
   private var hasRequestedActivation = false
 
+  /// Where failures to reach the watch, and normal events, are reported.
+  /// Called from WatchConnectivity's background queue too, so it's
+  /// `Sendable`.
+  private let tracker: any ErrorTracker
+
   /// `nonisolated` so `WatchLink`, which has no actor isolation, can create
   /// one. It only sets up the properties above, which needs no particular
   /// thread.
-  nonisolated override init() {
+  nonisolated init(tracker: any ErrorTracker) {
+    self.tracker = tracker
     super.init()
   }
 
@@ -58,9 +65,10 @@ final class PhoneWatchSession: NSObject {
         return .unsupported
       }
       // No reply handler: the phone doesn't wait for the watch. The error
-      // handler runs on a background queue, so it only logs.
+      // handler runs on a background queue, so it only reports.
+      let tracker = tracker
       session.sendMessage(snapshot.dictionary, replyHandler: nil) { @Sendable error in
-        watchLog.error("A live snapshot didn't reach the watch: \(error.localizedDescription, privacy: .public)")
+        tracker.logError("A live snapshot didn't reach the watch", category: "Watch", error: error)
       }
       return .sent
     case .drop(let outcome):
@@ -103,7 +111,7 @@ final class PhoneWatchSession: NSObject {
       try session.updateApplicationContext(snapshot.dictionary)
       return .sent
     } catch {
-      watchLog.error("Couldn't update the application context: \(error.localizedDescription, privacy: .public)")
+      tracker.logError("Couldn't update the application context", category: "Watch", error: error)
       return .failed
     }
   }
@@ -112,7 +120,11 @@ final class PhoneWatchSession: NSObject {
   /// can take it.
   private func activationDidComplete(errorDescription: String?) {
     if let errorDescription {
-      watchLog.error("WatchConnectivity didn't activate: \(errorDescription, privacy: .public)")
+      tracker.logError(
+        "WatchConnectivity didn't activate: \(errorDescription)",
+        category: "Watch",
+        error: nil
+      )
     }
     resendLatestContext()
   }
@@ -125,14 +137,17 @@ final class PhoneWatchSession: NSObject {
     }
     switch ApplicationContextAction(state) {
     case .update:
-      // Nobody is waiting for this outcome; a failure is logged.
+      // Nobody is waiting for this outcome; a failure is reported.
       _ = setApplicationContext(latestSnapshot)
     case .hold:
       // Still not activated, such as after an error; set on the next
       // activation.
       break
     case .drop(let outcome):
-      watchLog.info("Didn't resend the application context: \(String(describing: outcome), privacy: .public)")
+      tracker.logInfo(
+        "Didn't resend the application context: \(String(describing: outcome))",
+        category: "Watch"
+      )
     }
   }
 
@@ -144,7 +159,7 @@ final class PhoneWatchSession: NSObject {
     }
     switch LiveSnapshotAction(state) {
     case .send:
-      // Nobody is waiting for this outcome; a failure is logged.
+      // Nobody is waiting for this outcome; a failure is reported.
       _ = sendLive(latestSnapshot)
     case .drop:
       // The watch app closed or went out of range: nothing to send to.
@@ -177,7 +192,7 @@ extension PhoneWatchSession: WCSessionDelegate {
   nonisolated func sessionDidBecomeInactive(_ session: WCSession) {
     // Nothing to do: the session deactivates next. Context updates until
     // then are held.
-    watchLog.info("WatchConnectivity became inactive")
+    tracker.logInfo("WatchConnectivity became inactive", category: "Watch")
   }
 
   nonisolated func sessionDidDeactivate(_ session: WCSession) {

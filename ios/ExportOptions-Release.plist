@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Exports the Release build (PulseLink) as an Ad Hoc IPA, signed with its
+  distribution profiles, for the devices registered in them:
+
+    flutter build ipa --release --export-options-plist=ios/ExportOptions-Release.plist
+
+  Ad Hoc for now. To upload to the App Store instead, set method to
+  app-store-connect and name App Store profiles below.
+
+  The IPA holds two apps, so it needs a profile for each: the iPhone app and
+  the watch app embedded in it. Each profile name is as shown in the Apple
+  Developer account; a profile's UUID works too. See "xcodebuild -help" for
+  the other keys.
+-->
+<plist version="1.0">
+<dict>
+	<key>method</key>
+	<string>release-testing</string>
+	<key>teamID</key>
+	<string>ER3Y6PM2YR</string>
+	<key>signingStyle</key>
+	<string>manual</string>
+	<key>signingCertificate</key>
+	<string>Apple Distribution</string>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.jpeckner.pulselink</key>
+		<string>PulseLink</string>
+		<key>com.jpeckner.pulselink.watchkitapp</key>
+		<string>PulseLink Watch App</string>
+	</dict>
+</dict>
+</plist>

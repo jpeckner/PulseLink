@@ -10,10 +10,12 @@
     <uses-feature
         android:name="android.hardware.bluetooth_le"
         android:required="false" />
+    <!-- appName: "PulseLink", or "PulseLink Debug" or "PulseLink Profile",
+         and appIcon, set per build type in app/build.gradle.kts. -->
     <application
-        android:label="PulseLink"
+        android:label="${appName}"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="${appIcon}">
         <activity
             android:name=".MainActivity"
             android:exported="true"

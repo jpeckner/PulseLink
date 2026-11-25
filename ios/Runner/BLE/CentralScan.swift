@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import CoreBluetooth
 
 /// Owns the `CBCentralManager` and turns its callbacks into scan events. A
@@ -24,9 +28,9 @@ import CoreBluetooth
 /// delegate methods below) first checks `Thread.isMainThread`, then uses
 /// `MainActor.assumeIsolated` to tell the compiler. On the main thread
 /// `assumeIsolated` can't fail, so it never stops the app. If a framework
-/// ever broke its contract, the entry point logs a fault and skips the
-/// call: the scan might miss an event, but there's no crash and no data
-/// race, and the log says what happened.
+/// ever broke its contract, the entry point reports it to the error
+/// tracker and skips the call: the scan might miss an event, but there's
+/// no crash and no data race, and the report says what happened.
 @MainActor
 final class CentralScan: NSObject {
   private let heartRateService = CBUUID(string: "180D")
@@ -38,10 +42,14 @@ final class CentralScan: NSObject {
   /// Where events go while Dart is listening; nil otherwise.
   private var sink: PigeonEventSink<BleScanEvent>?
 
+  /// Where a call that arrives off the main thread is reported.
+  private let tracker: any ErrorTracker
+
   /// `nonisolated` so `BleStrapScanner`, which has no actor isolation, can
-  /// create one. It only sets up the empty properties above, which needs no
+  /// create one. It only sets up the properties above, which needs no
   /// particular thread.
-  nonisolated override init() {
+  nonisolated init(tracker: any ErrorTracker) {
+    self.tracker = tracker
     super.init()
   }
 
@@ -81,7 +89,7 @@ extension CentralScan: CBCentralManagerDelegate {
     // `queue: nil`, but its delegate protocol has no actor isolation, so
     // Swift can't know that. The guard checks it; see the class comment. If
     // this were ever skipped, the scan would miss one Bluetooth state change.
-    guard isOnMainThread() else {
+    guard isOnMainThread(reportingTo: tracker) else {
       return
     }
     let action = ScanAction(central.state)
@@ -98,7 +106,7 @@ extension CentralScan: CBCentralManagerDelegate {
   ) {
     // See centralManagerDidUpdateState. If this were ever skipped, the
     // picker would miss one strap until CoreBluetooth reports it again.
-    guard isOnMainThread() else {
+    guard isOnMainThread(reportingTo: tracker) else {
       return
     }
     let found = BleStrapFound(

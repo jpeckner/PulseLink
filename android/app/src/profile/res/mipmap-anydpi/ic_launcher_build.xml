@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Profile build's launcher icon: the heart on its own background colour,
+     so it can be told apart from Release, which is on white. It has no
+     monochrome layer, so launchers that theme icons usually keep its
+     colours rather than tinting it like Release's. The foreground is
+     shared, in src/main; tool/make_build_icons.swift makes it. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>

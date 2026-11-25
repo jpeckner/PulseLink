@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import Foundation
 import Testing
 import WatchConnectivity
@@ -139,7 +143,8 @@ struct HeartRateSnapshotFromPigeonTests {
   }
 
   @Test
-  func convertsWaitingAndReceiving() {
+  func convertsNoStrapWaitingAndReceiving() {
+    #expect(HeartRateSnapshot(pigeonSnapshot(status: WatchNoStrap()))?.status == .noStrap)
     #expect(HeartRateSnapshot(pigeonSnapshot(status: WatchWaiting()))?.status == .waiting)
     #expect(HeartRateSnapshot(pigeonSnapshot(status: WatchReceiving()))?.status == .receiving)
   }

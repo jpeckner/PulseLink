@@ -20,14 +20,16 @@ strap or watch.
 - [x] 3. Real BLE on iOS
 - [x] 4. Real BLE on Android
 - [x] 5. Apple Watch app
-- [ ] 6. Reliability for iOS
-- [ ] 7. Polish and portfolio (nice-to-have)
-- [ ] 8. Sessions and history (nice-to-have)
+- [x] 6. Hardening and Enhancements
+- [ ] 7. BLE Reliability (nice-to-have)
+- [ ] 8. Polish and portfolio (nice-to-have)
+- [ ] 9. Sessions and history (nice-to-have)
 
 ## Tech stack
 
 Flutter (iOS + Android), Material 3 via `material_ui`, `flutter_bloc` for state,
-`freezed` for immutable models and states, `very_good_analysis` for lints. iOS
+`freezed` for immutable models and states, gen-l10n for text,
+`very_good_analysis` for lints. iOS
 native dependencies use Swift Package Manager only; no CocoaPods. The watchOS
 app is native SwiftUI. The phone talks to it over WatchConnectivity, in Swift,
 which Dart calls through Pigeon.
@@ -43,27 +45,76 @@ lib/
 
 ## Running
 
-Requires Flutter 3.50.0 (stable).
+Requires Flutter 3.50.0 (stable). `pubspec.yaml` pins it
+(`environment.flutter`): `flutter pub get` fails on any other version, and CI
+installs that one. To upgrade Flutter, change it there.
 
 ```bash
 flutter pub get
 flutter run
 ```
 
-The app starts in **demo mode**: `FakeStrapDataSource` simulates a strap, and
-the screen shows a "Demo" badge. On an iPhone, tap **Find strap** to pick a real
-strap; that needs a physical phone, since BLE doesn't work in the iOS Simulator.
+The app starts with **no strap**: tap **Find strap** to pick one. On an
+iPhone, that needs a physical phone, since BLE doesn't work in the iOS
+Simulator. Every build starts on real data. Debug and profile builds can
+switch to demo data from the debug override (see "Debug tools"), where
+`FakeStrapDataSource` simulates a strap and the screen shows a "Demo" badge.
+Release builds only ever show heart rate from a real strap: demo data and the
+other debug tooling live in debug-only code, which they don't contain.
 On Android (12 or later, with Bluetooth LE), **Find strap** works the same
 way; the first scan asks for the Nearby devices permission, and the emulator
 can't reach a real strap. On both platforms, streaming stops soon after the
-app goes to the background; keeping it going comes in Milestone 6.
+app goes to the background; keeping it going comes in Milestone 7.
 
 The iOS project includes an Apple Watch app, so Flutter needs a device ID to
 run on an iOS simulator: `flutter run -d <id>`, with an ID from
 `flutter devices`. The watch app comes with the iPhone app: the iPhone installs
 it on its paired watch, which can take a minute. To run it straight away, or on
 a watch simulator paired with the iPhone simulator, run the `PulseLinkWatch`
-scheme from Xcode. It shows what the phone app shows, including demo mode.
+scheme from Xcode. It shows what the phone app shows, including demo data.
+
+Debug, profile and release builds install side by side, on iOS, Android and
+the watch, so a release build can stay on the phone while you develop. Each
+has its own ID, name and icon background:
+
+| Build | iPhone and Android ID | Watch app ID | Name | Icon background |
+| --- | --- | --- | --- | --- |
+| Debug | `com.jpeckner.pulselink.debug` | `com.jpeckner.pulselink.debug.watchkitapp` | PulseLink Debug | Grey, `#8E8E93` |
+| Profile | `com.jpeckner.pulselink.profile` | `com.jpeckner.pulselink.profile.watchkitapp` | PulseLink Profile | Green, `#248A3D` |
+| Release | `com.jpeckner.pulselink` | `com.jpeckner.pulselink.watchkitapp` | PulseLink | White |
+
+- **iOS:** `PULSELINK_BUNDLE_ID`, `PULSELINK_DISPLAY_NAME` and
+  `PULSELINK_APP_ICON` (`AppIcon`, `AppIcon-Profile` or `AppIcon-Debug`), set
+  once per configuration at the project level in `Runner.xcodeproj`. Every target
+  builds its own from them. Apple requires the watch app's ID to start with
+  the iPhone app's, and its companion ID matches the iPhone app's, so each
+  watch app talks only to the phone app of the same build. Xcode's automatic
+  signing registers each ID with your team the first time you build that
+  configuration for a device.
+- **Android:** `applicationIdSuffix`, and `appName` and `appIcon` manifest
+  placeholders, per build type in `android/app/build.gradle.kts`. Debug and
+  Profile use an adaptive icon, `ic_launcher_build`, whose background colour
+  is in `android/app/src/debug/res` and `android/app/src/profile/res`.
+
+The icon is a red heart with a white ECG trace. Release has more than one
+version of it:
+
+- **iPhone:** an Icon Composer document, `ios/Runner/AppIcon.icon`, so iOS 26
+  can show it in Dark, Clear and Tinted as well as Default. Xcode makes the
+  icons for older iOS versions from it. Debug and Profile use plain asset
+  catalog icons, so they look the same in every appearance.
+- **Android:** an adaptive icon with a monochrome layer, which launchers tint
+  for themed icons. Debug and Profile have none.
+- **Watch:** one icon per build.
+
+`tool/make_build_icons.swift` draws the design and writes every icon, so
+change the design or a colour there, then regenerate them:
+
+```bash
+swift tool/make_build_icons.swift
+```
+
+To build the Profile or Release app as an IPA, see "iOS Ad Hoc builds" below.
 
 Models and states use `freezed`, which generates `*.freezed.dart` files. They're
 committed, and CI fails if they're out of date. After changing an annotated
@@ -91,7 +142,7 @@ flutter test
 
 The Swift tests run on simulators: `ios/RunnerTests` on an iPhone and
 `ios/PulseLinkWatchTests` on an Apple Watch (macOS only; CI doesn't run them
-until Milestone 7):
+until Milestone 8):
 
 ```bash
 tool/test_swift.sh
@@ -104,7 +155,9 @@ Lints come from `very_good_analysis`, plus
 A few more built-in lints bring it closer to Swift's compile-time checks:
 `unsafe_variance`, `close_sinks`, `unreachable_from_main`,
 `avoid_implementing_value_types` and `prefer_void_to_null`.
-`analysis_options.yaml` says why each is on.
+`analysis_options.yaml` says why each is on, and
+[docs/swift-vs-dart-safety.md](docs/swift-vs-dart-safety.md) lists each place
+Swift is safer than Dart and how the project makes up for it.
 
 `flutter analyze` also runs the project's own lint rules from
 `tool/pulselink_lints`, an analyzer plugin enabled in `analysis_options.yaml`
@@ -122,6 +175,10 @@ A few more built-in lints bring it closer to Swift's compile-time checks:
   an enum, `bool` or sealed type.
 - `no_dynamic`: no written `dynamic`, including in type arguments such as
   `Map<String, dynamic>`; use `Object?` or a precise type.
+- `no_hardcoded_ui_strings`: no string literal as a `Text`'s text or a
+  user-facing argument such as `tooltip:`, `semanticLabel:`, `label:` or
+  `title:`; it goes in `lib/l10n/app_en.arb` (see "Text and translations").
+  Tests and debug-only code are exempt.
 - `no_ignored_results`: no thrown-away value of an enum or sealed type, such
   as a typed result. Discard one on purpose with `final _ = ...;`.
 - `use_switch_on_closed_types`: no `if (x case ...)`, `is` or `==` test that
@@ -147,6 +204,77 @@ can be built from another branch's plugin and silently lack newer rules. The
 script spots this and rebuilds it by touching the plugin's files. If an
 editor shows a rule missing, touch `tool/pulselink_lints/lib/main.dart` and
 restart the analysis server.
+
+## iOS Ad Hoc builds
+
+The Profile and Release builds can be exported as Ad Hoc IPAs, signed for the
+devices registered in their distribution profiles. Release uses Ad Hoc for now;
+App Store profiles will replace these later.
+
+Profile:
+
+```bash
+flutter build ipa --profile --export-options-plist=ios/ExportOptions-Profile.plist
+```
+
+Release:
+
+```bash
+flutter build ipa --release --export-options-plist=ios/ExportOptions-Release.plist
+```
+
+Each writes `build/ios/ipa/pulselink.ipa`, so the second build replaces the
+first; copy or rename the IPA before building the other.
+
+| Build | Export options | iPhone app profile | Watch app profile |
+| --- | --- | --- | --- |
+| Profile | `ios/ExportOptions-Profile.plist` | PulseLink - Profile | PulseLink Watch App - Profile |
+| Release | `ios/ExportOptions-Release.plist` | PulseLink | PulseLink Watch App |
+
+Before building, this Mac needs:
+
+- the "iPhone Distribution: Justin Peckner (ER3Y6PM2YR)" certificate, with
+  its private key, in the keychain;
+- the profiles above, downloaded (for example from Xcode's Settings >
+  Accounts > Download Manual Profiles). A profile's name is as shown in the
+  Apple Developer account; if one changes, update the export options file.
+
+Every device must be registered in the matching profile: the iPhone in the
+iPhone app's profile, and the paired Apple Watch in the watch app's.
+
+`flutter build ipa` exits 0 even when the export fails, so check the end of
+its output for "Built IPA"; an error there, such as a missing certificate or
+profile, means no IPA was made.
+
+To install, install the IPA on the iPhone, then install the watch app from the
+iPhone's Watch app (My Watch > Available Apps). The watch can't install the IPA
+directly: it reports that the app isn't made for it.
+
+## Text and translations
+
+Every string the app shows comes from `lib/l10n/app_en.arb`, through Flutter's
+gen-l10n (`flutter_localizations` and `intl`, configured in `l10n.yaml`). It
+generates `AppLocalizations`, with one typed getter or method per string, so
+the UI reads `context.l10n.tryAgain`, and a missing or misspelled string is a
+compile error. The app is English only for now.
+
+To add a string:
+
+1. Add it to `app_en.arb` with an `@` entry: a description, plus typed
+   placeholders if it has any (`int`, or `DateTime` with a format such as
+   `jms`). Use an ICU plural rather than choosing words in Dart.
+2. Run `flutter gen-l10n` (`flutter run` and `flutter build` also do it), and
+   commit the regenerated `lib/l10n/app_localizations*.dart`. CI fails if
+   they're out of date.
+3. Use it as `context.l10n.yourString`. Tests find text through
+   `test/helpers/english.dart`.
+
+The `no_hardcoded_ui_strings` lint flags a string literal in the UI. Debug-only
+code (`debug_*.dart` files and `debug/` folders) is exempt, since release
+builds drop it. To add a language later, add `app_<code>.arb` beside the
+English one and regenerate; `MaterialApp` picks it up through
+`AppLocalizations.supportedLocales`. The watch app's SwiftUI text isn't
+covered yet.
 
 ## iOS build warnings
 
@@ -182,15 +310,19 @@ doesn't use App Intents, and it's harmless.
 
 ## Debug tools
 
-Debug and profile builds (never release builds) include a reading override
-for exercising the app's warning states, with demo data or a real strap:
+Debug and profile builds (never release builds) include a debug override,
+for switching to demo data and exercising the app's warning states, with demo
+data or a real strap:
 
-1. Long-press the **PulseLink** title. Two buttons appear above the
-   disclaimer. They start out matching what the strap reports, so revealing
-   them doesn't change anything on screen.
-2. **Skin-contact detection: supported / not supported** switches between a
+1. Long-press the **PulseLink** title. Three buttons appear above the
+   disclaimer. They start out matching what's on screen, so revealing them
+   doesn't change anything.
+2. **Data: Real strap / Demo** switches between real data and demo data. The
+   app always starts on real data. Switching to demo data drops any strap;
+   switching back shows "No strap connected", and **Find strap** picks one.
+3. **Skin-contact detection: supported / not supported** switches between a
    strap that can detect skin contact and one that can't.
-3. **Override: …** cycles through the conditions that kind of strap can be in:
+4. **Override: …** cycles through the conditions that kind of strap can be in:
    - Supported: **None → No data (stale) → No skin contact → Zero bpm →
      Implausible bpm**
    - Not supported: **None → No data (stale) → Zero bpm → Implausible bpm**
@@ -199,11 +331,34 @@ for exercising the app's warning states, with demo data or a real strap:
 
    No data (stale) drops samples, so "No data from strap" appears after the
    real 10-second threshold.
-4. Long-press the title again to hide the buttons and turn the override off.
+5. Long-press the title again to hide the buttons and turn the reading
+   override off. Demo data, if on, stays on until switched back.
 
-Release builds don't contain this code: it's created only in the
-non-release branch of `main()`, and because `kReleaseMode` is a compile-time
+Release builds don't contain this code: only `debugApp`
+(`lib/app/debug/debug_app.dart`) creates it, `main()` uses `debugApp` only in
+its non-release branch, and because `kReleaseMode` is a compile-time
 constant, the release compiler removes that branch.
+
+## Logs and error reporting
+
+Each language logs in one place, so a crash reporting service plugs in
+there and nowhere else. Each of these classes has its Crashlytics calls in
+comments, and passes messages through placeholders for removing personal
+information, which remove nothing yet.
+
+| Code | Class | Where it goes for now | How to read it |
+| --- | --- | --- | --- |
+| Dart | `TrackerService` (`lib/data/tracker_service.dart`) | `dart:developer`, named `ble`, `bloc`, `watch`, `settings` or `uncaught` | DevTools' Logging view, while `flutter run` is attached |
+| Swift (iPhone and watch) | `OSLogTracker` (`ios/Shared/ErrorTracker.swift`) | Apple's unified log, under the build's bundle ID, such as `com.jpeckner.pulselink.debug` | Console.app on a Mac, with the device selected, filtered on that subsystem |
+| Kotlin | `LogcatTracker` (`ErrorTracker.kt`) | Logcat, tagged `LeScan`, `LeConnection` or `AppSettingsOpener` | Android Studio's Logcat, or `adb logcat` |
+
+`main()`, `AppDelegate`, `PulseLinkWatchApp` and `MainActivity` each create
+their app's only tracker and pass it to everything that logs, as a required
+argument. Errors that shouldn't happen go to `logError`, and normal events
+to `logInfo` (and, on Android, expected failures to `logWarning`). Errors
+nothing catches reach `UncaughtErrorReporter`, which reports them as fatal.
+SwiftLint and detekt fail the build on any logging outside the trackers; see
+"Error handling" in [CLAUDE.md](CLAUDE.md).
 
 ## Commit messages
 

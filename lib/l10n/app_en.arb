@@ -1,0 +1,216 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "PulseLink",
+  "@appTitle": {
+    "description": "The app's name, in the app bar and the app switcher."
+  },
+  "disclaimer": "For learning and fitness use only. Not a medical device.",
+  "@disclaimer": {
+    "description": "The non-medical disclaimer at the bottom of every main screen."
+  },
+
+  "findStrapTooltip": "Find strap",
+  "@findStrapTooltip": {
+    "description": "Tooltip and screen-reader label for the app bar button that opens the strap picker."
+  },
+  "demoBadge": "Demo",
+  "@demoBadge": {
+    "description": "Badge in the app bar while the heart rate is simulated (demo mode)."
+  },
+  "batteryPercent": "{percent}%",
+  "@batteryPercent": {
+    "description": "The strap's battery level next to its icon in the app bar.",
+    "placeholders": {
+      "percent": {"type": "int", "example": "80"}
+    }
+  },
+  "batteryLabel": "Strap battery {percent} percent",
+  "@batteryLabel": {
+    "description": "Screen-reader label for the strap's battery level.",
+    "placeholders": {
+      "percent": {"type": "int", "example": "80"}
+    }
+  },
+  "batteryLowLabel": "Strap battery {percent} percent, low",
+  "@batteryLowLabel": {
+    "description": "Screen-reader label for the strap's battery level once it's low.",
+    "placeholders": {
+      "percent": {"type": "int", "example": "15"}
+    }
+  },
+
+  "noStrapTitle": "No strap connected",
+  "@noStrapTitle": {
+    "description": "Shown at launch, before a heart-rate strap has been picked."
+  },
+  "noStrapDetail": "Find your heart-rate strap to see your heart rate.",
+  "@noStrapDetail": {
+    "description": "Under 'No strap connected': what to do next."
+  },
+  "findStrapButton": "Find strap",
+  "@findStrapButton": {
+    "description": "Button under 'No strap connected' that opens the strap picker."
+  },
+
+  "waitingForData": "Waiting for heart-rate data…",
+  "@waitingForData": {
+    "description": "Shown under the empty readout until the first heart-rate reading arrives."
+  },
+  "beatsPerMinuteUnit": "bpm",
+  "@beatsPerMinuteUnit": {
+    "description": "Unit after the large heart-rate number: beats per minute."
+  },
+  "noBeatsPerMinute": "--",
+  "@noBeatsPerMinute": {
+    "description": "Shown in place of the heart-rate number when there's no usable reading."
+  },
+  "beatsPerMinuteLabel": "{beatsPerMinute, plural, =1{1 beat per minute} other{{beatsPerMinute} beats per minute}}",
+  "@beatsPerMinuteLabel": {
+    "description": "Screen-reader label for the current heart rate.",
+    "placeholders": {
+      "beatsPerMinute": {"type": "int", "example": "72"}
+    }
+  },
+  "staleBeatsPerMinuteLabel": "{beatsPerMinute, plural, =1{Last reading 1 beat per minute, out of date} other{Last reading {beatsPerMinute} beats per minute, out of date}}",
+  "@staleBeatsPerMinuteLabel": {
+    "description": "Screen-reader label for the last heart rate once no new data has arrived for a while.",
+    "placeholders": {
+      "beatsPerMinute": {"type": "int", "example": "72"}
+    }
+  },
+  "noHeartRateLabel": "No heart-rate reading",
+  "@noHeartRateLabel": {
+    "description": "Screen-reader label for the readout when there's no usable heart rate."
+  },
+  "noDataFromStrap": "No data from strap",
+  "@noDataFromStrap": {
+    "description": "Warning shown once no heart-rate data has arrived for a while."
+  },
+  "lastReadingAt": "Last reading {time}",
+  "@lastReadingAt": {
+    "description": "Under the 'No data from strap' warning: when the last reading arrived.",
+    "placeholders": {
+      "time": {"type": "DateTime", "format": "jms", "example": "9:41:07 AM"}
+    }
+  },
+  "updatedAt": "Updated {time}",
+  "@updatedAt": {
+    "description": "Under the heart rate: when the reading arrived.",
+    "placeholders": {
+      "time": {"type": "DateTime", "format": "jms", "example": "9:41:07 AM"}
+    }
+  },
+
+  "skinContact": "Skin contact",
+  "@skinContact": {
+    "description": "Chip saying the strap senses the skin."
+  },
+  "noSkinContact": "No skin contact",
+  "@noSkinContact": {
+    "description": "Chip saying the strap doesn't sense the skin, so there's no heart rate."
+  },
+  "connectedNoHeartRateYet": "Strap connected, no heart rate yet",
+  "@connectedNoHeartRateYet": {
+    "description": "Chip shown when the strap sends a heart rate of 0, as straps do while settling."
+  },
+  "readingOutOfRange": "Strap reading out of range",
+  "@readingOutOfRange": {
+    "description": "Chip shown when the strap sends a value that can't be a heart rate."
+  },
+
+  "strapUnreachableTitle": "Can't reach the strap",
+  "@strapUnreachableTitle": {
+    "description": "Title when connecting to the strap failed or timed out."
+  },
+  "strapUnreachableDetail": "Make sure it's on, being worn and nearby, and not connected to another app.",
+  "@strapUnreachableDetail": {
+    "description": "What to do when the strap can't be reached."
+  },
+  "notAHeartRateStrapTitle": "Not a heart-rate strap",
+  "@notAHeartRateStrapTitle": {
+    "description": "Title when the picked device doesn't offer heart-rate data."
+  },
+  "notAHeartRateStrapDetail": "This device doesn't send heart-rate data.",
+  "@notAHeartRateStrapDetail": {
+    "description": "Explains a device that isn't a heart-rate strap."
+  },
+  "strapDisconnectedTitle": "Strap disconnected",
+  "@strapDisconnectedTitle": {
+    "description": "Title when a connected strap drops."
+  },
+  "strapDisconnectedDetail": "Make sure it's on, being worn and nearby, then try again.",
+  "@strapDisconnectedDetail": {
+    "description": "What to do when the strap has dropped."
+  },
+
+  "bluetoothOffTitle": "Bluetooth is off",
+  "@bluetoothOffTitle": {
+    "description": "Title when the phone's Bluetooth is turned off."
+  },
+  "bluetoothOffDetail": "Turn on Bluetooth to connect to your strap.",
+  "@bluetoothOffDetail": {
+    "description": "What to do when Bluetooth is off."
+  },
+  "bluetoothUnavailableTitle": "Bluetooth isn't available",
+  "@bluetoothUnavailableTitle": {
+    "description": "Title when the phone can't use Bluetooth LE at all."
+  },
+  "bluetoothUnavailableDetail": "This phone can't connect to a heart-rate strap.",
+  "@bluetoothUnavailableDetail": {
+    "description": "Explains a phone without usable Bluetooth LE."
+  },
+  "bluetoothPermissionTitle": "Bluetooth permission needed",
+  "@bluetoothPermissionTitle": {
+    "description": "Title when the user hasn't allowed the app to use Bluetooth."
+  },
+  "bluetoothPermissionDetail": "Allow PulseLink to use Bluetooth in Settings, then try again.",
+  "@bluetoothPermissionDetail": {
+    "description": "What to do when Bluetooth permission is denied."
+  },
+  "openSettings": "Open Settings",
+  "@openSettings": {
+    "description": "Button that opens this app's page in the phone's Settings."
+  },
+  "tryAgain": "Try again",
+  "@tryAgain": {
+    "description": "Button that retries connecting after a problem."
+  },
+  "openSettingsFailed": "Couldn't open Settings. Open the Settings app, then find PulseLink there.",
+  "@openSettingsFailed": {
+    "description": "Snack bar when the phone wouldn't open this app's Settings page."
+  },
+
+  "pickerTitle": "Find your strap",
+  "@pickerTitle": {
+    "description": "Title of the strap picker screen."
+  },
+  "lookingForStraps": "Looking for heart-rate straps…",
+  "@lookingForStraps": {
+    "description": "Shown while the picker scans and hasn't found a strap yet."
+  },
+  "lookingHint": "Put your strap on so it wakes up, and keep it close to your phone.",
+  "@lookingHint": {
+    "description": "Hint under 'Looking for heart-rate straps'."
+  },
+  "tipsTitle": "Still not finding it?",
+  "@tipsTitle": {
+    "description": "Heading for tips shown after scanning for a while without finding a strap."
+  },
+  "tipsBody": "Dampen the strap where it touches your skin, so it can sense your heart.\n\nA strap connects to one device at a time. If another phone, watch or gym machine is connected to it, disconnect it there.",
+  "@tipsBody": {
+    "description": "Tips for finding a strap; two paragraphs separated by a blank line."
+  },
+  "unnamedStrap": "Unnamed heart-rate strap",
+  "@unnamedStrap": {
+    "description": "Picker entry for a strap that doesn't advertise a name."
+  },
+  "strapConnectedLabel": "Connected",
+  "@strapConnectedLabel": {
+    "description": "Screen-reader label for the check mark on a strap already connected to the phone."
+  },
+  "tapToConnect": "Tap your strap to connect to it.",
+  "@tapToConnect": {
+    "description": "Instruction under the list of straps found."
+  }
+}

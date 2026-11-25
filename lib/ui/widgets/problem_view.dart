@@ -1,8 +1,13 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/data/app_settings.dart';
 import 'package:pulselink/domain/bluetooth_problem.dart';
+import 'package:pulselink/l10n/l10n.dart';
 
 /// What to tell the user about a problem: an icon, a short title, what to do
 /// about it, and whether changing this app's settings fixes it.
@@ -14,29 +19,31 @@ typedef ProblemMessage = ({
 });
 
 /// The message for [problem], shared by every screen that needs Bluetooth.
-ProblemMessage bluetoothProblemMessage(BluetoothProblem problem) =>
-    switch (problem) {
-      BluetoothProblem.off => (
-        icon: Icons.bluetooth_disabled,
-        title: 'Bluetooth is off',
-        detail: 'Turn on Bluetooth to connect to your strap.',
-        // Not this app's settings, and iOS doesn't let apps open the
-        // Bluetooth page directly.
-        isFixedInSettings: false,
-      ),
-      BluetoothProblem.unavailable => (
-        icon: Icons.bluetooth_disabled,
-        title: "Bluetooth isn't available",
-        detail: "This phone can't connect to a heart-rate strap.",
-        isFixedInSettings: false,
-      ),
-      BluetoothProblem.permissionDenied => (
-        icon: Icons.lock_outline,
-        title: 'Bluetooth permission needed',
-        detail: 'Allow PulseLink to use Bluetooth in Settings, then try again.',
-        isFixedInSettings: true,
-      ),
-    };
+ProblemMessage bluetoothProblemMessage(
+  AppLocalizations l10n,
+  BluetoothProblem problem,
+) => switch (problem) {
+  BluetoothProblem.off => (
+    icon: Icons.bluetooth_disabled,
+    title: l10n.bluetoothOffTitle,
+    detail: l10n.bluetoothOffDetail,
+    // Not this app's settings, and iOS doesn't let apps open the
+    // Bluetooth page directly.
+    isFixedInSettings: false,
+  ),
+  BluetoothProblem.unavailable => (
+    icon: Icons.bluetooth_disabled,
+    title: l10n.bluetoothUnavailableTitle,
+    detail: l10n.bluetoothUnavailableDetail,
+    isFixedInSettings: false,
+  ),
+  BluetoothProblem.permissionDenied => (
+    icon: Icons.lock_outline,
+    title: l10n.bluetoothPermissionTitle,
+    detail: l10n.bluetoothPermissionDetail,
+    isFixedInSettings: true,
+  ),
+};
 
 /// Shows a [ProblemMessage], with an "Open Settings" button if settings fix
 /// it, and a "Try again" button if [onTryAgain] is given.
@@ -58,6 +65,7 @@ class ProblemView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = context.l10n;
     final isFixedInSettings = message.isFixedInSettings;
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -81,7 +89,7 @@ class ProblemView extends StatelessWidget {
             // Not awaited: _openSettings never fails, and tells the user
             // itself if Settings didn't open.
             onPressed: () => unawaited(_openSettings(context)),
-            child: const Text('Open Settings'),
+            child: Text(l10n.openSettings),
           ),
         ],
         if (onTryAgain case final tryAgain?) ...[
@@ -89,10 +97,10 @@ class ProblemView extends StatelessWidget {
           // again comes after it.
           if (isFixedInSettings) ...[
             const SizedBox(height: 12),
-            OutlinedButton(onPressed: tryAgain, child: const Text('Try again')),
+            OutlinedButton(onPressed: tryAgain, child: Text(l10n.tryAgain)),
           ] else ...[
             const SizedBox(height: 24),
-            FilledButton(onPressed: tryAgain, child: const Text('Try again')),
+            FilledButton(onPressed: tryAgain, child: Text(l10n.tryAgain)),
           ],
         ],
       ],
@@ -103,16 +111,10 @@ class ProblemView extends StatelessWidget {
     // Looked up before the await, since the view may be gone by the time
     // Settings answers.
     final messenger = ScaffoldMessenger.maybeOf(context);
+    final failedMessage = context.l10n.openSettingsFailed;
     if (await appSettings.open()) {
       return;
     }
-    messenger?.showSnackBar(
-      const SnackBar(
-        content: Text(
-          "Couldn't open Settings. Open the Settings app, then find "
-          'PulseLink there.',
-        ),
-      ),
-    );
+    messenger?.showSnackBar(SnackBar(content: Text(failedMessage)));
   }
 }

@@ -1,13 +1,19 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_state.dart';
 import 'package:pulselink/blocs/live_heart_rate/strap_selection.dart';
 import 'package:pulselink/data/ble/ble_api.pigeon.dart';
+import 'package:pulselink/data/ble/ble_strap_data_source.dart';
 import 'package:pulselink/data/switchable_strap_data_source.dart';
 import 'package:pulselink/domain/strap_ble_identifier.dart';
 
 import '../helpers/discovered_strap.dart';
+import '../helpers/recording_tracker_service.dart';
 import '../helpers/stub_strap_data_source.dart';
 
 void main() {
@@ -48,6 +54,23 @@ void main() {
       expect(demo.isDisposed, isTrue);
       expect(strap.startCount, 1);
       expect(cubit.state, const LiveHeartRateState.waiting(isSimulated: false));
+    });
+
+    test('use switches to the source it is given and starts it, as for '
+        'demo data', () async {
+      final other = StubStrapDataSource(isSimulated: true);
+      addTearDown(other.dispose);
+      await selection.use(other);
+      expect(created, isEmpty);
+      expect(demo.isDisposed, isTrue);
+      expect(other.startCount, 1);
+      expect(cubit.state, const LiveHeartRateState.waiting(isSimulated: true));
+    });
+
+    test('clear goes back to no strap, disposing the current source', () async {
+      await selection.clear();
+      expect(demo.isDisposed, isTrue);
+      expect(cubit.state, const LiveHeartRateState.noStrap());
     });
 
     test('still switches and starts if disposing demo mode fails, and '
@@ -111,9 +134,14 @@ void main() {
         final cubit = LiveHeartRateCubit(source: source);
         await cubit.start();
 
+        // The source main() makes for a picked strap.
         await StrapSelection(
           source: source,
           cubit: cubit,
+          createSource: (strapId) => BleStrapDataSource(
+            strapId: strapId,
+            tracker: RecordingTrackerService(),
+          ),
         ).select(discoveredStrapOf('strap-1', 'TICKR'));
 
         expect(connected, [

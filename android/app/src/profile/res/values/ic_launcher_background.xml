@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Apple's high-contrast systemGreen, as in the iOS and watch Profile icons (see
+         tool/make_build_icons.swift). -->
+    <color name="ic_launcher_background">#248A3D</color>
+</resources>

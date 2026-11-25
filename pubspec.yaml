@@ -5,6 +5,12 @@ version: 0.1.0+1
 
 environment:
   sdk: ^3.14.0
+  # The one Flutter version this project uses. `flutter pub get` refuses any
+  # other, and CI installs this one (flutter-version-file in
+  # .github/workflows/ci.yml), so the two can't drift apart. It must be an
+  # exact version: CI can't install a range. To upgrade Flutter, change it
+  # here.
+  flutter: 3.50.0
 
 dependencies:
   bloc: ^9.2.1
@@ -12,6 +18,10 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_bloc: ^9.1.1
+  # Generated strings (lib/l10n, see l10n.yaml) and Flutter's own
+  # translations of its widgets' text.
+  flutter_localizations:
+    sdk: flutter
   freezed_annotation: ^3.1.0
   intl: ^0.20.3
   material_ui: ^1.11.0
@@ -29,6 +39,8 @@ dev_dependencies:
   very_good_analysis: ^11.0.0
 flutter:
   uses-material-design: true
+  # Runs gen-l10n (l10n.yaml) on pub get, run and build.
+  generate: true
   config:
     # iOS native dependencies come from Swift Package Manager only; this
     # project never uses CocoaPods (CI fails if an ios/Podfile appears).

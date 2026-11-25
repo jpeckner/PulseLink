@@ -29,7 +29,7 @@ Anything given is a note from the user, and notes override this skill's defaults
 
 ## 1. Preconditions
 
-1. `git branch --show-current` must not be `develop` or `master`. If it is, stop and say so. Note `git rev-parse HEAD` as the starting HEAD for the report; `git reset --hard <starting HEAD>` undoes everything this run does.
+1. `git branch --show-current` must not be `develop` or `main`. If it is, stop and say so. Note `git rev-parse HEAD` as the starting HEAD for the report; `git reset --hard <starting HEAD>` undoes everything this run does.
 2. `git status --porcelain` must print nothing. If anything is modified or untracked, stop and ask the user. The skill's commits would otherwise pick up their unfinished work, or its fixes would get mixed in with it.
 3. Note whether the branch has the lint plugin: `git ls-files --error-unmatch tool/pulselink_lints/pubspec.yaml`. Steps 3 and 5 use it only if it's there.
 
@@ -63,7 +63,7 @@ It cleans `build/`, gets packages, runs `build_runner` and `tool/pigeon.sh` and,
 Then:
 
 1. Run `git status --porcelain` and sort what changed:
-   - **Generated output:** `*.freezed.dart`, `*.g.dart`, `pubspec.lock`, `tool/pulselink_lints/pubspec.lock`, and Pigeon's `*.pigeon.dart`, `*.pigeon.swift` and `*.pigeon.kt` (the last two live under `ios/` and `android/`, but they're generated, so the next bullet doesn't apply to them). This is out of date on the branch.
+   - **Generated output:** `*.freezed.dart`, `*.g.dart`, `pubspec.lock`, `tool/pulselink_lints/pubspec.lock`, gen-l10n's `lib/l10n/app_localizations*.dart`, and Pigeon's `*.pigeon.dart`, `*.pigeon.swift` and `*.pigeon.kt` (the last two live under `ios/` and `android/`, but they're generated, so the next bullet doesn't apply to them). This is out of date on the branch.
    - **Anything under `ios/` or `android/`.** Flutter's tool rewrites these files after an upgrade, or when plugins change. Stop, show `git diff --stat`, and ask the user whether to commit them. Native project changes need a human look.
    - **Anything else.** It's unexpected, so stop and report it.
 2. Look for generated files left behind by a deleted or renamed source. `build_runner` doesn't remove them:
@@ -150,7 +150,7 @@ If it lists files, run `dart format lib test`, stage those files, and commit: `s
 flutter analyze --fatal-infos --fatal-warnings > "$LOGS/analyze.log" 2>&1
 ```
 
-This covers the very_good_analysis lints and, when the branch has it, the `pulselink_lints` plugin (`keep_pigeon_imports_local`, `no_assertions`, `no_catch_all_cases`, `no_dynamic`, `no_ignored_results`, `use_switch_on_closed_types`). `develop` passes CI, so any issue comes from the branch or from a Flutter upgrade, and fails the check. Fix only issues caused by this run's own commits, e.g. an import left unused by step 4. Report the rest with file, line and rule.
+This covers the very_good_analysis lints and, when the branch has it, the `pulselink_lints` plugin (`keep_pigeon_imports_local`, `no_assertions`, `no_catch_all_cases`, `no_dynamic`, `no_hardcoded_ui_strings`, `no_ignored_results`, `use_switch_on_closed_types`). `develop` passes CI, so any issue comes from the branch or from a Flutter upgrade, and fails the check. Fix only issues caused by this run's own commits, e.g. an import left unused by step 4. Report the rest with file, line and rule.
 
 A clean analyze doesn't prove the plugin ran: if it fails to load, analyze reports "No issues found!" anyway. If the branch has `tool/check_lint_plugin.sh`, run it; it analyzes a file that breaks each enabled rule and fails unless every rule reports. A failure here fails the analyze check. If it says it rebuilt the plugin's cached copy and then passed, the first analyze ran with a stale copy, so run analyze again and use that result.
 
@@ -163,7 +163,7 @@ flutter test --coverage --test-randomize-ordering-seed random > "$LOGS/test.log"
 grep -E "Shuffling test order|\[E\]|Some tests failed|All tests passed" "$LOGS/test.log"
 ```
 
-CI runs tests in a fixed order. Shuffling also catches tests that depend on each other's order. Note the seed from the "Shuffling test order with --test-randomize-ordering-seed=N" line.
+CI shuffles the order too, with a new seed each run, so shuffling here catches tests that depend on each other's order before CI does. Note the seed from the "Shuffling test order with --test-randomize-ordering-seed=N" line.
 
 For each failing test file:
 1. Rerun it once with the same seed: `flutter test <file> --test-randomize-ordering-seed <N>`.
@@ -180,7 +180,7 @@ If a failure was caused by this run's commits, fix it, then commit the fix. Othe
 If the branch has `tool/pulselink_lints`, run its own checks, as CI does:
 
 ```bash
-(cd tool/pulselink_lints && dart format --output=none --set-exit-if-changed lib test && dart analyze --fatal-infos --fatal-warnings && dart test)
+(cd tool/pulselink_lints && dart format --output=none --set-exit-if-changed lib test && dart analyze --fatal-infos --fatal-warnings && dart test --test-randomize-ordering-seed random)
 ```
 
 If the branch changed `.claude/skills/pre-merge-checks/find_unused_code/`, run `dart test` there too.
@@ -198,7 +198,7 @@ The first runs SwiftLint and the SwiftUI preview check on the hand-written Swift
 
 ### 5g. Swift tests
 
-CI doesn't run these yet; it runs on Linux until Milestone 7 adds a macOS job. If the branch has `tool/test_swift.sh`, run it in the background, after the Flutter tests:
+CI doesn't run these yet; it runs on Linux until Milestone 8 adds a macOS job. If the branch has `tool/test_swift.sh`, run it in the background, after the Flutter tests:
 
 ```bash
 tool/test_swift.sh > "$LOGS/test-swift.log" 2>&1
@@ -217,7 +217,7 @@ This lists lines the branch added or changed in `lib/` that no test runs, and ch
 
 ## 6. Release builds
 
-CI doesn't build the apps yet; that comes in Milestone 7. Build both release apps, one after the other, in the background:
+CI doesn't build the apps yet; that comes in Milestone 8. Build both release apps, one after the other, in the background:
 
 ```bash
 flutter build ios --release --no-codesign > "$LOGS/build-ios.log" 2>&1

@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import Flutter
 
 /// Connects to a strap for Dart (`BleConnectionApi`) and streams its events
@@ -7,12 +11,20 @@ import Flutter
 /// Not itself `@MainActor`: it subclasses Pigeon's generated stream handler,
 /// which has no actor isolation, and a subclass can't change that.
 final class BleStrapLink: StrapEventsStreamHandler {
-  private let connection = StrapConnection()
+  private let connection: StrapConnection
+  /// Where a call that arrives off the main thread is reported.
+  private let tracker: any ErrorTracker
+
+  init(tracker: any ErrorTracker) {
+    self.tracker = tracker
+    self.connection = StrapConnection(tracker: tracker)
+    super.init()
+  }
 
   override func onListen(withArguments arguments: Any?, sink: PigeonEventSink<BleStrapEvent>) {
     // See BleStrapScanner.onListen: Flutter calls this on the main thread,
     // and the sink is only used there.
-    guard isOnMainThread() else {
+    guard isOnMainThread(reportingTo: tracker) else {
       return
     }
     nonisolated(unsafe) let mainThreadSink = sink
@@ -23,7 +35,7 @@ final class BleStrapLink: StrapEventsStreamHandler {
   }
 
   override func onCancel(withArguments arguments: Any?) {
-    guard isOnMainThread() else {
+    guard isOnMainThread(reportingTo: tracker) else {
       return
     }
     let connection = connection
@@ -51,7 +63,7 @@ extension BleStrapLink: BleConnectionApi {
   func disconnect() throws {
     // Flutter calls this on the main thread. If it ever didn't, the
     // connection would stay up until the next connect or disconnect.
-    guard isOnMainThread() else {
+    guard isOnMainThread(reportingTo: tracker) else {
       return
     }
     let connection = connection

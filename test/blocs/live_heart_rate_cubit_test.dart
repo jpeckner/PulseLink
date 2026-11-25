@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
@@ -163,6 +167,35 @@ void main() {
         },
         act: (cubit) => cubit.start(),
         expect: () => <LiveHeartRateState>[],
+      );
+
+      blocTest<LiveHeartRateCubit, LiveHeartRateState>(
+        'with no strap picked, shows that there is no strap',
+        build: () {
+          source.startResult = const StrapDataSourceStartResult.noStrap();
+          return LiveHeartRateCubit(source: source);
+        },
+        act: (cubit) => cubit.start(),
+        expect: () => [const LiveHeartRateState.noStrap()],
+      );
+
+      blocTest<LiveHeartRateCubit, LiveHeartRateState>(
+        'starting again once there is a strap waits, then shows its readings',
+        build: () {
+          source.startResult = const StrapDataSourceStartResult.noStrap();
+          return LiveHeartRateCubit(source: source);
+        },
+        act: (cubit) async {
+          await cubit.start();
+          source.startResult = const StrapDataSourceStartResult.started();
+          await cubit.start();
+          source.emit(_sampleAt(clock.now()));
+        },
+        expect: () => [
+          const LiveHeartRateState.noStrap(),
+          const LiveHeartRateState.waiting(isSimulated: false),
+          isA<LiveHeartRateReading>(),
+        ],
       );
 
       blocTest<LiveHeartRateCubit, LiveHeartRateState>(
@@ -580,6 +613,36 @@ void main() {
       await cubit.start();
       expect(source.startCount, 0);
       expect(source.hasListener, isFalse);
+    });
+  });
+
+  group('LiveHeartRateState.isSimulated', () {
+    test('is never true with no strap', () {
+      expect(const LiveHeartRateState.noStrap().isSimulated, isFalse);
+    });
+
+    test("is each other state's own value", () {
+      for (final isSimulated in [true, false]) {
+        expect(
+          LiveHeartRateState.waiting(isSimulated: isSimulated).isSimulated,
+          isSimulated,
+        );
+        expect(
+          LiveHeartRateState.connectionFailed(
+            failure: const StrapConnectionFailure.strapUnreachable(),
+            isSimulated: isSimulated,
+          ).isSimulated,
+          isSimulated,
+        );
+        expect(
+          LiveHeartRateState.reading(
+            sample: _sampleAt(_start),
+            isStale: false,
+            isSimulated: isSimulated,
+          ).isSimulated,
+          isSimulated,
+        );
+      }
     });
   });
 }

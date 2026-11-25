@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulselink/data/strap_data_source.dart';
@@ -202,6 +206,83 @@ void main() {
           expect(demo.startCount, 0);
         },
       );
+    });
+  });
+
+  group('SwitchableStrapDataSource.empty', () {
+    late SwitchableStrapDataSource source;
+
+    setUp(() => source = SwitchableStrapDataSource.empty());
+
+    tearDown(() => source.dispose());
+
+    test('reports no strap until a source is switched to, and is not '
+        'simulated', () async {
+      expect(source.isSimulated, isFalse);
+      expect(await source.start(), const StrapDataSourceStartResult.noStrap());
+    });
+
+    test('stopping with no source does nothing', () async {
+      await source.stop();
+      expect(await source.start(), const StrapDataSourceStartResult.noStrap());
+    });
+
+    test('switching to a source passes it on, and starts it from then '
+        'on', () async {
+      final strap = StubStrapDataSource();
+      final samples = <HeartRateSample>[];
+      source.samples.listen(samples.add);
+
+      await source.switchTo(strap);
+      expect(await source.start(), const StrapDataSourceStartResult.started());
+      expect(strap.startCount, 1);
+      strap.emit(_sample(64));
+      await _delivered();
+      expect(samples.map(_beatsPerMinute), [64]);
+    });
+
+    test('disposing with no source closes its streams', () async {
+      await source.dispose();
+      expect(
+        await source.start(),
+        const StrapDataSourceStartResult.cancelled(),
+      );
+      await expectLater(source.samples, emitsDone);
+    });
+
+    test('clearing goes back to no source, disposing the current one, and '
+        'stops passing it on', () async {
+      final demo = StubStrapDataSource(isSimulated: true);
+      final samples = <HeartRateSample>[];
+      final levels = <BatteryLevel?>[];
+      source.samples.listen(samples.add);
+      source.batteryLevel.listen(levels.add);
+      await source.switchTo(demo);
+      expect(source.isSimulated, isTrue);
+
+      await source.clear();
+      expect(demo.isDisposed, isTrue);
+      expect(demo.hasListener, isFalse);
+      expect(source.isSimulated, isFalse);
+      expect(await source.start(), const StrapDataSourceStartResult.noStrap());
+      expect(samples, isEmpty);
+      expect(levels.last, isNull);
+    });
+
+    test('clearing after dispose does nothing', () async {
+      await source.dispose();
+      await source.clear();
+      expect(
+        await source.start(),
+        const StrapDataSourceStartResult.cancelled(),
+      );
+    });
+
+    test('disposing after a switch disposes the source', () async {
+      final strap = StubStrapDataSource();
+      await source.switchTo(strap);
+      await source.dispose();
+      expect(strap.isDisposed, isTrue);
     });
   });
 }

@@ -1,118 +1,65 @@
-import 'dart:async';
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:pulselink/app/app.dart';
 import 'package:pulselink/app/app_bloc_observer.dart';
-import 'package:pulselink/blocs/debug_override/debug_override_cubit.dart';
-import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
-import 'package:pulselink/blocs/live_heart_rate/strap_selection.dart';
-import 'package:pulselink/blocs/strap_battery/strap_battery_cubit.dart';
-import 'package:pulselink/blocs/watch_sync/watch_sync.dart';
-import 'package:pulselink/data/app_settings.dart';
+import 'package:pulselink/app/composition.dart';
+import 'package:pulselink/app/debug/debug_app.dart';
+import 'package:pulselink/app/uncaught_error_reporter.dart';
 import 'package:pulselink/data/app_settings/platform_app_settings.dart';
+import 'package:pulselink/data/ble/ble_strap_data_source.dart';
 import 'package:pulselink/data/ble/ble_strap_scanner.dart';
-import 'package:pulselink/data/debug_override_strap_data_source.dart';
-import 'package:pulselink/data/fake_strap_data_source.dart';
-import 'package:pulselink/data/strap_data_source.dart';
-import 'package:pulselink/data/strap_scanner.dart';
-import 'package:pulselink/data/switchable_strap_data_source.dart';
+import 'package:pulselink/data/tracker_service.dart';
 import 'package:pulselink/data/watch/pigeon_watch_bridge.dart';
-import 'package:pulselink/domain/discovered_strap.dart';
-import 'package:pulselink/ui/debug/debug_override_buttons.dart';
+import 'package:pulselink/data/watch_bridge.dart';
 
-/// The composition root: builds the app's object graph and hands it to the
-/// widgets through constructors, so a missing dependency is a compile error,
-/// not a runtime lookup failure. These objects live as long as the app.
+/// The composition root: gathers what the app needs from the platform, and
+/// builds the release app or, in debug and profile builds, the debug one
+/// (see lib/app/composition.dart). Dependencies reach the widgets through
+/// constructors, so a missing one is a compile error, not a runtime lookup
+/// failure.
 void main() {
+  // The app's only tracker: everything that reports errors gets this one.
+  const tracker = TrackerService();
+  // First, so errors that nothing else catches, from anything below, are
+  // logged rather than only printed.
+  const UncaughtErrorReporter(tracker: tracker).install();
   // Before anything below reaches the platform: WatchSync sends its first
   // snapshot through a platform channel as soon as it starts, before runApp.
   WidgetsFlutterBinding.ensureInitialized();
-  Bloc.observer = const AppBlocObserver();
+  Bloc.observer = const AppBlocObserver(tracker: tracker);
 
-  // Demo mode at launch, until a strap is picked in the strap picker.
-  final source = SwitchableStrapDataSource(FakeStrapDataSource());
-  final StrapScanner strapScanner = BleStrapScanner();
-  final AppSettings appSettings = PlatformAppSettings();
-
+  final platform = AppPlatform(
+    strapScanner: BleStrapScanner(),
+    appSettings: PlatformAppSettings(tracker: tracker),
+    watchBridge: _watchBridge(tracker),
+    createStrapSource: (strapId) =>
+        BleStrapDataSource(strapId: strapId, tracker: tracker),
+    tracker: tracker,
+  );
   if (kReleaseMode) {
-    // Created before starting the source, which reports its battery level as
-    // it starts; a broadcast stream doesn't replay it to later listeners.
-    final batteryCubit = StrapBatteryCubit(source: source);
-    final cubit = _startedCubit(source);
-    _syncWatch(cubit);
-    runApp(
-      PulseLinkApp(
-        liveHeartRateCubit: cubit,
-        strapBatteryCubit: batteryCubit,
-        strapScanner: strapScanner,
-        appSettings: appSettings,
-        onStrapSelected: _selectStrap(source, cubit),
-      ),
-    );
+    runApp(releaseApp(platform));
   } else {
     // Debug and profile builds only. kReleaseMode is a compile-time constant,
-    // so release builds contain neither this branch nor anything only it uses.
-    // The override wraps the switchable source, so it also works on a strap.
-    final overrideSource = DebugOverrideStrapDataSource(source);
-    final overrideCubit = DebugOverrideCubit(source: overrideSource);
-    // Before starting the source; see the release branch above.
-    final batteryCubit = StrapBatteryCubit(source: overrideSource);
-    final cubit = _startedCubit(overrideSource);
-    _syncWatch(cubit);
-    runApp(
-      PulseLinkApp(
-        liveHeartRateCubit: cubit,
-        strapBatteryCubit: batteryCubit,
-        strapScanner: strapScanner,
-        appSettings: appSettings,
-        onStrapSelected: _selectStrap(source, cubit),
-        debugControls: DebugOverrideButtons(cubit: overrideCubit),
-        onTitleLongPress: overrideCubit.toggleVisibility,
-      ),
-    );
+    // so release builds contain neither this branch nor anything only it
+    // uses: no demo data and no debug override.
+    runApp(debugApp(platform));
   }
 }
 
-/// Switches the live heart rate to a strap picked in the strap picker.
-ValueChanged<DiscoveredStrap> _selectStrap(
-  SwitchableStrapDataSource source,
-  LiveHeartRateCubit cubit,
-) {
-  final selection = StrapSelection(source: source, cubit: cubit);
-  // Not awaited: the screen shows how connecting goes through the cubit's
-  // state. select() only throws if disposing demo mode fails; that's left
-  // for the zone's error handler, and the strap is still connected to.
-  return (strap) => unawaited(selection.select(strap));
-}
-
-/// Keeps the platform's watch app, if it has one, showing what [cubit]
-/// shows. `WatchSync` works with any `WatchBridge`, so supporting another
-/// wearable means giving its platform's case a bridge here. Never closed:
-/// like the cubits, it lives as long as the app.
-void _syncWatch(LiveHeartRateCubit cubit) {
-  switch (defaultTargetPlatform) {
-    case TargetPlatform.iOS:
-      WatchSync(heartRate: cubit, bridge: PigeonWatchBridge()).start();
-    case TargetPlatform.android ||
-        TargetPlatform.fuchsia ||
-        TargetPlatform.linux ||
-        TargetPlatform.macOS ||
-        TargetPlatform.windows:
+/// The platform's watch app, if it has one. `WatchSync` works with any
+/// `WatchBridge`, so supporting another wearable means giving its
+/// platform's case a bridge here.
+WatchBridge? _watchBridge(TrackerService tracker) =>
+    switch (defaultTargetPlatform) {
+      TargetPlatform.iOS => PigeonWatchBridge(tracker: tracker),
       // No watch app to sync with yet. Wear OS would go in the Android case.
-      break;
-  }
-}
-
-LiveHeartRateCubit _startedCubit(StrapDataSource source) {
-  final cubit = LiveHeartRateCubit(source: source);
-  // Not awaited: runApp shouldn't wait for the source. start() doesn't need
-  // watching here: a source that can't start (Bluetooth off, permission
-  // denied) reports it as a typed result, which the cubit turns into a state
-  // the screen shows. start() only throws on a bug in a source; that's left
-  // uncaught for the zone's error handler to report, and the screen keeps
-  // showing that it's waiting.
-  unawaited(cubit.start());
-  return cubit;
-}
+      TargetPlatform.android ||
+      TargetPlatform.fuchsia ||
+      TargetPlatform.linux ||
+      TargetPlatform.macOS ||
+      TargetPlatform.windows => null,
+    };

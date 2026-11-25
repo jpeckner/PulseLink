@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:pulselink/domain/battery_level.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
@@ -20,10 +24,15 @@ sealed class StrapDataSourceStartResult with _$StrapDataSourceStartResult {
   /// being off.
   const factory failed(StrapConnectionFailure failure) =
       StrapDataSourceStartFailed;
+
+  /// There's nothing to start: no strap has been picked yet. Nothing went
+  /// wrong; the screen asks for a strap.
+  const factory noStrap() = StrapDataSourceNoStrap;
 }
 
 /// Where heart-rate samples come from: a BLE strap, or a simulator for demo
-/// mode and tests. Everything above the data layer depends only on this.
+/// mode (debug and profile builds only) and tests. Everything above the data
+/// layer depends only on this.
 abstract interface class StrapDataSource {
   /// True when samples are simulated, so the UI can label them as such.
   bool get isSimulated;

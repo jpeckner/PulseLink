@@ -30,7 +30,9 @@ Constraints:
 - SwiftUI preview code must never ship in a release build. Put every `#Preview`, `PreviewProvider` and `PreviewModifier`, and the sample data and helpers only previews use, inside `#if DEBUG` ... `#endif`, usually one block at the end of the file. Only the Debug build configuration defines `DEBUG`, in the Runner and PulseLinkWatch targets alike. `tool/check_swift_previews.py` (run by `tool/lint_native.sh` and every Xcode build) reports a preview outside `#if DEBUG`, and the pre-merge checks look for preview code in the release binaries. Nothing marks a helper as preview-only, so reviews check those.
 - Flutter only accepts calls from the platform's main thread: the main thread on iOS, and the main (UI) thread on Android. That covers platform-channel messages, Pigeon event sinks and Flutter API calls. Native code must never send to Dart from any other thread. Swift: a type that holds Flutter channel state or sends to Dart is `@MainActor`. Where Flutter or a system framework calls in without actor isolation, check `isOnMainThread()` first. If that's false, skip the call, since the check has already logged a fault. Then use `MainActor.assumeIsolated`. Create CoreBluetooth managers with `queue: nil`, so their delegate methods run on the main queue. Kotlin: system callbacks such as `BluetoothGattCallback` and `ScanCallback` arrive on background threads. Post to the main looper, for example with `Handler(Looper.getMainLooper())`, before calling a Pigeon sink or channel. No lint can tell which thread code runs on, so reviews check this.
 - Switch on closed types without a catch-all. Model a fixed set of cases as an enum or sealed class (not an `int`, a `String` or a plain abstract class), and when switching on it, list every case: no `default`, `_`, untyped variable or other catch-all. Then adding a case is a compile error at every switch that must handle it, as in Swift. The `no_catch_all_cases` lint (`tool/pulselink_lints`) enforces this; where a catch-all is truly needed, ignore the lint with a comment saying why. For the same reason, don't test a closed type for one case with `if (x case ...)`, `is` or `==`: those silently skip new cases, so use a switch, with an explicit do-nothing case where one applies. The `use_switch_on_closed_types` lint enforces this; a null check such as `if (x case final y?)` is still fine.
-- Handle errors on purpose. Dart has no checked exceptions and no lint can tell what throws, so this rule and the tests are the check. Expected failures (Bluetooth off, permission denied, strap out of range, a failed write) are outcomes, not exceptions: data-layer implementations catch what packages and platform channels throw and return a typed result, so callers must handle every case. The `no_ignored_results` lint flags a typed result that's thrown away; to discard one on purpose, write `final _ = ...;` with a comment saying why. Cleanup in `close()`, `dispose()` and the like goes in `try`/`finally` so it always finishes, and the error still reaches the caller. Catch specific types (`on SomeException`), never swallow an error silently, and when an exception is left uncaught on purpose, add a short comment saying why and what handles it. Every cleanup path gets a test with a dependency that fails. Before committing changes to `lib/` that add async calls, cleanup code, catch blocks or data-layer implementations, run the `error-handling-review` project skill and resolve its findings.
+- Handle errors on purpose. Dart has no checked exceptions and no lint can tell what throws, so this rule and the tests are the check. Expected failures (Bluetooth off, permission denied, strap out of range, a failed write) are outcomes, not exceptions: data-layer implementations catch what packages and platform channels throw and return a typed result, so callers must handle every case. The `no_ignored_results` lint flags a typed result that's thrown away; to discard one on purpose, write `final _ = ...;` with a comment saying why. Cleanup in `close()`, `dispose()` and the like goes in `try`/`finally` so it always finishes, and the error still reaches the caller. Catch specific types (`on SomeException`), never swallow an error silently, and when an exception is left uncaught on purpose, add a short comment saying why and what handles it. Anything nothing catches reaches `UncaughtErrorReporter` (`lib/app/uncaught_error_reporter.dart`), which `main()` installs first and which reports it as fatal; it's a last resort for bugs, not a way to handle expected failures. Report errors through `TrackerService` (`lib/data/tracker_service.dart`), never `developer.log` or `print` directly, so a crash reporting service plugs in at one place. A caught error that shouldn't happen, such as a platform channel failing, is non-fatal; only `UncaughtErrorReporter` reports fatal ones. Expected failures and normal events (a malformed packet, the strap disconnecting) aren't errors: note those with its `logInfo()`, if at all. There's one `TrackerService`, which `main()` creates. A class that reports errors takes it as a required constructor argument, with no default, so a missing one is a compile error and nothing makes a second one. Tests pass `RecordingTrackerService` (`test/helpers/`) and check what was reported. Native code follows the same rule with its own `ErrorTracker`: Swift's in `ios/Shared/ErrorTracker.swift` (`OSLogTracker`), Kotlin's in `ErrorTracker.kt` (`LogcatTracker`). `AppDelegate`, `PulseLinkWatchApp` and `MainActivity` each create one and pass it as a required initializer or constructor argument. It works on any thread, unlike calls to Dart. Normal events go through the tracker's `logInfo()` too, and on Android expected failures go through its `logWarning()`. Only the tracker logs: SwiftLint's `no_direct_logging` rule bans `Logger` at any level, `os_log` and `NSLog` elsewhere, and detekt's `ForbiddenMethodCall` bans `Log.e`, `Log.wtf`, `Log.w`, `Log.i`, `Log.d`, `Log.v` and `Log.println`. Create a Swift `Logger` with `Logger(category:)`, whose subsystem is the bundle ID from the build settings, never a hard-coded ID. Swift tests pass `RecordingErrorTracker` (`ios/SharedTests/`). Every cleanup path gets a test with a dependency that fails. Before committing changes to `lib/` that add async calls, cleanup code, catch blocks or data-layer implementations, run the `error-handling-review` project skill and resolve its findings.
+- Release builds never show simulated or debug data: heart rate comes only from a real strap the user picks. Code that makes fake data or debug tooling, such as the demo source and the debug override (with its demo-data toggle), goes in debug-only files: named `debug_*.dart`, or in a `debug/` folder. Only `debugApp`, which `main()` uses when not in release mode, may reach it, so release builds don't contain it, and the pre-merge release-binary check proves that. On the watch, preview data stays inside `#if DEBUG` (see "SwiftUI previews").
+- User-facing text goes in `lib/l10n/app_en.arb`, never in a string literal in the UI. Read it through the `AppLocalizations` class that `flutter gen-l10n` generates from the ARB file, as `context.l10n.tryAgain`, so a missing or misspelled string is a compile error, and the app can be translated later without touching the widgets. Give every string a description, for whoever translates it, and use typed placeholders (`int`, `DateTime` with a format) and plurals rather than building text by concatenation or interpolation in Dart. The `no_hardcoded_ui_strings` lint (`tool/pulselink_lints`) enforces this. Debug-only code (`debug_*.dart` files and `debug/` folders) is exempt, since release builds drop it; where a literal truly isn't text for the user, ignore the lint with a comment saying why. The watch app's SwiftUI text isn't covered yet.
 
 ## Project overview
 
@@ -53,7 +55,7 @@ Disclaimer to include in the app and README: "For learning and fitness use only.
 
 ## Tech stack and architecture
 
-Flutter can't build watchOS apps, so the watch app is native SwiftUI. It talks to the Flutter app through Apple's WatchConnectivity framework, bridged into Dart with a platform channel.
+Flutter can't build watchOS apps, so the watch app is native SwiftUI. It talks to the Flutter app through Apple's WatchConnectivity framework, in Swift, which Dart calls through Pigeon.
 
 | Layer | Choice | Notes |
 | --- | --- | --- |
@@ -64,8 +66,10 @@ Flutter can't build watchOS apps, so the watch app is native SwiftUI. It talks t
 | Charts | `fl_chart` | Session history graphs |
 | Watch app | SwiftUI, watchOS | Embedded in the iOS Runner project |
 | Phone-watch bridge | WatchConnectivity in Swift, called from Dart through Pigeon (`pigeons/watch_api.dart`) | Written by hand for learning, rather than the `watch_connectivity` package |
-| Tests | `flutter_test`, `mocktail`, bloc\_test, XCTest | Fakes for BLE and watch |
-| CI | GitHub Actions | Analyze, test, build |
+| Text | gen-l10n (`flutter_localizations`, `intl`) | Every string in `lib/l10n/app_en.arb`, read through the generated, typed `AppLocalizations` |
+| Errors and logs | `TrackerService` (Dart), `ErrorTracker` (Swift and Kotlin) | The one place each language logs, through `dart:developer`, the unified log and Logcat for now; a crash reporting service plugs in there |
+| Tests | `flutter_test`, `mocktail`, bloc\_test, Swift Testing, JUnit | Fakes for BLE and watch |
+| CI | GitHub Actions | Analyze, format, test and lint; app builds come in Milestone 8 |
 
 Layers in the Flutter app, top to bottom:
 
@@ -93,15 +97,15 @@ MVP (phone):
 - Scan for devices advertising the Heart Rate Service, then pick and pair one
 - Live screen: big bpm number, last-updated time, connection status, sensor-contact indicator, battery level if available
 - Clear states: scanning, connecting, connected, reconnecting, disconnected, Bluetooth off, permission denied
-- Automatic reconnect to the last device after a drop or app restart
-- Demo mode using `FakeStrapDataSource`, so the app works with no hardware (also useful for screenshots and tests)
+- Automatic reconnect to the last device after a drop or app restart (Milestone 7)
+- Demo mode using `FakeStrapDataSource`, so the app works with no hardware (also useful for screenshots and tests); in debug and profile builds only, since release builds show only a real strap's data
 
 MVP (watch):
 
 - Live bpm with a stale-data indicator and connection status
 - Shows a clear "phone not reachable" state
 
-Nice-to-have (Milestone 8, Sessions and history):
+Nice-to-have (Milestone 9, Sessions and history):
 
 - Start and stop a session; store samples (bpm, RR intervals, timestamp)
 - History list and session detail: duration, average, min and max, and a chart
@@ -126,18 +130,20 @@ Each milestone ends with something I can run on a device and a commit. Each one 
    - Done when: demo mode shows a moving bpm with timestamps, and the parser tests pass.
 3. **Real BLE on iOS.** Done. On iOS: Bluetooth permission, scan filtered by service UUID, device picker (listing straps already connected to the phone), connect, subscribe to notifications, battery level, a "Strap disconnected" state with Try again, and an Open Settings button when permission is denied. Native BLE code in Swift behind a Pigeon contract. Android reports that BLE isn't supported yet, and runs in demo mode.
    - Done when: on an iPhone, a real strap shows live bpm and battery level, and every failure (Bluetooth off, permission denied, strap unreachable, strap dropped) is explained on screen.
-4. **Real BLE on Android.** Done. Kotlin scanning and connecting behind the same Pigeon contract, runtime permissions (`BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT`; the app needs Android 12 or later, so no location permission), a hand-written GATT queue, retries after GATT error 133, staying under Android's scan throttling, and the battery level. The Dart above the data layer is shared with iOS and needed no changes. The `connectedDevice` foreground service for streaming in the background was built (`feat/Milestone4_ForegroundService`) and works, but moved to Milestone 6, so both platforms gain background streaming together.
+4. **Real BLE on Android.** Done. Kotlin scanning and connecting behind the same Pigeon contract, runtime permissions (`BLUETOOTH_SCAN` and `BLUETOOTH_CONNECT`; the app needs Android 12 or later, so no location permission), a hand-written GATT queue, retries after GATT error 133, staying under Android's scan throttling, and the battery level. The Dart above the data layer is shared with iOS and needed no changes. The `connectedDevice` foreground service for streaming in the background was built (`feat/Milestone4_ForegroundService`) and works, but moved to Milestone 7, so both platforms gain background streaming together.
    - Done when: the same checks as Milestone 3 pass on an Android phone.
 5. **Apple Watch app.** Done. A native SwiftUI watchOS app embedded in the iOS app, fed over WatchConnectivity: the phone's Swift sends a snapshot of the live state, as a live message and as the application context, through a second Pigeon contract. The watch shows the bpm with when it was measured, marks it stale after 10 seconds by its own clock, shows why there's no heart rate, tags demo data, says when the iPhone has been unreachable for 5 seconds, and shows the latest state on launch. Swift Testing covers both apps, in `RunnerTests` and `PulseLinkWatchTests`. It needs only the iOS app, so it didn't depend on Milestone 4.
    - Done when: the watch shows live bpm with its age and connection status, and handles "phone not reachable".
-6. **Reliability for iOS.** Connection state machine (a Bloc), automatic reconnect with backoff, Bluetooth off and on, app backgrounded, remembering the last device, and the in-app debug log; on iOS, one shared `CBCentralManager` and the `bluetooth-central` background mode; on Android, the `connectedDevice` foreground service shelved in Milestone 4. Most of it is shared Dart, so Android runs it too, but only the iPhone is checked for the rest.
+6. **Hardening and Enhancements.** Done. Made what Milestones 1-5 built sturdier and ready to show, in place of the reliability work first planned here, which moved to Milestone 7: all user-facing text in `app_en.arb`, read through the generated `AppLocalizations`; Swift safety rules for the native code; a separate bundle ID for each build, and IPA export; release builds that show only real data, with demo data and the debug override kept to debug builds; license headers; SwiftLint in CI; the app icon; CI pinned to the project's Flutter version; error reporting through `TrackerService` and `UncaughtErrorReporter`, with native `ErrorTracker`s, placeholders for redacting personal information, and lint rules that ban logging around them; and reporting a dropped strap when iOS restarts Bluetooth.
+   - Done when: the epic passes every pre-merge check, the release builds run on an iPhone (with the watch) and an Android phone, and it merges into `develop`.
+7. **BLE Reliability** (nice-to-have). Connection state machine (a Bloc), automatic reconnect with backoff, Bluetooth off and on, app backgrounded, remembering the last device, and the in-app debug log; on iOS, one shared `CBCentralManager` and the `bluetooth-central` background mode; on Android, the `connectedDevice` foreground service shelved in Milestone 4. Most of it is shared Dart, so Android runs it too, but only the iPhone is checked for the rest.
    - Done when: on an iPhone, I can walk out of range and back, toggle Bluetooth, background the app, and kill and reopen it, and it always recovers or explains itself; and on an Android phone, streaming carries on in the background.
-7. **Polish and portfolio** (nice-to-have). Tests filled in, CI building iOS and Android, README with screenshots and a demo GIF, architecture doc, hazard table.
+8. **Polish and portfolio** (nice-to-have). Tests filled in, CI building iOS and Android, README with screenshots and a demo GIF, architecture doc, hazard table.
    - Done when: the repo is public and I can walk through it in an interview in 5 minutes.
-8. **Sessions and history** (nice-to-have). drift schema, recording, history list, session detail with chart and stats, and start and stop buttons on the watch that control the phone.
+9. **Sessions and history** (nice-to-have). drift schema, recording, history list, session detail with chart and stats, and start and stop buttons on the watch that control the phone.
    - Done when: a 20-minute session saves and charts correctly, and the watch can start and stop it.
 
-Milestones 7 and 8 are nice-to-haves: plan as if the project may be shown in interviews without them, so Milestones 1-6 must stand on their own.
+Milestones 7-9 are nice-to-haves: plan as if the project may be shown in interviews without them, so Milestones 1-6 must stand on their own.
 
 Then pick stretch items, starting with the watch complication.
 
@@ -170,7 +176,7 @@ Platform setup:
 - **iOS**: `NSBluetoothAlwaysUsageDescription` in Info.plist; the `bluetooth-central` background mode so notifications keep arriving while backgrounded. Background scans must filter by service UUID. BLE doesn't work in the iOS Simulator, so use a real iPhone.
 - **Android 12+** (the app's minimum, `minSdk = 31`): `BLUETOOTH_SCAN` (with `neverForLocation`) and `BLUETOOTH_CONNECT`, asked for in Kotlin when a scan starts. Older versions would also need location permission, and location services switched on, to scan. To keep streaming in the background, use a foreground service of type `connectedDevice` (Android 14 also needs the matching foreground-service permission).
 
-Reliability rules to build in:
+Reliability rules to build in (Milestone 7):
 
 - One connection state machine owns all transitions; the UI only renders its state.
 - Reconnect with backoff (1, 2, 4, 8 seconds, then every 30 seconds), and stop when the user disconnects on purpose.
@@ -190,7 +196,7 @@ Testing:
 - Native: Swift Testing in `RunnerTests` (iPhone app, including the shared message encoding and decoding) and `PulseLinkWatchTests` (watch app), and JUnit for the Kotlin; `tool/test_swift.sh` runs the Swift tests on simulators.
 - Manual test checklist in `docs/test-plan.md`: out of range, Bluetooth toggled, app killed, phone locked, watch unreachable, strap battery low.
 
-CI (GitHub Actions): `flutter analyze`, `dart format --set-exit-if-changed`, `flutter test` with coverage on every push; an Android build on Ubuntu and an iOS build on macOS (no code signing).
+CI (GitHub Actions): `flutter analyze`, `dart format --set-exit-if-changed`, `flutter test` with coverage on every push; an Android build on Ubuntu and an iOS build on macOS (no code signing). As of Milestone 6 it runs analyze, format, the tests in a random order, the lint plugin's own checks and the native lints, with the Flutter version pinned in `pubspec.yaml`; the builds, and the Swift tests on macOS, come in Milestone 8.
 
 Docs to commit:
 
@@ -198,6 +204,7 @@ Docs to commit:
 - `docs/architecture.md`: layers, the phone-watch design, and Mermaid sequence diagrams for connect-and-stream and watch start/stop. Started in Milestone 5 with the phone app, the watch app and the messages between them; connect-and-stream and watch start/stop are still to come.
 - `docs/hazards.md`: a lightweight hazard table (hazard, cause, mitigation), such as stale bpm shown as current, or a session lost on crash. It mirrors how regulated teams think without claiming compliance.
 - `docs/learning-log.md`: what I learned per milestone, with Flutter-vs-native notes. Useful interview material.
+- `docs/swift-vs-dart-safety.md`: where Swift's compiler is safer than Dart's, and how PulseLink makes up for each. Added in Milestone 6.
 
 ## Setup checklist and open questions
 
@@ -213,5 +220,5 @@ Open questions:
 
 - Which features need a full Bloc (events) versus a simpler Cubit? Plan: Bloc for connection and sessions, Cubits elsewhere.
 - Hand-written platform channels, or the `watch_connectivity` package? Decided in Milestone 5: hand-written Swift, called through Pigeon.
-- App name and bundle ID
+- App name and bundle ID? Decided in Milestone 6: PulseLink, `com.jpeckner.pulselink`, with `.debug` and `.profile` for those builds, so all three install side by side.
 - Android-only Wear OS app later, or never?

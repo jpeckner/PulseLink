@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import Foundation
 
 /// What the iPhone app tells the watch about the heart rate it's showing.
@@ -39,6 +43,9 @@ enum HeartRateSource: String, Sendable {
 /// How getting heart-rate data is going on the phone. Mirrors the Dart
 /// `LiveHeartRateState` cases.
 enum HeartRateStatus: Equatable, Sendable {
+  /// No strap has been picked on the phone.
+  case noStrap
+
   /// Starting up or connecting; no reading since then.
   case waiting
 
@@ -149,6 +156,8 @@ extension HeartRateSnapshot {
       Field.source: source.rawValue,
     ]
     switch status {
+    case .noStrap:
+      dictionary[Field.status] = StatusCode.noStrap.rawValue
     case .waiting:
       dictionary[Field.status] = StatusCode.waiting.rawValue
     case .receiving:
@@ -180,6 +189,8 @@ extension HeartRateSnapshot {
 
     let status: HeartRateStatus
     switch statusValue {
+    case .noStrap:
+      status = .noStrap
     case .waiting:
       status = .waiting
     case .receiving:
@@ -284,6 +295,7 @@ private enum Field {
 
 /// The `status` values.
 private enum StatusCode: String {
+  case noStrap
   case waiting
   case receiving
   case failed

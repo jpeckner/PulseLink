@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Copyright (c) 2026 Justin Peckner
+# SPDX-License-Identifier: MIT
+# See the LICENSE file in the project root for the full license text.
+
 # Proves the pulselink_lints analyzer plugin is running, and that every rule
 # enabled in analysis_options.yaml reports.
 #
@@ -25,6 +29,7 @@ trap 'rm -f "$probe"' EXIT
 # One violation per rule. Add one here when adding a rule.
 cat > "$probe" <<'EOF'
 // Written by tool/check_lint_plugin.sh, which deletes it when it finishes.
+import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/data/ble/ble_api.pigeon.dart';
 
 BleBatteryLevel? keepPigeonImportsLocal;
@@ -45,6 +50,8 @@ _Probe _probeResult() => _Probe.a;
 void noIgnoredResults() => _probeResult();
 
 void noDynamic(List<dynamic> values) {}
+
+const noHardcodedUiStrings = Text('Hello');
 EOF
 
 # The rules enabled under `plugins: pulselink_lints: diagnostics:`.

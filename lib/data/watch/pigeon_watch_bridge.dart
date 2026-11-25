@@ -1,6 +1,9 @@
-import 'dart:developer' as developer;
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
 
 import 'package:flutter/services.dart';
+import 'package:pulselink/data/tracker_service.dart';
 // Prefixed: the generated types share names with the domain types they
 // carry, such as WatchHeartRateSnapshot.
 import 'package:pulselink/data/watch/watch_api.pigeon.dart' as pigeon;
@@ -16,9 +19,12 @@ import 'package:pulselink/domain/watch_heart_rate_snapshot.dart';
 /// iOS only. The contract has no Android side, so on Android every call
 /// returns [WatchDeliveryResult.unsupported].
 class PigeonWatchBridge implements WatchBridge {
-  /// [api] stands in for the platform channel in tests.
-  new({pigeon.WatchSessionApi? api}) : _api = api ?? pigeon.WatchSessionApi();
+  /// A platform channel failure is reported to `tracker`. [api] stands in
+  /// for the platform channel in tests.
+  new({required this._tracker, pigeon.WatchSessionApi? api})
+    : _api = api ?? pigeon.WatchSessionApi();
 
+  final TrackerService _tracker;
   final pigeon.WatchSessionApi _api;
 
   @override
@@ -51,10 +57,12 @@ class PigeonWatchBridge implements WatchBridge {
       return _resultFor(await send());
     } on PlatformException catch (error, stackTrace) {
       // The native side reports expected failures as outcomes, so this means
-      // the channel itself failed. With no native handler (on Android, which
-      // has no watch app), Pigeon reports 'channel-error'.
+      // the channel itself failed, which shouldn't happen: main() only
+      // creates this bridge on iOS, which always registers the handler.
+      // With no native handler (as on Android, which has no watch app),
+      // Pigeon reports 'channel-error'.
       final isMissingHandler = error.code == 'channel-error';
-      developer.log(
+      _tracker.logError(
         '$call failed on the platform channel',
         name: 'watch',
         error: error,
@@ -86,6 +94,7 @@ class PigeonWatchBridge implements WatchBridge {
         ? pigeon.WatchHeartRateSource.demo
         : pigeon.WatchHeartRateSource.strap,
     status: switch (snapshot.status) {
+      WatchHeartRateNoStrap() => pigeon.WatchNoStrap(),
       WatchHeartRateWaiting() => pigeon.WatchWaiting(),
       WatchHeartRateReceiving() => pigeon.WatchReceiving(),
       WatchHeartRateFailed(:final failure) => pigeon.WatchFailed(

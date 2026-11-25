@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:pulselink/domain/heart_rate_sample.dart';
 import 'package:pulselink/domain/strap_connection_failure.dart';
@@ -7,6 +11,9 @@ part 'watch_heart_rate_snapshot.freezed.dart';
 /// How getting heart-rate data is going on the phone, as the watch shows it.
 @freezed
 sealed class WatchHeartRateStatus with _$WatchHeartRateStatus {
+  /// No strap has been picked on the phone.
+  const factory noStrap() = WatchHeartRateNoStrap;
+
   /// Starting up or connecting; no reading since then.
   const factory waiting() = WatchHeartRateWaiting;
 

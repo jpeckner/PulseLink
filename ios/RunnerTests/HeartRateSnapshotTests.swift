@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import Foundation
 import Testing
 
@@ -97,7 +101,8 @@ struct HeartRateSnapshotEncodingTests {
   }
 
   @Test(arguments: [
-    HeartRateStatus.waiting,
+    HeartRateStatus.noStrap,
+    .waiting,
     .receiving,
     .failed(.bluetooth(.off)),
     .failed(.bluetooth(.unavailable)),

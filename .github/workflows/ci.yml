@@ -8,14 +8,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  # Keep in sync with the local SDK (`flutter --version`).
-  FLUTTER_VERSION: 3.50.0
-
 jobs:
   analyze-and-test:
     name: Analyze and test
-    runs-on: ubuntu-latest
+    # Pinned rather than ubuntu-latest: SwiftLint's Linux build (see
+    # tool/lint_native.sh) links against libxml2.so.2, and Ubuntu 25.10 and
+    # later ship only libxml2.so.16, so it can't start there. Move on once a
+    # SwiftLint release runs on the newer Ubuntu.
+    runs-on: ubuntu-24.04
     # Room for Gradle's first detekt run, which downloads its dependencies.
     timeout-minutes: 25
     steps:
@@ -24,7 +24,9 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          # The exact version in pubspec.yaml's environment.flutter, which
+          # `flutter pub get` also enforces locally.
+          flutter-version-file: pubspec.yaml
           cache: true
 
       - name: Install dependencies
@@ -42,10 +44,11 @@ jobs:
       - name: Check generated code is up to date
         run: |
           dart run build_runner build --delete-conflicting-outputs
+          flutter gen-l10n
           tool/pigeon.sh
           if [ -n "$(git status --porcelain)" ]; then
             git status --short
-            echo "::error::Generated code is out of date. Run 'dart run build_runner build' and 'tool/pigeon.sh', and commit the result."
+            echo "::error::Generated code is out of date. Run 'dart run build_runner build', 'flutter gen-l10n' and 'tool/pigeon.sh', and commit the result."
             exit 1
           fi
 
@@ -63,8 +66,12 @@ jobs:
       - name: Check the lint plugin is running
         run: tool/check_lint_plugin.sh
 
+      # A new random order each run, so a test that only passes after
+      # another one fails here. The log's "Shuffling test order with
+      # --test-randomize-ordering-seed=N" line gives the seed: pass the same
+      # flag locally to rerun in that order.
       - name: Test
-        run: flutter test --coverage
+        run: flutter test --coverage --test-randomize-ordering-seed random
 
       # Gradle needs a JDK to run detekt; the Android Gradle Plugin needs 17
       # or newer, and detekt 2.0 is tested on 25.
@@ -100,7 +107,7 @@ jobs:
         run: |
           dart format --output=none --set-exit-if-changed lib test
           dart analyze --fatal-infos --fatal-warnings
-          dart test
+          dart test --test-randomize-ordering-seed random
 
   # Android (Ubuntu) and iOS (macOS, no code signing) build jobs are added in
-  # Milestone 7.
+  # Milestone 8.

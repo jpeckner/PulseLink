@@ -120,9 +120,65 @@ what throws, so this rule and the tests are the check.
   always finishes, and the error still reaches the caller.
 - Catch specific types (`on SomeException`) and never swallow an error
   silently. When an exception is left uncaught on purpose, add a short comment
-  saying why and what handles it.
+  saying why and what handles it. Anything nothing catches reaches
+  `UncaughtErrorReporter` (`lib/app/uncaught_error_reporter.dart`), which
+  `main()` installs first and which reports it as fatal; it's a last resort
+  for bugs, not a way to handle expected failures.
+- Report errors through `TrackerService` (`lib/data/tracker_service.dart`),
+  never `developer.log` or `print` directly, so a crash reporting service
+  plugs in at one place. A caught error that shouldn't happen, such as a
+  platform channel failing, is non-fatal; only `UncaughtErrorReporter`
+  reports fatal ones. Expected failures and normal events (a malformed
+  packet, the strap disconnecting) aren't errors: note those with its
+  `logInfo()`, if at all.
+- There's one `TrackerService`, which `main()` creates. A class that reports
+  errors takes it as a required constructor argument, with no default, so a
+  missing one is a compile error and nothing makes a second one. Tests pass
+  `RecordingTrackerService` (`test/helpers/`) and check what was reported.
+- Native code follows the same rule with its own `ErrorTracker`: Swift's in
+  `ios/Shared/ErrorTracker.swift` (`OSLogTracker`), Kotlin's in
+  `ErrorTracker.kt` (`LogcatTracker`). `AppDelegate`, `PulseLinkWatchApp`
+  and `MainActivity` each create one and pass it as a required initializer
+  or constructor argument. It works on any thread, unlike calls to Dart.
+  Normal events go through the tracker's `logInfo()` too, and on Android
+  expected failures go through its `logWarning()`. Only the tracker logs:
+  SwiftLint's `no_direct_logging` rule bans `Logger` at any level, `os_log`
+  and `NSLog` elsewhere, and detekt's `ForbiddenMethodCall` bans `Log.e`,
+  `Log.wtf`, `Log.w`, `Log.i`, `Log.d`, `Log.v` and `Log.println`.
+  Create a Swift `Logger` with `Logger(category:)`, whose subsystem is the
+  bundle ID from the build settings, never a hard-coded ID.
+  Swift tests pass `RecordingErrorTracker` (`ios/SharedTests/`).
 - Every cleanup path gets a test with a dependency that fails.
 
 Before committing changes to `lib/` that add async calls, cleanup code, catch
 blocks or data-layer implementations, run the `error-handling-review` project
 skill (`.claude/skills/error-handling-review/`) and resolve its findings.
+
+## Release builds show real data only
+
+Release builds never show simulated or debug data: heart rate comes only from
+a real strap the user picks. Code that makes fake data or debug tooling, such
+as the demo source and the debug override (with its demo-data toggle), goes in
+debug-only files: named `debug_*.dart`, or in a `debug/` folder. Only
+`debugApp`, which `main()` uses when not in release mode, may reach it, so
+release builds don't contain it, and the pre-merge release-binary check
+proves that. On the watch, preview data stays inside `#if DEBUG` (see
+"SwiftUI previews").
+
+## User-facing text
+
+User-facing text goes in `lib/l10n/app_en.arb`, never in a string literal in
+the UI. Read it through the `AppLocalizations` class that `flutter gen-l10n`
+generates from the ARB file, as `context.l10n.tryAgain`, so a missing or
+misspelled string is a compile error, and the app can be translated later
+without touching the widgets.
+
+- Give every string a description, for whoever translates it.
+- Use typed placeholders (`int`, `DateTime` with a format) and plurals rather
+  than building text by concatenation or interpolation in Dart.
+- The `no_hardcoded_ui_strings` lint (`tool/pulselink_lints`) enforces this.
+  Debug-only code (`debug_*.dart` files and `debug/` folders) is exempt,
+  since release builds drop it. Where a literal truly isn't text for the
+  user, ignore the lint with a comment saying why.
+
+The watch app's SwiftUI text isn't covered yet.

@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import Foundation
 import Testing
 
@@ -112,6 +116,13 @@ struct WatchHeartRateDisplayTests {
     let display = display(status: .waiting, reading: .measured(try bpm(72), measuredAt: measuredAt))
     #expect(display.readout == .outOfDate(try bpm(72)))
     #expect(display.status == .waiting(lastReadingAt: measuredAt))
+  }
+
+  @Test func showsNoStrapWithNoNumber() {
+    let display = display(status: .noStrap, reading: nil)
+    #expect(display.readout == .none)
+    #expect(display.status == .noStrap)
+    #expect(display.source == .strap)
   }
 
   @Test func showsWaitingBeforeAnyReading() {

@@ -1,9 +1,14 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import 'package:analysis_server_plugin/plugin.dart';
 import 'package:analysis_server_plugin/registry.dart';
 import 'package:pulselink_lints/src/keep_pigeon_imports_local.dart';
 import 'package:pulselink_lints/src/no_assertions.dart';
 import 'package:pulselink_lints/src/no_catch_all_cases.dart';
 import 'package:pulselink_lints/src/no_dynamic.dart';
+import 'package:pulselink_lints/src/no_hardcoded_ui_strings.dart';
 import 'package:pulselink_lints/src/no_ignored_results.dart';
 import 'package:pulselink_lints/src/use_switch_on_closed_types.dart';
 
@@ -25,6 +30,7 @@ class PulseLinkLintsPlugin extends Plugin {
       ..registerLintRule(NoAssertions())
       ..registerLintRule(NoCatchAllCases())
       ..registerLintRule(NoDynamic())
+      ..registerLintRule(NoHardcodedUiStrings())
       ..registerLintRule(NoIgnoredResults())
       ..registerLintRule(UseSwitchOnClosedTypes());
   }

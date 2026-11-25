@@ -1,3 +1,7 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import SwiftUI
 
 /// The watch's heart-rate screen for one `WatchHeartRateDisplay`. The words
@@ -97,6 +101,12 @@ private struct StatusLines: View {
     switch status {
     case .noSnapshotYet:
       Text("Open PulseLink on your iPhone")
+        .font(.footnote)
+        .foregroundStyle(.secondary)
+    case .noStrap:
+      Text("No strap connected")
+        .font(.footnote)
+      Text("Pick one in PulseLink on your iPhone")
         .font(.footnote)
         .foregroundStyle(.secondary)
     case .waiting(let lastReadingAt):
@@ -207,6 +217,10 @@ private func previewDisplay(
 
 private func previewMeasured(_ value: Int, secondsAgo: TimeInterval) -> HeartRateReading? {
   BeatsPerMinute(value).map { .measured($0, measuredAt: previewNow.addingTimeInterval(-secondsAgo)) }
+}
+
+#Preview("No strap") {
+  HeartRateScreen(display: previewDisplay(status: .noStrap, reading: nil))
 }
 
 #Preview("Live") {

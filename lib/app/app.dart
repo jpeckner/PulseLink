@@ -1,9 +1,14 @@
+// Copyright (c) 2026 Justin Peckner
+// SPDX-License-Identifier: MIT
+// See the LICENSE file in the project root for the full license text.
+
 import 'package:material_ui/material_ui.dart';
 import 'package:pulselink/blocs/live_heart_rate/live_heart_rate_cubit.dart';
 import 'package:pulselink/blocs/strap_battery/strap_battery_cubit.dart';
 import 'package:pulselink/data/app_settings.dart';
 import 'package:pulselink/data/strap_scanner.dart';
 import 'package:pulselink/domain/discovered_strap.dart';
+import 'package:pulselink/l10n/l10n.dart';
 import 'package:pulselink/ui/live/live_heart_rate_screen.dart';
 import 'package:pulselink/ui/picker/strap_picker_screen.dart';
 
@@ -43,7 +48,9 @@ class PulseLinkApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'PulseLink',
+      onGenerateTitle: (context) => context.l10n.appTitle,
+      localizationsDelegates: pulseLinkLocalizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: _theme(Brightness.light),
       darkTheme: _theme(Brightness.dark),
       home: LiveHeartRateScreen(
