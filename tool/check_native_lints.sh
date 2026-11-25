@@ -56,6 +56,8 @@ var probeImplicitlyUnwrapped: Int!
 
 func probeNoAssertions() { fatalError("probe") }
 
+func probeNoDirectLogging(_ logger: Logger) { logger.info("probe") }
+
 func probeNoCatchAllCases(_ probe: NativeLintProbe) -> Int {
   switch probe {
   case .a:
@@ -89,6 +91,9 @@ private class ProbeLateinitUsage {
 }
 
 private fun probeForbiddenMethodCall(): Nothing = error("probe")
+
+// Also ForbiddenMethodCall: logging straight to Logcat outside LogcatTracker.
+private fun probeDirectLogging(): Int = android.util.Log.i("probe", "probe")
 
 private fun probeElseCase(probe: NativeLintProbe): Int =
     when (probe) {

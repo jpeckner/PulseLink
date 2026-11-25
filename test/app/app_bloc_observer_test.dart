@@ -14,6 +14,21 @@ class _CounterCubit extends Cubit<int> {
 
 void main() {
   group('AppBlocObserver', () {
+    test('notes a Bloc or Cubit state change', () async {
+      final tracker = RecordingTrackerService();
+      final cubit = _CounterCubit();
+      addTearDown(cubit.close);
+
+      AppBlocObserver(tracker: tracker)
+          .onChange(cubit, const Change(currentState: 0, nextState: 1));
+
+      final noted = tracker.infos.single;
+      expect(noted.message, contains('_CounterCubit'));
+      expect(noted.message, contains('nextState: 1'));
+      expect(noted.name, 'bloc');
+      expect(tracker.errors, isEmpty);
+    });
+
     test('tracks a Bloc or Cubit error as non-fatal', () async {
       final tracker = RecordingTrackerService();
       final cubit = _CounterCubit();

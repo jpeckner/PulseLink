@@ -9,8 +9,8 @@ import SwiftUI
 @main
 struct PulseLinkWatchApp: App {
   /// Lives as long as the app, so snapshots keep arriving while the screen
-  /// is redrawn.
-  @State private var connection = PhoneConnection()
+  /// is redrawn. It's given the watch app's only error tracker.
+  @State private var connection = PhoneConnection(tracker: OSLogTracker())
 
   var body: some Scene {
     WindowGroup {

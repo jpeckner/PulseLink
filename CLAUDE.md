@@ -129,12 +129,25 @@ what throws, so this rule and the tests are the check.
   plugs in at one place. A caught error that shouldn't happen, such as a
   platform channel failing, is non-fatal; only `UncaughtErrorReporter`
   reports fatal ones. Expected failures and normal events (a malformed
-  packet, the strap disconnecting) aren't errors: log those with
-  `developer.log`, if at all.
+  packet, the strap disconnecting) aren't errors: note those with its
+  `logInfo()`, if at all.
 - There's one `TrackerService`, which `main()` creates. A class that reports
   errors takes it as a required constructor argument, with no default, so a
   missing one is a compile error and nothing makes a second one. Tests pass
   `RecordingTrackerService` (`test/helpers/`) and check what was reported.
+- Native code follows the same rule with its own `ErrorTracker`: Swift's in
+  `ios/Shared/ErrorTracker.swift` (`OSLogTracker`), Kotlin's in
+  `ErrorTracker.kt` (`LogcatTracker`). `AppDelegate`, `PulseLinkWatchApp`
+  and `MainActivity` each create one and pass it as a required initializer
+  or constructor argument. It works on any thread, unlike calls to Dart.
+  Normal events go through the tracker's `logInfo()` too, and on Android
+  expected failures go through its `logWarning()`. Only the tracker logs:
+  SwiftLint's `no_direct_logging` rule bans `Logger` at any level, `os_log`
+  and `NSLog` elsewhere, and detekt's `ForbiddenMethodCall` bans `Log.e`,
+  `Log.wtf`, `Log.w`, `Log.i`, `Log.d`, `Log.v` and `Log.println`.
+  Create a Swift `Logger` with `Logger(category:)`, whose subsystem is the
+  bundle ID from the build settings, never a hard-coded ID.
+  Swift tests pass `RecordingErrorTracker` (`ios/SharedTests/`).
 - Every cleanup path gets a test with a dependency that fails.
 
 Before committing changes to `lib/` that add async calls, cleanup code, catch

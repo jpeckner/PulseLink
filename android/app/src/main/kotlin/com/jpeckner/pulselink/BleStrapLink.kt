@@ -13,10 +13,13 @@ import android.content.Context
  * thread, and Pigeon runs [connect] on the main dispatcher, which is where
  * LeConnection expects to be called.
  */
-class BleStrapLink(context: Context) :
+class BleStrapLink(
+    context: Context,
+    tracker: ErrorTracker,
+) :
     StrapEventsStreamHandler(),
     BleConnectionApi {
-    private val connection = LeConnection(context)
+    private val connection = LeConnection(context, tracker)
 
     override fun onListen(
         p0: Any?,

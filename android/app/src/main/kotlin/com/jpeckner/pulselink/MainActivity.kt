@@ -8,6 +8,9 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 
 class MainActivity : FlutterActivity() {
+    /** The app's only error tracker: everything that reports errors gets this one. */
+    private val tracker: ErrorTracker = LogcatTracker()
+
     /** Created with the engine; null before that and after it goes. */
     private var strapScanner: BleStrapScanner? = null
     private var strapLink: BleStrapLink? = null
@@ -16,16 +19,16 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         val messenger = flutterEngine.dartExecutor.binaryMessenger
         // The channels keep these for as long as the engine runs.
-        val scanner = BleStrapScanner(this)
+        val scanner = BleStrapScanner(this, tracker)
         strapScanner = scanner
         ScanForHeartRateStrapsStreamHandler.register(messenger, scanner)
         // The application context, since the connection may outlive this
         // activity once streaming continues in the background.
-        val link = BleStrapLink(applicationContext)
+        val link = BleStrapLink(applicationContext, tracker)
         strapLink = link
         StrapEventsStreamHandler.register(messenger, link)
         BleConnectionApi.setUp(messenger, link)
-        AppSettingsApi.setUp(messenger, AppSettingsOpener(this))
+        AppSettingsApi.setUp(messenger, AppSettingsOpener(this, tracker))
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {

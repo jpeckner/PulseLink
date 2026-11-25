@@ -108,7 +108,7 @@ flowchart TB
 | Data | `SwitchableStrapDataSource` | Owns whichever `StrapDataSource` is current, so the cubits never change source themselves. Starts with none, reporting no strap until one is picked. |
 | Data | `BleStrapDataSource` | The strap through `ble_api`. Parses raw Heart Rate Measurement bytes in exactly one place. Expected failures come back as typed results, never exceptions. |
 | Data | `PigeonWatchBridge` | The watch through `watch_api`. Turns platform errors into a `WatchDeliveryResult`. |
-| Data | `TrackerService` | Where errors are reported from: fatal from `UncaughtErrorReporter`, non-fatal from `AppBlocObserver` and from the platform-channel failures `BleStrapDataSource` and `PlatformAppSettings` catch. Logs through `dart:developer` for now; a crash reporting service, and Milestone 6's in-app debug log, would plug in there. Expected failures and normal events, such as a malformed packet, don't go through it. |
+| Data | `TrackerService` | Where errors are reported from: fatal from `UncaughtErrorReporter`, non-fatal from `AppBlocObserver` and from the platform-channel failures `BleStrapDataSource`, `PlatformAppSettings` and `PigeonWatchBridge` catch. Logs through `dart:developer` for now; a crash reporting service, and Milestone 6's in-app debug log, would plug in there. Expected failures and normal events, such as a malformed packet, aren't errors: they're noted through its `logInfo()`, by `AppBlocObserver`, `BleStrapDataSource` and `WatchSync`. |
 
 ### Swap points
 
@@ -128,6 +128,15 @@ flowchart TB
 Each Pigeon contract has a generated handler that native code implements.
 On both platforms everything that talks to Dart runs on the main thread,
 the only thread Flutter accepts messages on.
+
+Errors that shouldn't happen, such as a call off the main thread or a
+permission revoked after it was checked, go to an `ErrorTracker`, the native
+counterpart of Dart's `TrackerService`. `AppDelegate` creates the iPhone
+app's (`OSLogTracker`, unified log) and `MainActivity` Android's
+(`LogcatTracker`), and each passes it to everything below that reports
+errors. It also takes normal events worth noting, through `logInfo()`,
+and on Android expected failures, through `logWarning()`. It works on any thread, so it doesn't send to Dart. Expected
+failures go back to Dart as typed results instead.
 
 ```mermaid
 flowchart LR
@@ -192,7 +201,8 @@ flowchart LR
 There's no native swap-in in the app itself. Swift Testing and JUnit tests
 exercise the pure decision types (`ScanAction`, `ConnectAction`,
 `WatchSessionState` and the delivery actions, `GattQueue`, `ScanThrottle`)
-without a phone.
+without a phone, and Swift tests pass `RecordingErrorTracker` to check what's
+reported, such as by `isOnMainThread` off the main thread.
 
 ## 3. Watch app
 
@@ -257,7 +267,8 @@ old.
 | Swap point | Live | Swap-in |
 | --- | --- | --- |
 | Data on `HeartRateScreen` | `WatchHeartRateDisplay` from `PhoneConnection` | `#Preview` sample displays, inside `#if DEBUG`; lint and binary checks keep them out of release builds |
-| `PhoneConnection`'s input | `WCSession` delegate callbacks | Tests call `receive(_:)` and `reachabilityDidChange(_:at:)` directly |
+| `PhoneConnection`'s input | `WCSession` delegate callbacks | Tests call `receive(_:)`, `reachabilityDidChange(_:at:)` and `decode(_:from:)` directly |
+| `PhoneConnection`'s error tracker | `OSLogTracker`, created by `PulseLinkWatchApp` | Tests: `RecordingErrorTracker`, which records each error and info message |
 | Time | `TimelineView`'s date | Tests pass a fixed `now` to `WatchHeartRateDisplay` |
 
 ## 4. Phone to watch

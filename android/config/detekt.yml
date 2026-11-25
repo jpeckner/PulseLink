@@ -1,5 +1,6 @@
 # detekt rules for the hand-written Kotlin in the Android app: the native
-# part of CLAUDE.md's "No assertions" rule. tool/lint_native.sh runs them
+# part of CLAUDE.md's "No assertions" rule, and of "Error handling"'s
+# rule that errors are reported through ErrorTracker. tool/lint_native.sh runs them
 # (through Gradle's detektMain task), and tool/check_native_lints.sh proves
 # each still reports.
 #
@@ -56,3 +57,19 @@ style:
         reason: 'Throws on a programmer error; handle null with `?.` or `?:` instead.'
       - value: 'kotlin.TODO'
         reason: 'Throws when reached; finish the code instead.'
+      # Logging straight to Logcat, at any level, which only LogcatTracker
+      # does.
+      - value: 'android.util.Log.e'
+        reason: 'Report an error that should not happen through ErrorTracker.logError.'
+      - value: 'android.util.Log.wtf'
+        reason: 'Report an error that should not happen through ErrorTracker.logError.'
+      - value: 'android.util.Log.w'
+        reason: 'Note an expected failure through ErrorTracker.logWarning.'
+      - value: 'android.util.Log.i'
+        reason: 'Note a normal event through ErrorTracker.logInfo.'
+      - value: 'android.util.Log.d'
+        reason: 'Note a normal event through ErrorTracker.logInfo.'
+      - value: 'android.util.Log.v'
+        reason: 'Note a normal event through ErrorTracker.logInfo.'
+      - value: 'android.util.Log.println'
+        reason: 'Log through ErrorTracker instead.'

@@ -14,17 +14,19 @@ import 'package:pulselink/data/app_settings.dart';
 import 'package:pulselink/data/strap_data_source.dart';
 import 'package:pulselink/data/strap_scanner.dart';
 import 'package:pulselink/data/switchable_strap_data_source.dart';
+import 'package:pulselink/data/tracker_service.dart';
 import 'package:pulselink/data/watch_bridge.dart';
 import 'package:pulselink/domain/strap_ble_identifier.dart';
 
-/// What the app needs from the platform. main() passes the real ones; tests
-/// pass stubs.
+/// What the app needs from the platform, and the app's tracker. main()
+/// passes the real ones; tests pass stubs.
 class AppPlatform {
   const new({
     required this.strapScanner,
     required this.appSettings,
     required this.watchBridge,
     required this.createStrapSource,
+    required this.tracker,
   });
 
   /// Used by the strap picker, which scans only while it's open.
@@ -39,6 +41,10 @@ class AppPlatform {
   /// Makes the source for a picked strap: main() passes one that connects
   /// to a BLE strap; tests pass a stub.
   final StrapDataSource Function(StrapBleIdentifier strapId) createStrapSource;
+
+  /// The app's one tracker, which main() creates, for what the app itself
+  /// creates and that reports to it, such as `WatchSync`.
+  final TrackerService tracker;
 }
 
 /// The release app: heart rate only from a strap the user picks, never
@@ -52,7 +58,7 @@ Widget releaseApp(AppPlatform platform) {
   // it starts; a broadcast stream doesn't replay it to later listeners.
   final batteryCubit = StrapBatteryCubit(source: source);
   final cubit = startedCubit(source);
-  syncWatch(cubit, platform.watchBridge);
+  syncWatch(cubit, platform.watchBridge, platform.tracker);
   final selection = StrapSelection(
     source: source,
     cubit: cubit,
@@ -84,9 +90,14 @@ LiveHeartRateCubit startedCubit(StrapDataSource source) {
 }
 
 /// Keeps the platform's watch app, if it has one, showing what [cubit]
-/// shows. Never closed: like the cubits, it lives as long as the app.
-void syncWatch(LiveHeartRateCubit cubit, WatchBridge? bridge) {
+/// shows, and notes how delivery goes to [tracker]. Never closed: like the
+/// cubits, it lives as long as the app.
+void syncWatch(
+  LiveHeartRateCubit cubit,
+  WatchBridge? bridge,
+  TrackerService tracker,
+) {
   if (bridge case final watch?) {
-    WatchSync(heartRate: cubit, bridge: watch).start();
+    WatchSync(heartRate: cubit, bridge: watch, tracker: tracker).start();
   }
 }

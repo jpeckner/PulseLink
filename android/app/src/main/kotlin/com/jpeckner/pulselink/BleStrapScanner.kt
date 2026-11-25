@@ -15,8 +15,11 @@ import android.app.Activity
  * [activity] shows the permission dialog; MainActivity forwards its result,
  * and its resumes, here.
  */
-class BleStrapScanner(activity: Activity) : ScanForHeartRateStrapsStreamHandler() {
-    private val scan = LeScan(activity)
+class BleStrapScanner(
+    activity: Activity,
+    tracker: ErrorTracker,
+) : ScanForHeartRateStrapsStreamHandler() {
+    private val scan = LeScan(activity, tracker)
 
     override fun onListen(
         p0: Any?,

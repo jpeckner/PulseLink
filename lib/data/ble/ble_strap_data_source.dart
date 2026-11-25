@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for the full license text.
 
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
@@ -210,13 +209,13 @@ class BleStrapDataSource implements StrapDataSource {
             // A malformed packet has no reading in it. It's logged rather
             // than sent, since samples never carry errors; if bad packets
             // keep coming, the live screen marks the last reading stale.
-            developer.log(
+            _tracker.logInfo(
               'Dropped a malformed Heart Rate Measurement: ${error.name}',
               name: 'ble',
             );
         }
       case BleStrapDisconnected():
-        developer.log('The strap disconnected', name: 'ble');
+        _tracker.logInfo('The strap disconnected', name: 'ble');
         // Only a strap that was connected can be lost. A later start()
         // connects again.
         if (_isStarted) {
@@ -233,7 +232,7 @@ class BleStrapDataSource implements StrapDataSource {
         } else {
           // Not a percentage, so not a level to show; most likely a corrupt
           // value. Logged rather than sent: the stream never carries errors.
-          developer.log('Dropped a battery level of $percent', name: 'ble');
+          _tracker.logInfo('Dropped a battery level of $percent', name: 'ble');
         }
     }
   }

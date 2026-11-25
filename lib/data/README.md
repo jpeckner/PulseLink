@@ -4,8 +4,9 @@ Everything that talks to the outside world, behind interfaces so it can be
 faked in tests: `StrapDataSource` (BLE or fake), `StrapScanner` (BLE),
 `AppSettings` (opens the app's page in Settings), `SessionRepository`
 (drift), and `WatchBridge` (WatchConnectivity via platform channels).
-`TrackerService` is where errors are reported from, for now through
-`dart:developer`; a crash reporting service would plug in there.
+`TrackerService` is where errors are reported from, and normal events
+noted, for now through `dart:developer`; a crash reporting service would
+plug in there.
 
 `ble/` holds the BLE implementations. They talk to native code (CoreBluetooth
 on iOS, Android's BLE APIs on Android) through Pigeon platform channels: the

@@ -230,6 +230,10 @@ void main() {
           ..add(BleHeartRateMeasurement(value: _packet));
         await _delivered();
         expect(samples, hasLength(1));
+        final noted = tracker.infos.single;
+        expect(noted.message, startsWith('Dropped a malformed'));
+        expect(noted.name, 'ble');
+        expect(tracker.errors, isEmpty);
       });
 
       test('a native error on the event stream is tracked as non-fatal, and '
@@ -266,6 +270,10 @@ void main() {
         events.add(BleStrapDisconnected());
         await _delivered();
         expect(lost, [const StrapConnectionFailure.connectionLost()]);
+        expect(tracker.infos.single, (
+          message: 'The strap disconnected',
+          name: 'ble',
+        ));
       });
 
       group('battery level', () {
@@ -289,6 +297,10 @@ void main() {
             ..add(BleBatteryLevel(percent: 40));
           await _delivered();
           expect(levels, [BatteryLevel.tryFrom(40)]);
+          expect(tracker.infos.single, (
+            message: 'Dropped a battery level of 255',
+            name: 'ble',
+          ));
         });
 
         test('becomes unknown when the strap drops, or on stop', () async {

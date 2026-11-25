@@ -13,9 +13,14 @@ typedef LoggedError = ({
   bool fatal,
 });
 
-/// A [TrackerService] that records each error instead of logging it.
+/// One call to [TrackerService.logInfo].
+typedef LoggedInfo = ({String message, String name});
+
+/// A [TrackerService] that records each error and info message instead of
+/// logging it.
 class RecordingTrackerService implements TrackerService {
   final errors = <LoggedError>[];
+  final infos = <LoggedInfo>[];
 
   @override
   void logError(
@@ -31,4 +36,8 @@ class RecordingTrackerService implements TrackerService {
     stackTrace: stackTrace,
     fatal: fatal,
   ));
+
+  @override
+  void logInfo(String message, {required String name}) =>
+      infos.add((message: message, name: name));
 }

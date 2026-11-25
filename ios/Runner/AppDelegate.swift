@@ -27,15 +27,18 @@ extension AppDelegate: FlutterImplicitEngineDelegate {
   ) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     let messenger = engineBridge.applicationRegistrar.messenger()
+    // The app's only error tracker: everything that reports errors gets
+    // this one.
+    let tracker = OSLogTracker()
     // The channels keep these for as long as the engine runs.
     ScanForHeartRateStrapsStreamHandler.register(
       with: messenger,
-      streamHandler: BleStrapScanner()
+      streamHandler: BleStrapScanner(tracker: tracker)
     )
-    let strapLink = BleStrapLink()
+    let strapLink = BleStrapLink(tracker: tracker)
     StrapEventsStreamHandler.register(with: messenger, streamHandler: strapLink)
     BleConnectionApiSetup.setUp(binaryMessenger: messenger, api: strapLink)
     AppSettingsApiSetup.setUp(binaryMessenger: messenger, api: AppSettingsOpener())
-    WatchSessionApiSetup.setUp(binaryMessenger: messenger, api: WatchLink())
+    WatchSessionApiSetup.setUp(binaryMessenger: messenger, api: WatchLink(tracker: tracker))
   }
 }
