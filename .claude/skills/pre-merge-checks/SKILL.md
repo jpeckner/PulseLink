@@ -198,7 +198,7 @@ The first runs SwiftLint and the SwiftUI preview check on the hand-written Swift
 
 ### 5g. Swift tests
 
-CI doesn't run these yet; it runs on Linux until Milestone 7 adds a macOS job. If the branch has `tool/test_swift.sh`, run it in the background, after the Flutter tests:
+CI doesn't run these yet; it runs on Linux until Milestone 8 adds a macOS job. If the branch has `tool/test_swift.sh`, run it in the background, after the Flutter tests:
 
 ```bash
 tool/test_swift.sh > "$LOGS/test-swift.log" 2>&1
@@ -217,7 +217,7 @@ This lists lines the branch added or changed in `lib/` that no test runs, and ch
 
 ## 6. Release builds
 
-CI doesn't build the apps yet; that comes in Milestone 7. Build both release apps, one after the other, in the background:
+CI doesn't build the apps yet; that comes in Milestone 8. Build both release apps, one after the other, in the background:
 
 ```bash
 flutter build ios --release --no-codesign > "$LOGS/build-ios.log" 2>&1

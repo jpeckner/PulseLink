@@ -20,9 +20,10 @@ strap or watch.
 - [x] 3. Real BLE on iOS
 - [x] 4. Real BLE on Android
 - [x] 5. Apple Watch app
-- [ ] 6. Reliability for iOS
-- [ ] 7. Polish and portfolio (nice-to-have)
-- [ ] 8. Sessions and history (nice-to-have)
+- [ ] 6. Hardening and Enhancements
+- [ ] 7. BLE Reliability (nice-to-have)
+- [ ] 8. Polish and portfolio (nice-to-have)
+- [ ] 9. Sessions and history (nice-to-have)
 
 ## Tech stack
 
@@ -62,7 +63,7 @@ other debug tooling live in debug-only code, which they don't contain.
 On Android (12 or later, with Bluetooth LE), **Find strap** works the same
 way; the first scan asks for the Nearby devices permission, and the emulator
 can't reach a real strap. On both platforms, streaming stops soon after the
-app goes to the background; keeping it going comes in Milestone 6.
+app goes to the background; keeping it going comes in Milestone 7.
 
 The iOS project includes an Apple Watch app, so Flutter needs a device ID to
 run on an iOS simulator: `flutter run -d <id>`, with an ID from
@@ -140,7 +141,7 @@ flutter test
 
 The Swift tests run on simulators: `ios/RunnerTests` on an iPhone and
 `ios/PulseLinkWatchTests` on an Apple Watch (macOS only; CI doesn't run them
-until Milestone 7):
+until Milestone 8):
 
 ```bash
 tool/test_swift.sh

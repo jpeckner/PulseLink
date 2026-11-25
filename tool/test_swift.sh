@@ -9,7 +9,7 @@
 #
 # Run from anywhere on macOS: tool/test_swift.sh
 # The pre-merge-checks skill runs it. CI doesn't yet: it runs on Linux until
-# Milestone 7 adds a macOS job.
+# Milestone 8 adds a macOS job.
 #
 # Needs Flutter's iOS project config, which `flutter build ios --config-only`
 # (or tool/regenerate.sh) writes. Each simulator is the first available one

@@ -648,3 +648,14 @@ bad one is ignored, not half-shown. The banner's grace period trades
   it;
 - treat clock skew between phone and watch as a hazard with a stated bound;
 - decide, with a clinician, how long "not reachable" may go unannounced.
+
+## Milestone 6: Hardening and Enhancements (in progress)
+
+Milestones were renumbered while this one was under way. The work after
+Milestone 5 hardened what was there rather than adding the planned
+reliability work, so Milestone 6 became Hardening and Enhancements, and
+reliability (reconnecting, backgrounding, remembering the strap, the debug
+log) moved to Milestone 7, a nice-to-have. Polish and portfolio is now
+Milestone 8, and Sessions and history 9. The earlier entries keep the
+numbers they had then, so where they mention Milestone 6, that's now
+Milestone 7.

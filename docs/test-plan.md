@@ -8,7 +8,7 @@ the log at the end. The Apple Watch checks need an iPhone and its paired
 watch, but no strap: demo data (from the debug override, in a debug build)
 drives them.
 
-Each milestone adds its own section. Milestone 6 will add walking out of
+Each milestone adds its own section. Milestone 7 will add walking out of
 range and back, toggling Bluetooth while connected, backgrounding the app
 (on both platforms, once Android's background streaming lands), and killing
 and reopening it.

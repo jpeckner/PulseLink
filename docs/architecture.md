@@ -3,8 +3,8 @@
 How the phone app, the Apple Watch app and the link between them fit
 together, as of Milestone 5, plus the no-strap start and debug-only demo
 data that came after it. Update it when a milestone changes a component
-or a message; Milestone 6 will add the connection state machine, and
-Milestone 8 the watch's start and stop commands.
+or a message; Milestone 7 will add the connection state machine, and
+Milestone 9 the watch's start and stop commands.
 
 The diagrams show the live path: a real strap, the real platform channels and
 a real watch. Swap points, where a demo, debug or test component takes a live
@@ -108,7 +108,7 @@ flowchart TB
 | Data | `SwitchableStrapDataSource` | Owns whichever `StrapDataSource` is current, so the cubits never change source themselves. Starts with none, reporting no strap until one is picked. |
 | Data | `BleStrapDataSource` | The strap through `ble_api`. Parses raw Heart Rate Measurement bytes in exactly one place. Expected failures come back as typed results, never exceptions. |
 | Data | `PigeonWatchBridge` | The watch through `watch_api`. Turns platform errors into a `WatchDeliveryResult`. |
-| Data | `TrackerService` | Where errors are reported from: fatal from `UncaughtErrorReporter`, non-fatal from `AppBlocObserver` and from the platform-channel failures `BleStrapDataSource`, `PlatformAppSettings` and `PigeonWatchBridge` catch. Logs through `dart:developer` for now; a crash reporting service, and Milestone 6's in-app debug log, would plug in there. Expected failures and normal events, such as a malformed packet, aren't errors: they're noted through its `logInfo()`, by `AppBlocObserver`, `BleStrapDataSource` and `WatchSync`. |
+| Data | `TrackerService` | Where errors are reported from: fatal from `UncaughtErrorReporter`, non-fatal from `AppBlocObserver` and from the platform-channel failures `BleStrapDataSource`, `PlatformAppSettings` and `PigeonWatchBridge` catch. Logs through `dart:developer` for now; a crash reporting service, and Milestone 7's in-app debug log, would plug in there. Expected failures and normal events, such as a malformed packet, aren't errors: they're noted through its `logInfo()`, by `AppBlocObserver`, `BleStrapDataSource` and `WatchSync`. |
 
 ### Swap points
 
@@ -274,7 +274,7 @@ old.
 ## 4. Phone to watch
 
 One-way for now: the phone sends snapshots and the watch only listens.
-Start and stop commands from the watch are planned for Milestone 8, and the
+Start and stop commands from the watch are planned for Milestone 9, and the
 message's `kind` field leaves room for them.
 
 ### One change, end to end

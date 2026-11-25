@@ -25,7 +25,7 @@ enum StrapConnectOutcome: Equatable, Sendable {
 /// `queue: nil`; each checks that, as `CentralScan` explains.
 ///
 /// It has its own `CBCentralManager`, separate from `CentralScan`'s, which
-/// Apple allows. Milestone 6's reliability work (reconnecting, staying
+/// Apple allows. Milestone 7's reliability work (reconnecting, staying
 /// connected in the background) is the time to share one.
 @MainActor
 final class StrapConnection: NSObject {
